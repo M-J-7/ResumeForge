@@ -1,0 +1,21 @@
+# Normalise line endings. Prettier and .editorconfig both write LF; without
+# this, core.autocrlf on Windows rewrites every file on checkout and produces
+# diff noise that obscures real changes.
+* text=auto eol=lf
+
+# Binary assets — never munge, never diff.
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
+
+# Font metadata is protobuf text but upstream-owned; leave it byte-exact.
+*.pb -text
+
+# Generated. Collapse in diffs and reviews.
+pnpm-lock.yaml linguist-generated=true -diff

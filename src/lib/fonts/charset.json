@@ -1,0 +1,72 @@
+{
+  "description": "Unicode ranges preserved when subsetting vendored fonts. Shared by scripts/fetch-fonts.mjs (which applies it) and src/lib/fonts/charset.ts (which tests it). Widening a range means re-running `pnpm fonts:fetch`.",
+  "ranges": [
+    {
+      "name": "Basic Latin",
+      "start": 32,
+      "end": 126,
+      "why": "ASCII. Every resume needs it."
+    },
+    {
+      "name": "Latin-1 Supplement",
+      "start": 160,
+      "end": 255,
+      "why": "é ñ ü ç ø å ö ß — Western European names and the × symbol."
+    },
+    {
+      "name": "Latin Extended-A",
+      "start": 256,
+      "end": 383,
+      "why": "ā ł đ ğ ş ı — Polish, Turkish, Baltic, Czech, Hungarian names."
+    },
+    {
+      "name": "Latin Extended-B",
+      "start": 384,
+      "end": 591,
+      "why": "Romanian, Vietnamese base forms, and African Latin orthographies."
+    },
+    {
+      "name": "Greek and Coptic",
+      "start": 880,
+      "end": 1023,
+      "why": "Greek applicants' names. Present in all five source families."
+    },
+    {
+      "name": "Cyrillic",
+      "start": 1024,
+      "end": 1279,
+      "why": "Russian, Ukrainian, Bulgarian, Serbian names."
+    },
+    {
+      "name": "General Punctuation",
+      "start": 8208,
+      "end": 8231,
+      "why": "En dash (used in every date range), bullet, curly quotes, ellipsis."
+    },
+    {
+      "name": "Currency Symbols",
+      "start": 8352,
+      "end": 8383,
+      "why": "₹ € ₽ ₩ — quantified achievements are often monetary, and the audience is global."
+    }
+  ],
+  "extras": [
+    {
+      "codePoint": 8482,
+      "name": "TRADE MARK SIGN",
+      "why": "Appears in product and certification names."
+    },
+    { "codePoint": 8470, "name": "NUMERO SIGN", "why": "Common in Cyrillic-script documents." },
+    { "codePoint": 8722, "name": "MINUS SIGN", "why": "Negative deltas in quantified results." },
+    {
+      "codePoint": 8804,
+      "name": "LESS-THAN OR EQUAL TO",
+      "why": "Latency and threshold claims (\"≤50ms\")."
+    },
+    {
+      "codePoint": 8805,
+      "name": "GREATER-THAN OR EQUAL TO",
+      "why": "Scale claims (\"≥1M requests\")."
+    }
+  ]
+}

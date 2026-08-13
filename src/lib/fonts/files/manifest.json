@@ -1,0 +1,166 @@
+{
+  "generatedFrom": "Google Fonts CSS API",
+  "userAgent": "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_5_8; en-us) AppleWebKit/531.22.7 (KHTML, like Gecko) Version/4.0.5 Safari/531.22.7",
+  "fonts": [
+    {
+      "family": "Tinos",
+      "style": "Regular",
+      "file": "Tinos-Regular.ttf",
+      "bytes": 87212,
+      "rawBytes": 311236,
+      "sha256": "6776658130a28b0fb2d9a7c02983304709299074b7407d0c4b419e581861f8a8"
+    },
+    {
+      "family": "Tinos",
+      "style": "Bold",
+      "file": "Tinos-Bold.ttf",
+      "bytes": 87168,
+      "rawBytes": 343708,
+      "sha256": "d7e19101b7dfe322cbeeabc503bca6495337ca51c4d50c220664595615867089"
+    },
+    {
+      "family": "Tinos",
+      "style": "Italic",
+      "file": "Tinos-Italic.ttf",
+      "bytes": 90808,
+      "rawBytes": 353492,
+      "sha256": "db7f1a647278dabc950d84f2cffb018093a7f0ec2b045a4ae3646864c31cdb0b"
+    },
+    {
+      "family": "Tinos",
+      "style": "BoldItalic",
+      "file": "Tinos-BoldItalic.ttf",
+      "bytes": 90460,
+      "rawBytes": 352328,
+      "sha256": "5b4f5c8f6ff942ff68c96360549a0941e51a0efe89f0d5c7ff5a796139601f39"
+    },
+    {
+      "family": "Arimo",
+      "style": "Regular",
+      "file": "Arimo-Regular.ttf",
+      "bytes": 83708,
+      "rawBytes": 319496,
+      "sha256": "00e066664646c996ecbe367eab6b1917c589121201bb599ca25523d30224c232"
+    },
+    {
+      "family": "Arimo",
+      "style": "Bold",
+      "file": "Arimo-Bold.ttf",
+      "bytes": 84404,
+      "rawBytes": 320464,
+      "sha256": "e1fb1c8d84cf7e8701e72f7292db1ba98ab7f52936cbc619ca1a3329fa89a9fc"
+    },
+    {
+      "family": "Arimo",
+      "style": "Italic",
+      "file": "Arimo-Italic.ttf",
+      "bytes": 92148,
+      "rawBytes": 342216,
+      "sha256": "5b4800e4eb7a33c4db61be57dacb916f5bacea76e3a897c6fe03a46818603860"
+    },
+    {
+      "family": "Arimo",
+      "style": "BoldItalic",
+      "file": "Arimo-BoldItalic.ttf",
+      "bytes": 93256,
+      "rawBytes": 343880,
+      "sha256": "dd6dea69f19675ccdd790992470d43b45793b588406eaaab0ba0039a62d8ee33"
+    },
+    {
+      "family": "Carlito",
+      "style": "Regular",
+      "file": "Carlito-Regular.ttf",
+      "bytes": 169048,
+      "rawBytes": 292856,
+      "sha256": "943da7f5d5e8b470f3ac5869d153f11ddf323c9dc6baa4df4ab545ef67527e84"
+    },
+    {
+      "family": "Carlito",
+      "style": "Bold",
+      "file": "Carlito-Bold.ttf",
+      "bytes": 178704,
+      "rawBytes": 309100,
+      "sha256": "95c520b3ca4d0a4679703d102c1f4a6877bf6afb2f7704db5607e966aabf045c"
+    },
+    {
+      "family": "Carlito",
+      "style": "Italic",
+      "file": "Carlito-Italic.ttf",
+      "bytes": 166008,
+      "rawBytes": 286596,
+      "sha256": "1d1891cedabe1068b8c26f03ea46cd0ed7fc4f0637ebb35e957a0b2b720c45b6"
+    },
+    {
+      "family": "Carlito",
+      "style": "BoldItalic",
+      "file": "Carlito-BoldItalic.ttf",
+      "bytes": 219976,
+      "rawBytes": 420892,
+      "sha256": "9ab2d7264ea8e1ba683ef7cf376a6c84f1804762a4dd6b82ed61ae1b6a04ed77"
+    },
+    {
+      "family": "EB Garamond",
+      "style": "Regular",
+      "file": "EBGaramond-Regular.ttf",
+      "bytes": 191316,
+      "rawBytes": 400264,
+      "sha256": "f8f0c6489cb89cb270cdde03a5e80a284d19efe4552c89a5e098886c67c710eb"
+    },
+    {
+      "family": "EB Garamond",
+      "style": "Bold",
+      "file": "EBGaramond-Bold.ttf",
+      "bytes": 191464,
+      "rawBytes": 400796,
+      "sha256": "0abd2944478944dcf3f00dc583fdd0a20b2ea739172b17c63cb8cde7facf5b17"
+    },
+    {
+      "family": "EB Garamond",
+      "style": "Italic",
+      "file": "EBGaramond-Italic.ttf",
+      "bytes": 183352,
+      "rawBytes": 355928,
+      "sha256": "56a4daecdd495940b1534e89961fe0052477448582efac5d9ce6b19eb4b4fd75"
+    },
+    {
+      "family": "EB Garamond",
+      "style": "BoldItalic",
+      "file": "EBGaramond-BoldItalic.ttf",
+      "bytes": 184696,
+      "rawBytes": 359500,
+      "sha256": "63aada00fbb0c76ec07b0885dc498c809140fb1cca6b92422be0ad3489d5c836"
+    },
+    {
+      "family": "IBM Plex Sans",
+      "style": "Regular",
+      "file": "IBMPlexSans-Regular.ttf",
+      "bytes": 146184,
+      "rawBytes": 183444,
+      "sha256": "53d9dd54f8d7ca1015d983b5e4bdabbdb98cd73c858452674c118ccb87ab0ab5"
+    },
+    {
+      "family": "IBM Plex Sans",
+      "style": "Bold",
+      "file": "IBMPlexSans-Bold.ttf",
+      "bytes": 146116,
+      "rawBytes": 183424,
+      "sha256": "bf9cdf0bf46a205786a986e92b4ecf6bfa1519b5b82b9cd7b7093a2b9c8ee7f3"
+    },
+    {
+      "family": "IBM Plex Sans",
+      "style": "Italic",
+      "file": "IBMPlexSans-Italic.ttf",
+      "bytes": 160276,
+      "rawBytes": 198068,
+      "sha256": "549a0151a360682757f1a6c98674eb8c912ba71f64266c55997cd6d9100fd71e"
+    },
+    {
+      "family": "IBM Plex Sans",
+      "style": "BoldItalic",
+      "file": "IBMPlexSans-BoldItalic.ttf",
+      "bytes": 160340,
+      "rawBytes": 198060,
+      "sha256": "1ed2282028e6479db4a01d7e7fbca806de3f15570f2a9dc45071270db26c3fe1"
+    }
+  ]
+}
