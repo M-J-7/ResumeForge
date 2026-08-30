@@ -136,3 +136,41 @@ test("offers a page-fit suggestion only when the overflow is small", async ({ pa
   // A one-page resume must not be nagged about fitting on one page.
   await expect(preview.getByText(/lines? onto page/)).toHaveCount(0);
 });
+
+test("X-Ray shows what a parser reads back from the generated PDF", async ({ page }) => {
+  await fillContact(page, "Ada Lovelace", "ada@example.com");
+  await addRole(
+    page,
+    "Analytical Engine Programmer",
+    "Difference Engine Co",
+    "Wrote the first algorithm.",
+  );
+
+  const preview = page.getByRole("region", { name: "Document preview" });
+  await expect(preview.getByRole("img", { name: "Resume page 1" })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await preview.getByRole("tab", { name: "X-Ray" }).click();
+
+  // The scorecard only exists if the PDF was re-parsed in the browser —
+  // pdfjs extraction, not just rendering.
+  await expect(preview.getByRole("table")).toBeVisible({ timeout: 30_000 });
+  await expect(preview.getByText(/of your fields were recovered/)).toBeVisible();
+
+  // Ground truth we typed must appear as what the machine read.
+  await expect(
+    preview.getByRole("cell", { name: "Ada Lovelace", exact: true }).first(),
+  ).toBeVisible();
+
+  // A clean document must grade at 100% — if it does not, the failure is in
+  // our emitters, which is the whole premise of the scorecard.
+  const scorecard = preview.locator("section[aria-label='Field recovery scorecard']");
+  await expect(scorecard).toContainText("100%");
+  await expect(scorecard).not.toContainText("Not found");
+
+  // Layer 1: the extracted text itself.
+  await expect(
+    preview.getByText("Analytical Engine Programmer", { exact: false }).first(),
+  ).toBeVisible();
+});

@@ -18,7 +18,9 @@
 | P4 State + builder UI    | M0-T7, T8        | ✅ Done                    |
 | P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                    |
 | P6 Lint + tests + launch | M0-T11, T14, T13 | 🔶 Code done, deploy owed  |
-| P7–P14 (M1–M3)           | —                | ⬜ Next                    |
+| P7 X-Ray engine          | M1-T1, T2        | ✅ Done                    |
+| P8 X-Ray UI              | M1-T3, T4        | ✅ Done                    |
+| P9–P14 (M2–M3)           | —                | ⬜ Next                    |
 
 ---
 
@@ -187,27 +189,47 @@ Five of 24 seeds initially failed the "bullet never splits across pages" check. 
 
 Also owed: choosing a host, a domain, and running the actual deploy.
 
+### P7 + P8 — X-Ray (M1-T1, M1-T2, M1-T3, M1-T4)
+
+The wedge: every competitor _claims_ ATS-friendliness; this measures it, because we hold the ground truth the extraction can be graded against.
+
+- `src/lib/xray/extract.ts` — two deliberately different PDF strategies plus DOCX.
+  - **A, stream order:** items as emitted, what a naive parser sees.
+  - **B, geometric:** cluster by baseline, sort by x — what a good parser does.
+  - `extractDocxStructure` parses `word/document.xml` for paragraph _styles_, the structural signal PDF has no equivalent for and the reason D4 favours DOCX.
+- `src/lib/xray/scorecard.ts` — recovers name (first-line heuristic), email, phone (validated by `libphonenumber-js`, not regex alone), and per role title/organization/start/end. Weighted: contact details and the most recent role count most, because they carry the most consequence.
+- `src/components/xray/` — the three layers per M1-T3: scorecard first (the answer), parser disagreements second, raw extracted text last, with a toggle between the two reading orders.
+- Wired as a **tab beside Preview** in the preview pane, kept mounted so switching does not discard the extraction.
+- M1-T4 is satisfied by the recovery tests running in the normal suite: CI fails if any field regresses.
+- 41 X-Ray tests, plus an E2E test proving it works in a real browser. Dependency added: `libphonenumber-js`.
+
+**100% recovery on all seven fixtures, across both PDF strategies and DOCX.**
+
+#### Two things the strategies taught us
+
+**The two-column role header reads differently under each strategy — and that is correct.** A role header is visually one line (title left, date right), so geometric reports it as one line while stream order sees the whole left column and then the right. Neither is wrong; the difference is exactly what layer 3 shows the user. The scorecard handles both layouts rather than scoring our own output down for something a real parser reads fine.
+
+**Substring matching silently mis-assigned roles.** "Backend Engineer" is a substring of "Senior Backend Engineer", so a greedy match handed the junior role the senior role's employer and dates, then reported the mismatch as a parse failure that never happened. Roles are now claimed exact-first, each recovered role used once. Worth remembering anywhere resume fields get fuzzy-matched — M3's keyword scoring will hit the same shape.
+
 ---
 
 ## Next
 
-### Before anything else: finish M0
+### Still owed: ship M0
 
-M0 is code-complete and fully green — 872 unit tests, 6 Playwright E2E tests — but the plan says **ship M0 publicly before starting M1**, and three manual checks plus the deploy are outstanding. They are listed with checklists in `docs/QA.md`. Do those first; the point of shipping M0 is a week of real user feedback before building accounts.
+M0 and M1 are both code-complete and green — 913 unit tests, 7 Playwright tests. But the plan says **ship M0 publicly before starting M1**, and that gate is still unmet: three manual checks and the deploy remain, all listed with checklists in `docs/QA.md`. M1 was built ahead of it because the deploy needs decisions only the owner can make (host, domain, product name — §12 open questions 2 and 3), not because the sequencing was reconsidered.
 
-### P7 — X-Ray engine (M1-T1, M1-T2)
+The feedback loop the plan wants — a week of real users before building accounts — has not happened. Weigh that before starting M2.
 
-The wedge. Every competitor _claims_ ATS-friendliness; this proves it, because we hold the ground truth.
+### P9 — Database + auth (M2-T1, M2-T2)
 
-- [ ] `lib/xray/extract.ts` — PDF via `pdfjs-dist` `getTextContent()`, DOCX via `mammoth` plus direct `word/document.xml` parsing. **Both dependencies are already installed and in use.**
-- [ ] Two deliberately different PDF strategies: **A — stream order** (what a naive parser sees) and **B — geometric** (sort by descending y with tolerance-based line clustering, then x).
-- [ ] **`lib/pdf/read.ts` already implements strategy B** — geometric line clustering with a 2.5pt tolerance, built for the pagination invariants. Generalize it rather than writing a second one; strategy A is the simpler addition.
-- [ ] `M1-T2` field-recovery scorecard: name (first-line heuristic), email (regex), phone (`libphonenumber-js`), and per role title/company/start/end. Compare to the `ResumeDocument` with normalized fuzzy matching.
-- [ ] Accept: **100% recovery on every M0 fixture.** Anything less is a bug in _our_ emitters, and finding those is the point.
+- [ ] Prisma + better-sqlite3. On **every connection**: `PRAGMA journal_mode=WAL; busy_timeout=5000; synchronous=NORMAL; foreign_keys=ON`. Assert the pragma values in a test.
+- [ ] `better-sqlite3` is **synchronous** — a slow query blocks the event loop for every user. Keep queries indexed and small; note it in code comments.
+- [ ] `Json` columns on SQLite are TEXT and are **not queryable or indexable**. Denormalize anything sortable into real columns (`lastScore`, `pageCount`, `wordCount`) — the schema in §7 of the plan already does this.
+- [ ] Auth.js v5, Google OAuth + email magic link, **no passwords ever** (D7). Prisma adapter, sessions in the same SQLite file.
+- [ ] Accept: migrations run clean; both auth flows work end to end; sessions survive restart.
 
-**Note:** the seven fixtures now include non-Latin names and very long organization names, so the scorecard will be tested against harder inputs than the plan assumed.
-
-### Then P8 — X-Ray UI (M1-T3, M1-T4)
+### Then P10 (sync + dashboard), P11 (Litestream + **rehearsed** restore — the largest tail risk in the architecture, §10), P12–P14 (M3 scoring)
 
 ---
 
@@ -219,10 +241,12 @@ The wedge. Every competitor _claims_ ATS-friendliness; this proves it, because w
 - **Any react-pdf style that sets `fontSize` must also set `lineHeight`.** react-pdf inherits a unitless lineHeight as an absolute value, so a heading inherits a body-sized line box and collides with the line below. Silent failure; guarded by the `overlappingLines` test.
 - **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever. Select the stable reference and derive during render.
 - **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test fails loudly on drift, but the shared module is what prevents it.
-- **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to the Vitest suite. Run `pnpm test:e2e` before believing anything about the preview.
-- **When asserting that text did not split across pages, match the whole string against one page's joined lines** — never head-fragment against tail-fragment. See the P6 note above.
+- **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to the Vitest suite. Run `pnpm test:e2e` before believing anything about the preview or X-Ray.
+- **When asserting that text did not split across pages, match the whole string against one page's joined lines** — never head-fragment against tail-fragment.
+- **Fuzzy-matching resume fields needs exact-first, claim-once semantics.** Substrings otherwise mis-assign shorter titles to longer ones. See the P7 note.
 - `public/fonts/` and `public/pdf.worker.min.mjs` are generated and gitignored. If the preview 404s on a font, run `pnpm fonts:sync`.
 - The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff there means the machine-readable output changed; treat it as a product change, not a test annoyance.
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
 - Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`, none of which jsdom implements.
 - **Email and URL are plain text in the schema**, validated by `isValidEmail`/`isValidUrl` in the form and the lint engine. See the P4 note for why; do not "fix" this by putting `z.email()` back.
+- M4-T1 (resume import) reuses `lib/xray/extract.ts` wholesale — it is the biggest onboarding unlock for the least new code.

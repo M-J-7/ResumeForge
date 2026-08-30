@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PdfCanvas } from "./PdfCanvas";
 import { ExportPanel } from "./ExportPanel";
 import { usePdfPreview } from "./usePdfPreview";
+import { XRayPanel } from "@/components/xray/XRayPanel";
 import { Button, Select } from "@/components/ui/control";
 import { analyzeFit, fitInputsFromPages, suggestFit, type PageFit } from "@/lib/layout/fit";
 import { readPages } from "@/lib/pdf/read";
@@ -11,6 +12,9 @@ import { useResumeStore } from "@/store/resume";
 import { cn } from "@/lib/utils";
 
 type ZoomMode = "fit-width" | "fit-page" | "actual";
+
+/** The preview shows the document; X-Ray shows what a parser reads from it. */
+type ViewMode = "preview" | "xray";
 
 /** A4 and Letter are both ~600pt wide; used to size fit-width before measuring. */
 const NOMINAL_PAGE_WIDTH_PT = 595;
@@ -21,6 +25,7 @@ export function PreviewPane({ className }: { className?: string }) {
   const resume = useResumeStore((s) => s.history.present);
   const update = useResumeStore((s) => s.update);
 
+  const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -82,7 +87,36 @@ export function PreviewPane({ className }: { className?: string }) {
 
   return (
     <section className={cn("flex min-h-0 flex-col", className)} aria-label="Document preview">
-      <div className="flex flex-wrap items-center gap-3 border-b border-zinc-200 px-4 py-2 dark:border-zinc-800">
+      <div
+        role="tablist"
+        aria-label="Document view"
+        className="flex gap-1 border-b border-zinc-200 px-4 pt-2 dark:border-zinc-800"
+      >
+        {(["preview", "xray"] as const).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            role="tab"
+            aria-selected={viewMode === mode}
+            onClick={() => setViewMode(mode)}
+            className={cn(
+              "rounded-t-md px-3 py-1.5 text-sm font-medium transition",
+              viewMode === mode
+                ? "bg-white text-zinc-900 ring-1 ring-zinc-200 dark:bg-zinc-950 dark:text-zinc-100 dark:ring-zinc-800"
+                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
+            )}
+          >
+            {mode === "preview" ? "Preview" : "X-Ray"}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-3 border-b border-zinc-200 px-4 py-2 dark:border-zinc-800",
+          viewMode !== "preview" && "hidden",
+        )}
+      >
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
             {fit ? fit.summary : pageCount > 0 ? `${pageCount} pages` : "—"}
@@ -112,7 +146,7 @@ export function PreviewPane({ className }: { className?: string }) {
         </label>
       </div>
 
-      {suggestion ? (
+      {suggestion && viewMode === "preview" ? (
         <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40">
           <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
             You are {fit?.linesOver} {fit?.linesOver === 1 ? "line" : "lines"} onto page{" "}
@@ -142,7 +176,10 @@ export function PreviewPane({ className }: { className?: string }) {
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-auto bg-zinc-200 p-6 dark:bg-zinc-900"
+        className={cn(
+          "min-h-0 flex-1 overflow-auto bg-zinc-200 p-6 dark:bg-zinc-900",
+          viewMode !== "preview" && "hidden",
+        )}
       >
         {bytes ? (
           <PdfCanvas bytes={bytes} scale={scale} />
@@ -151,6 +188,11 @@ export function PreviewPane({ className }: { className?: string }) {
             {rendering ? "Rendering your resume…" : "Start typing to see your resume."}
           </p>
         )}
+      </div>
+
+      {/* Kept mounted so switching tabs does not discard the extraction. */}
+      <div className={cn("min-h-0 flex-1", viewMode !== "xray" && "hidden")}>
+        <XRayPanel bytes={bytes} active={viewMode === "xray"} />
       </div>
 
       <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
