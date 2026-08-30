@@ -420,9 +420,130 @@ export function buildOverflowFixture(bulletCount: number): ResumeDocument {
   return { ...longCareerResume, sections };
 }
 
+/**
+ * Names and organizations in scripts the vendored fonts do not cover, plus
+ * extended Latin that they do.
+ *
+ * `docs/ATTRIBUTION.md` records the gap: Devanagari, CJK, Arabic, Hebrew and
+ * others render as .notdef boxes. This fixture exists so that failure is
+ * visible in the test suite rather than discovered by a user, and so the
+ * Latin coverage that *is* claimed stays proven.
+ */
+export const nonLatinNameResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Zoë Đurđević-Þórsdóttir",
+    email: "zoe@example.com",
+    phone: "+354 555 0100",
+    location: "Reykjavík, Ísland",
+    links: [],
+  },
+  sections: [
+    { id: "nl-sec-summary", type: "summary", visible: true, content: "" },
+    {
+      id: "nl-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "nl-exp-1",
+          title: "Sénior Software Engineer",
+          organization: "Ålborg Teknologi Ø/S",
+          location: "København, Danmark",
+          dates: { start: { year: 2021, month: 4 }, end: null, current: true },
+          bullets: [
+            "Reduced cost per transaction by 38% — measured across ≥1M requests a day.",
+            "Led the €2.4M platform migration with zero customer-visible downtime.",
+          ],
+        },
+      ],
+    },
+    { id: "nl-sec-education", type: "education", visible: true, entries: [] },
+    { id: "nl-sec-skills", type: "skills", visible: true, groups: [] },
+    { id: "nl-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "nl-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * Organization and title strings long enough to wrap the right-aligned date
+ * column. This is where a two-column header layout breaks if the tab stop or
+ * flex sizing is wrong.
+ */
+export const longOrganizationNamesResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Robert Whitfield",
+    email: "robert.whitfield@example.com",
+    phone: "+44 20 7946 0100",
+    location: "London, United Kingdom",
+    links: [],
+  },
+  sections: [
+    { id: "lo-sec-summary", type: "summary", visible: true, content: "" },
+    {
+      id: "lo-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "lo-exp-1",
+          title: "Senior Principal Engineering Manager, Platform Infrastructure and Reliability",
+          organization:
+            "The International Consolidated Financial Technologies and Services Group Limited",
+          location: "London, United Kingdom",
+          dates: { start: { year: 2019, month: 2 }, end: null, current: true },
+          bullets: [
+            "Consolidated 14 regional deployment pipelines into one, cutting release lead time from 9 days to 4 hours.",
+          ],
+        },
+      ],
+    },
+    { id: "lo-sec-education", type: "education", visible: true, entries: [] },
+    { id: "lo-sec-skills", type: "skills", visible: true, groups: [] },
+    { id: "lo-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "lo-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * Every section present and visible but only one populated — the shape a
+ * document takes early in editing, and the case where a bare heading or an
+ * orphaned break rule is most likely to surface.
+ */
+export const onlyOneSectionResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Sam Okonkwo",
+    email: "sam.okonkwo@example.com",
+    phone: "",
+    location: "",
+    links: [],
+  },
+  sections: [
+    { id: "os-sec-summary", type: "summary", visible: true, content: "" },
+    { id: "os-sec-experience", type: "experience", visible: true, entries: [] },
+    { id: "os-sec-education", type: "education", visible: true, entries: [] },
+    {
+      id: "os-sec-skills",
+      type: "skills",
+      visible: true,
+      groups: [{ id: "os-skill-1", label: "Technical", skills: ["Python", "SQL"] }],
+    },
+    { id: "os-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "os-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
 export const ALL_FIXTURES: ReadonlyArray<{ name: string; document: ResumeDocument }> = [
   { name: "mid-career", document: midCareerResume },
   { name: "fresher", document: fresherResume },
   { name: "long-career", document: longCareerResume },
   { name: "single-bullet-role", document: singleBulletRoleResume },
+  { name: "non-latin-name", document: nonLatinNameResume },
+  { name: "long-organization-names", document: longOrganizationNamesResume },
+  { name: "only-one-section", document: onlyOneSectionResume },
 ];

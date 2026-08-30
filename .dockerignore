@@ -1,0 +1,11 @@
+node_modules
+.next
+.git
+.claude
+coverage
+test-results
+playwright-report
+blob-report
+public/fonts
+public/pdf.worker.min.mjs
+*.tsbuildinfo

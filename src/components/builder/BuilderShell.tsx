@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { STEPS, DEFAULT_STEP_ID } from "./steps-config";
 import { StepNav } from "./StepNav";
 import { SectionManager } from "./SectionManager";
+import { IssuesPanel } from "./IssuesPanel";
 import { CommandPalette, useCommandPalette, type Command } from "./CommandPalette";
 import { ContactStep } from "./steps/ContactStep";
 import { SummaryStep } from "./steps/SummaryStep";
@@ -126,6 +127,7 @@ export function BuilderShell() {
       >
         <aside className="flex shrink-0 flex-col gap-6 lg:w-60">
           <StepNav activeStep={activeStep} onSelect={setActiveStep} />
+          <IssuesPanel onNavigate={setActiveStep} />
           <div className="hidden lg:block">
             <SectionManager />
           </div>

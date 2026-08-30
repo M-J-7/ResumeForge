@@ -1,0 +1,7 @@
+--- page 1 ---
+Robert Whitfield
+robert.whitfield@example.com +44 20 7946 0100 · London, United Kingdom
+EXPERIENCE
+Senior Principal Engineering Manager, Platform Infrastructure and Reliability Feb 2019 – Present
+The International Consolidated Financial Technologies and Services Group Limited London, United Kingdom
+• Consolidated 14 regional deployment pipelines into one, cutting release lead time from 9 days to 4 hours.

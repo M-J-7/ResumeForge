@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ATS Resume Builder
 
-## Getting Started
+Build a single-column resume and download it as PDF, DOCX, and plain text. Runs entirely in the
+browser: no account, no server-side rendering of your document, and nothing uploaded.
 
-First, run the development server:
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open <http://localhost:3000>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`predev` and `prebuild` run `scripts/sync-public-fonts.mjs`, which copies the vendored font files
+and pdfjs's worker into `public/`. Both are generated and gitignored — the ~2.8MB of fonts lives in
+the repository exactly once, under `src/lib/fonts/files/`. **If the preview 404s on a font, run
+`pnpm fonts:sync`.**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Command            | What it does                                                |
+| ------------------ | ----------------------------------------------------------- |
+| `pnpm dev`         | Development server                                          |
+| `pnpm build`       | Production build (standalone output, for Docker)            |
+| `pnpm verify`      | `typecheck` + `lint` + `test` — run before committing       |
+| `pnpm test`        | Vitest unit and component suite                             |
+| `pnpm test:e2e`    | Playwright end-to-end suite (builds and starts the app)     |
+| `pnpm fonts:fetch` | Re-vendors the font files from Google Fonts (rarely needed) |
+| `pnpm fonts:sync`  | Copies fonts and the pdfjs worker into `public/`            |
 
-To learn more about Next.js, take a look at the following resources:
+Run `pnpm test:e2e` before trusting anything about the preview. The PDF is generated in a Web
+Worker and painted with pdfjs, and pdfjs behaves differently under Node than in a browser — a whole
+class of bug there is invisible to the unit suite.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Vercel cannot host this.** The architecture assumes a persistent filesystem, which Vercel's
+ephemeral functions do not provide. Next.js defaults push everyone toward Vercel, so this is worth
+stating plainly.
 
-## Deploy on Vercel
+Deploy the Docker image to a VM with a persistent volume — Railway, Render, Fly, or a plain VPS all
+work:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+docker build -t ats-resume-builder .
+docker run -p 3000:3000 ats-resume-builder
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The image is `node:20-bookworm-slim`, multi-stage, and runs as a non-root user.
+
+## Documentation
+
+| File                     | Contents                                               |
+| ------------------------ | ------------------------------------------------------ |
+| `docs/EXECUTION_PLAN.md` | The full plan: milestones, tasks, acceptance criteria  |
+| `docs/PROGRESS.md`       | **What is done and where to pick up.** Read this first |
+| `docs/DECISIONS.md`      | Locked architecture decisions (D1–D14) and why         |
+| `docs/ATTRIBUTION.md`    | Font and data-source licensing                         |
+
+## Architecture in one paragraph
+
+`lib/resume/` holds the schema and its migration chain. `lib/layout/document.ts` turns a resume into
+an ordered list of semantic blocks carrying keep-together hints — the four break rules live there
+once, and all three emitters read them. `lib/emit/{pdf,docx,text}/` render those blocks;
+`lib/emit/shared/` holds the composition DOCX and TXT must agree on. The preview renders the _same_
+PDF blob the download hands over, so the two cannot drift.
+
+## Claims
+
+This produces the document structure that is most reliably readable across the widest range of
+applicant tracking systems. It is not a guarantee that any particular system will parse your resume
+correctly, or that you will pass any screen. See `docs/DECISIONS.md` (D14) for why the claim is
+phrased that way and not more strongly.

@@ -167,13 +167,18 @@ describe("layout sanity", () => {
     }
   });
 
-  it("keeps every line inside the page margins", async () => {
-    const marginPt = midCareerResume.settings.margins * 72;
-    const { bytes } = await render(midCareerResume);
+  it.each(ALL_FIXTURES)("$name keeps every line inside the page margins", async ({ document }) => {
+    // Text pushed past the right edge is not merely ugly — it is clipped, so
+    // the words are gone from both the print and the extracted text. The
+    // long-organization fixture exists to put pressure on exactly this.
+    const marginPt = document.settings.margins * 72;
+    const { bytes } = await render(document);
     for (const page of await readPages(bytes)) {
+      const rightEdge = page.widthPt - marginPt;
       for (const line of page.lines) {
         for (const item of line.items) {
-          expect(item.x).toBeGreaterThanOrEqual(marginPt - 1);
+          expect(item.x, `left overflow: ${item.text}`).toBeGreaterThanOrEqual(marginPt - 1);
+          expect(item.x, `right overflow: ${item.text}`).toBeLessThanOrEqual(rightEdge + 1);
         }
       }
     }
@@ -227,12 +232,16 @@ function assertRoleHeaderStaysWithFirstBullet(pages: PdfPage[], resume: ResumeDo
 /**
  * Rule 3: a bullet never splits mid-content across a page boundary.
  *
- * A bullet that wraps onto several lines must have all of them on one page.
- * We detect a split by checking that no page *ends* with a line that is a
- * continuation fragment — i.e. the bullet's opening line is on page N while
- * its trailing text appears on page N+1.
+ * A bullet that wraps onto several lines must have all of them on one page,
+ * so its *entire* text has to be recoverable from a single page once that
+ * page's lines are joined. Comparing a head fragment against a tail fragment
+ * looks equivalent but is not — a tail short enough to match reliably is
+ * also short enough to match a different bullet, which reports splits that
+ * never happened.
  */
 function assertNoBulletSplitsAcrossPages(pages: PdfPage[], resume: ResumeDocument) {
+  const joined = pages.map((page) => page.lines.map((l) => l.text).join(" "));
+
   for (const block of buildDocument(resume)) {
     const texts: string[] = [];
     if ((block.type === "experienceEntry" || block.type === "projectEntry") && block.firstBullet) {
@@ -241,12 +250,12 @@ function assertNoBulletSplitsAcrossPages(pages: PdfPage[], resume: ResumeDocumen
     if (block.type === "bullet") texts.push(block.text);
 
     for (const text of texts) {
-      const head = text.slice(0, 45);
-      const tail = text.slice(-25);
-      const headPage = pageOf(pages, (l) => l.includes(head));
-      const tailPage = pageOf(pages, (l) => l.includes(tail));
-      if (headPage === null || tailPage === null) continue;
-      expect(tailPage, `bullet split across pages: "${head}…"`).toBe(headPage);
+      const needle = text.replace(/\s+/g, " ").trim();
+      const wholeOn = joined.filter((pageText) => pageText.includes(needle)).length;
+      expect(
+        wholeOn,
+        `bullet not recoverable from any single page: "${needle.slice(0, 45)}…"`,
+      ).toBeGreaterThan(0);
     }
   }
 }

@@ -17,8 +17,8 @@
 | P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                    |
 | P4 State + builder UI    | M0-T7, T8        | ✅ Done                    |
 | P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                    |
-| P6 Lint + tests + launch | M0-T11, T14, T13 | ⬜ Next                    |
-| P7–P14 (M1–M3)           | —                | ⬜ Not started             |
+| P6 Lint + tests + launch | M0-T11, T14, T13 | 🔶 Code done, deploy owed  |
+| P7–P14 (M1–M3)           | —                | ⬜ Next                    |
 
 ---
 
@@ -150,34 +150,64 @@ The locked stack names shadcn/ui, whose model is "copy the component into your p
 
 The preview failed with `No "GlobalWorkerOptions.workerSrc" specified` — invisible to the unit suite, since pdfjs falls back to a fake worker under Node. Only the Playwright run surfaced it. This is the argument for keeping the E2E tests: three of P5's moving parts (worker, canvas, IndexedDB) have no Node equivalent.
 
+### P6 — Lint, verification, launch prep (M0-T11, M0-T14, M0-T13)
+
+**Lint engine (M0-T11) — done**
+
+- `src/lib/lint/types.ts`, `rules.ts`, `engine.ts`. ESLint framing per D11: stable namespaced id, severity, message, and a one-line _why this matters_, dismissible with a required reason.
+- All 12 M0 rules implemented: missing name · no email or phone · malformed email · missing location · no evidence at all · end date before start · inconsistent date precision · paragraph bullets · duty phrasing · first-person pronouns · weak opening verb · no quantified outcome · word count outside 300–800 · empty visible section.
+- `IssuesPanel.tsx` shows **"3 issues left"** per D12 — never a 0–100 score. Info findings are listed but not counted, so the number can actually reach zero; a checklist that never completes stops being read.
+- 50 tests, including a pass and a fail fixture per rule, plus meta-tests asserting no rule's _why_ text is generic filler and no rule promises a guarantee (D14).
+
+**Verification suite (M0-T14) — automated parts done**
+
+- Three fixtures added: `nonLatinNameResume` (extended Latin, Þ/Đ/ø), `longOrganizationNamesResume` (wraps the right-aligned date column), `onlyOneSectionResume`. Seven fixtures total.
+- `pagination.test.tsx` — property-based invariants over 24 **seeded** random documents. Seeded deliberately: a property failure that cannot be reproduced gets dismissed as a fluke.
+- Right-margin overflow check added across every fixture — text past the page edge is clipped, so the words are lost from both print and extraction.
+- `.github/workflows/ci.yml` — verify, E2E with Chromium, and a Docker build.
+
+**Launch prep (M0-T13) — code done, deploy owed**
+
+- `src/app/page.tsx` replaces the create-next-app default. Honest positioning per D14, with an explicit "what we will not tell you" section.
+- `/privacy` and `/terms` — required live before launch per §9.
+- `Dockerfile` (`node:20-bookworm-slim`, multi-stage, non-root, healthcheck) and `output: "standalone"` in `next.config.ts`. `.dockerignore` excludes the generated `public/fonts`, which the build regenerates.
+- README rewritten, including the **Vercel cannot host this** warning the plan asks for.
+
+#### A false positive the property test taught us to avoid
+
+Five of 24 seeds initially failed the "bullet never splits across pages" check. The bullets were fine — the assertion compared a _head_ fragment against a _tail_ fragment, and with a small generated vocabulary the tail matched a different bullet on another page. The correct check is that the bullet's **entire** text is recoverable from one page's joined lines. The same flaw was in the P2 test and is fixed there too. Generated bullet text now carries its role index so a real failure names exactly one bullet.
+
+#### Still owed before M0 can be called shipped
+
+`docs/QA.md` records three manual checks that cannot be automated here, each with a checklist and a "not yet run" result:
+
+1. **DOCX opens cleanly in Word, LibreOffice, and Google Docs** — needs those applications; LibreOffice is not installed in this environment.
+2. **Cross-format page parity** — needs a Word-compatible layout engine. LibreOffice headless converting DOCX→PDF is the practical route.
+3. **End-to-end build on a real phone** — an emulator answers the wrong question.
+
+Also owed: choosing a host, a domain, and running the actual deploy.
+
 ---
 
 ## Next
 
-### P6 — Lint + tests + launch (M0-T11, M0-T14, M0-T13)
+### Before anything else: finish M0
 
-**M0-T11 — lint engine (6h)**
+M0 is code-complete and fully green — 872 unit tests, 6 Playwright E2E tests — but the plan says **ship M0 publicly before starting M1**, and three manual checks plus the deploy are outstanding. They are listed with checklists in `docs/QA.md`. Do those first; the point of shipping M0 is a week of real user feedback before building accounts.
 
-- [ ] `lib/lint/` with ESLint framing (D11/D12): stable rule id, severity, message, a one-line _why this matters_, dismissible with a reason.
-- [ ] M0 rules: missing contact fields · no email or phone · date format inconsistency · end date before start date · bullets that are paragraphs (>2 lines or >40 words) · `responsible for` / `helped with` / `duties included` · first-person pronouns · weak or missing leading action verb · no quantified outcome in a role · word count outside 300–800 · empty visible section.
-- [ ] UI: **"3 issues left"** during editing (D12), expanding to the list on click. No live 0–100 score.
-- [ ] Reuse `isValidEmail` / `isValidUrl` from `lib/resume/schema.ts` — already the single definition, used by the builder forms.
-- [ ] Accept: every rule has a unit test with a passing and a failing fixture, and non-generic _why_ text.
+### P7 — X-Ray engine (M1-T1, M1-T2)
 
-**M0-T14 — verification suite (8h)**
+The wedge. Every competitor _claims_ ATS-friendliness; this proves it, because we hold the ground truth.
 
-- [ ] Remaining fixtures: non-Latin names, very long company names, every section empty but one.
-- [ ] Property-based pagination invariants over randomly generated content lengths (P2 shipped a bounded 12-step sweep; this is the exhaustive version).
-- [ ] Cross-format page parity: PDF and DOCX page counts agree on every fixture. **Needs a Word-compatible renderer** — LibreOffice headless converting DOCX→PDF is the practical option, skipped gracefully when absent.
-- [ ] **Manual pass, still owed**: open each DOCX in Word, LibreOffice, and Google Docs; build a resume end-to-end on a real phone. Document in `docs/QA.md`.
-- [ ] Wire the whole suite into CI, including `pnpm test:e2e`.
+- [ ] `lib/xray/extract.ts` — PDF via `pdfjs-dist` `getTextContent()`, DOCX via `mammoth` plus direct `word/document.xml` parsing. **Both dependencies are already installed and in use.**
+- [ ] Two deliberately different PDF strategies: **A — stream order** (what a naive parser sees) and **B — geometric** (sort by descending y with tolerance-based line clustering, then x).
+- [ ] **`lib/pdf/read.ts` already implements strategy B** — geometric line clustering with a 2.5pt tolerance, built for the pagination invariants. Generalize it rather than writing a second one; strategy A is the simpler addition.
+- [ ] `M1-T2` field-recovery scorecard: name (first-line heuristic), email (regex), phone (`libphonenumber-js`), and per role title/company/start/end. Compare to the `ResumeDocument` with normalized fuzzy matching.
+- [ ] Accept: **100% recovery on every M0 fixture.** Anything less is a bug in _our_ emitters, and finding those is the point.
 
-**M0-T13 — landing page and deploy (6h)**
+**Note:** the seven fixtures now include non-Latin names and very long organization names, so the scorecard will be tested against harder inputs than the plan assumed.
 
-- [ ] Replace the create-next-app default at `src/app/page.tsx` with honest positioning (D14): free downloads forever, nothing sent to an AI, works without an account. No "beat the bots".
-- [ ] Privacy policy and terms — required _before_ launch (§9).
-- [ ] Dockerfile (`node:20-bookworm-slim`), deploy to a VM host, custom domain, HTTPS. **Vercel cannot host this** (§1) — note it in the README.
-- [ ] Accept: public URL, Lighthouse ≥ 90 on the landing page, builder interactive under 3s throttled.
+### Then P8 — X-Ray UI (M1-T3, M1-T4)
 
 ---
 
@@ -190,8 +220,9 @@ The preview failed with `No "GlobalWorkerOptions.workerSrc" specified` — invis
 - **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever. Select the stable reference and derive during render.
 - **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test fails loudly on drift, but the shared module is what prevents it.
 - **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to the Vitest suite. Run `pnpm test:e2e` before believing anything about the preview.
+- **When asserting that text did not split across pages, match the whole string against one page's joined lines** — never head-fragment against tail-fragment. See the P6 note above.
 - `public/fonts/` and `public/pdf.worker.min.mjs` are generated and gitignored. If the preview 404s on a font, run `pnpm fonts:sync`.
 - The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff there means the machine-readable output changed; treat it as a product change, not a test annoyance.
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
 - Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`, none of which jsdom implements.
-- Manual QA still owed (M0-T14): open generated DOCX in Word, LibreOffice, Google Docs; confirm DOCX page count matches the PDF; build a resume end-to-end on a real phone. Record in `docs/QA.md`.
+- **Email and URL are plain text in the schema**, validated by `isValidEmail`/`isValidUrl` in the form and the lint engine. See the P4 note for why; do not "fix" this by putting `z.email()` back.

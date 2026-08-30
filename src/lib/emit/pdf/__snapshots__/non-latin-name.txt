@@ -1,0 +1,8 @@
+--- page 1 ---
+Zoë Đurđević-Þórsdóttir
+zoe@example.com +354 555 0100 · Reykjavík, Ísland
+EXPERIENCE
+Sénior Software Engineer Apr 2021 – Present
+Ålborg Teknologi Ø/S København, Danmark
+• Reduced cost per transaction by 38% — measured across ≥1M requests a day.
+• Led the €2.4M platform migration with zero customer-visible downtime.
