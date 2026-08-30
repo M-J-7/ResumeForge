@@ -45,3 +45,12 @@ next-env.d.ts
 
 # local agent/editor settings
 .claude/settings.local.json
+
+# generated: font files copied from src/lib/fonts/files by scripts/sync-public-fonts.mjs
+/public/fonts/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/public/pdf.worker.min.mjs

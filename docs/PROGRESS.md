@@ -16,8 +16,8 @@
 | P2 Document model + PDF  | M0-T3, T4        | ✅ Done                    |
 | P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                    |
 | P4 State + builder UI    | M0-T7, T8        | ✅ Done                    |
-| P5 Preview + exports     | M0-T9, T10, T12  | ⬜ Next                    |
-| P6 Lint + tests + launch | M0-T11, T14, T13 | ⬜ Not started             |
+| P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                    |
+| P6 Lint + tests + launch | M0-T11, T14, T13 | ⬜ Next                    |
 | P7–P14 (M1–M3)           | —                | ⬜ Not started             |
 
 ---
@@ -115,26 +115,69 @@ The locked stack names shadcn/ui, whose model is "copy the component into your p
 
 `CustomStep` selected its sections with `.filter()` _inside_ the Zustand selector, which returns a new array each call, so the snapshot compared unequal on every render — an infinite render loop that would have hit any user opening the Custom step. Fixed by selecting the stable array and filtering during render.
 
+### P5 — Preview + exports (M0-T9, M0-T10, M0-T12)
+
+**Font delivery (the blocker)**
+
+- `scripts/sync-public-fonts.mjs` copies the vendored `.ttf` files into `public/fonts/`, plus pdfjs's `pdf.worker.min.mjs`. Wired to `predev`/`prebuild`, so a fresh clone needs no extra step. `public/fonts/` and the worker are gitignored — the 2.8MB of fonts stays in the repo exactly once.
+- `src/lib/fonts/paths.browser.ts` — `browserFontResolver`, the URL counterpart to the existing Node filesystem resolver.
+
+**Preview (M0-T9)**
+
+- `src/components/preview/render.worker.ts` — generates the PDF off the main thread. `usePdfPreview` debounces 400ms, discards responses it has outrun by request id, and falls back to main-thread rendering if a worker cannot be constructed.
+- `PdfCanvas.tsx` rasterizes each page detached and swaps them in complete, so a half-painted page is never shown and the previous frame stays up during a re-render. Backing store capped at 2x DPR — an A4 page at 3x on a phone allocates a canvas large enough to be refused.
+- `PreviewPane.tsx` — page chrome (discrete pages, shadow, ring), zoom (fit-width / fit-page / 100%), the fit indicator, and the export panel. Split view on desktop, tabbed on mobile; the preview stays mounted across the tab switch so it does not re-render from scratch.
+
+**Page fit (M0-T10)**
+
+- `src/lib/layout/fit.ts` — `analyzeFit` turns the measured geometry into "1.2 pages — 4 lines over 1". `suggestFit` offers exactly one suggestion, ordered by what the reader loses least: margins, then density, then font size, then the longest bullet. Font size stops at 10pt and margins at 0.6" — a resume squeezed to fit and then thrown away is not a win. The bullet suggestion is a no-op `apply`: it names the problem and leaves the words to the user (D8).
+
+**Exports (M0-T12)**
+
+- `src/lib/emit/filename.ts` — `FirstName_LastName_Resume.pdf`, transliterated for the **filename only**. Characters with no NFKD decomposition (Ł, Ø, Đ, ß, Æ) are mapped explicitly rather than silently deleted. Unsafe characters become separators, not deletions, so distinct names cannot collapse onto one filename.
+- `ExportPanel.tsx` — all three formats, never paywalled (D13). The PDF handed over is the exact blob the preview is showing (D2). Includes the per-destination recommendation table.
+
+**Testing**
+
+- Playwright added (locked stack) with 6 E2E tests in `e2e/` covering what jsdom cannot model: the worker actually producing a PDF, pdfjs painting it to canvas, IndexedDB surviving a real reload, downloads with correct filenames, and a keyboard-only build. Run separately with `pnpm test:e2e`.
+- 17 fit tests, 13 filename tests, 6 page-count tests.
+
+#### Page count no longer goes through pdfjs
+
+`renderPdf` runs _inside_ our render worker, and pdfjs refuses to run in a browser without `GlobalWorkerOptions.workerSrc` — which would have meant spawning a nested worker purely to read one integer. `src/lib/pdf/page-count.ts` reads `/Count` from the PDF's own page tree instead, which is what pdfjs does for `numPages` anyway. Still measured from the artifact per D3, and `page-count.test.ts` asserts it agrees with pdfjs on every fixture and across a multi-page sweep, so the cheap path cannot quietly drift. `readPages` still uses pdfjs (it needs real text geometry) and sets `workerSrc` when a `window` exists.
+
+#### Found by running it in a real browser
+
+The preview failed with `No "GlobalWorkerOptions.workerSrc" specified` — invisible to the unit suite, since pdfjs falls back to a fake worker under Node. Only the Playwright run surfaced it. This is the argument for keeping the E2E tests: three of P5's moving parts (worker, canvas, IndexedDB) have no Node equivalent.
+
 ---
 
 ## Next
 
-### P5 — Preview + exports (M0-T9, M0-T10, M0-T12)
+### P6 — Lint + tests + launch (M0-T11, M0-T14, M0-T13)
 
-- [ ] **Browser font resolver first.** `renderPdf` takes a `FontSourceResolver`; only the Node/filesystem one exists (`lib/fonts/paths.node.ts`). The browser resolves by URL, so the `.ttf` files must be served — copy to `public/fonts/` in a build step, or import them as bundler assets. Nothing else in P5 works until this exists.
-- [ ] `components/preview/` — render the PDF blob to canvas with `pdfjs-dist`. Per D2 the preview _is_ the downloaded artifact.
-- [ ] Debounce re-render ~400ms; run it in a **Web Worker** so typing never stutters. Keep the previous frame visible during re-render — never flash blank.
-- [ ] **Real page chrome**: discrete pages, drop shadows, visible boundaries, page count. The plan calls this out as most of what makes the product feel like a document tool rather than a form.
-- [ ] Zoom: fit-width / fit-page / 100%. Desktop split screen, mobile tabbed.
-- [ ] `lib/layout/measure.ts` — canvas `measureText` against the same webfont, for line-level hints only. Authoritative page count still comes from the rendered PDF (D3).
-- [ ] M0-T10 page-fit indicator: `1.3 pages — 4 lines over`, with one highest-value suggestion when within ~15% of a boundary.
-- [ ] M0-T12 export UI: all three formats, filename `FirstName_LastName_Resume.pdf` (transliterate for the **filename only**, never the content), plus the per-destination format recommendation (Workday/Taleo → DOCX; Greenhouse/Lever/Ashby/email → PDF).
+**M0-T11 — lint engine (6h)**
 
-**Depends on:** M0-T4 (done) and M0-T8 (done).
+- [ ] `lib/lint/` with ESLint framing (D11/D12): stable rule id, severity, message, a one-line _why this matters_, dismissible with a reason.
+- [ ] M0 rules: missing contact fields · no email or phone · date format inconsistency · end date before start date · bullets that are paragraphs (>2 lines or >40 words) · `responsible for` / `helped with` / `duties included` · first-person pronouns · weak or missing leading action verb · no quantified outcome in a role · word count outside 300–800 · empty visible section.
+- [ ] UI: **"3 issues left"** during editing (D12), expanding to the list on click. No live 0–100 score.
+- [ ] Reuse `isValidEmail` / `isValidUrl` from `lib/resume/schema.ts` — already the single definition, used by the builder forms.
+- [ ] Accept: every rule has a unit test with a passing and a failing fixture, and non-generic _why_ text.
 
-### Then P6 — Lint + tests + launch (M0-T11, M0-T14, M0-T13)
+**M0-T14 — verification suite (8h)**
 
-M0-T11 is position-flexible and depends only on the schema — it could move ahead of P5 if quality feedback while building is worth more than shipping the engine last.
+- [ ] Remaining fixtures: non-Latin names, very long company names, every section empty but one.
+- [ ] Property-based pagination invariants over randomly generated content lengths (P2 shipped a bounded 12-step sweep; this is the exhaustive version).
+- [ ] Cross-format page parity: PDF and DOCX page counts agree on every fixture. **Needs a Word-compatible renderer** — LibreOffice headless converting DOCX→PDF is the practical option, skipped gracefully when absent.
+- [ ] **Manual pass, still owed**: open each DOCX in Word, LibreOffice, and Google Docs; build a resume end-to-end on a real phone. Document in `docs/QA.md`.
+- [ ] Wire the whole suite into CI, including `pnpm test:e2e`.
+
+**M0-T13 — landing page and deploy (6h)**
+
+- [ ] Replace the create-next-app default at `src/app/page.tsx` with honest positioning (D14): free downloads forever, nothing sent to an AI, works without an account. No "beat the bots".
+- [ ] Privacy policy and terms — required _before_ launch (§9).
+- [ ] Dockerfile (`node:20-bookworm-slim`), deploy to a VM host, custom domain, HTTPS. **Vercel cannot host this** (§1) — note it in the README.
+- [ ] Accept: public URL, Lighthouse ≥ 90 on the landing page, builder interactive under 3s throttled.
 
 ---
 
@@ -146,7 +189,9 @@ M0-T11 is position-flexible and depends only on the schema — it could move ahe
 - **Any react-pdf style that sets `fontSize` must also set `lineHeight`.** react-pdf inherits a unitless lineHeight as an absolute value, so a heading inherits a body-sized line box and collides with the line below. Silent failure; guarded by the `overlappingLines` test.
 - **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever. Select the stable reference and derive during render.
 - **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test fails loudly on drift, but the shared module is what prevents it.
+- **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to the Vitest suite. Run `pnpm test:e2e` before believing anything about the preview.
+- `public/fonts/` and `public/pdf.worker.min.mjs` are generated and gitignored. If the preview 404s on a font, run `pnpm fonts:sync`.
 - The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff there means the machine-readable output changed; treat it as a product change, not a test annoyance.
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
-- Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, which jsdom does not implement.
+- Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`, none of which jsdom implements.
 - Manual QA still owed (M0-T14): open generated DOCX in Word, LibreOffice, Google Docs; confirm DOCX page count matches the PDF; build a resume end-to-end on a real phone. Record in `docs/QA.md`.

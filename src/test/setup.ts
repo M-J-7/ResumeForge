@@ -28,3 +28,21 @@ if (typeof HTMLDialogElement !== "undefined") {
     };
   }
 }
+
+// jsdom implements neither ResizeObserver nor the canvas 2D context. The
+// preview pane observes its container to compute fit-width zoom, and the
+// PDF canvas needs a context to paint into. Stubbing both keeps component
+// tests focused on behaviour that jsdom can actually model; the rendering
+// itself is covered by the emitter suites in plain Node, against real bytes.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe(): void {}
+    unobserve(): void {}
+    disconnect(): void {}
+  } as unknown as typeof ResizeObserver;
+}
+
+if (typeof URL.createObjectURL === "undefined") {
+  URL.createObjectURL = () => "blob:stub";
+  URL.revokeObjectURL = () => {};
+}

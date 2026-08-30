@@ -17,7 +17,7 @@ import {
   registerFontPair,
   type FontSourceResolver,
 } from "@/lib/fonts/register";
-import { readPageCount } from "@/lib/pdf/read";
+import { countPages } from "@/lib/pdf/page-count";
 import type { ResumeDocument } from "@/lib/resume/schema";
 import { resumePdfElement } from "./ResumePdf";
 
@@ -42,7 +42,7 @@ export async function renderPdf(
 
   const blob = await pdf(resumePdfElement(resume)).toBlob();
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  const pageCount = await readPageCount(bytes);
+  const pageCount = countPages(bytes);
 
   return { blob, bytes, pageCount };
 }
