@@ -7,6 +7,8 @@ import {
   dateRangeSchema,
   contactSchema,
   type ResumeDocument,
+  isValidEmail,
+  isValidUrl,
 } from "./schema";
 import { createEmptyResume } from "./factory";
 import { fresherResume, midCareerResume } from "@/test/fixtures/resumes";
@@ -93,9 +95,13 @@ describe("contactSchema", () => {
     expect(() => contactSchema.parse(blank)).not.toThrow();
   });
 
-  it("rejects a non-empty but malformed email", () => {
-    const bad = { fullName: "A", email: "not-an-email", phone: "", location: "", links: [] };
-    expect(() => contactSchema.parse(bad)).toThrow();
+  it("accepts a half-typed email, because the store persists every keystroke", () => {
+    // Rejecting this would mean a refresh mid-word discards the whole
+    // draft, since the migration chain parses on load. Format is checked
+    // by the builder form and the lint engine, where the user can act on
+    // it — see the note above `isValidEmail` in schema.ts.
+    const partial = { fullName: "A", email: "jo", phone: "", location: "", links: [] };
+    expect(() => contactSchema.parse(partial)).not.toThrow();
   });
 
   it("trims surrounding whitespace", () => {
@@ -179,5 +185,29 @@ describe("settingsSchema", () => {
 
   it("defaults to A4, since the audience is global rather than US-only", () => {
     expect(DEFAULT_SETTINGS.pageSize).toBe("A4");
+  });
+});
+
+describe("isValidEmail / isValidUrl", () => {
+  it("accepts realistic addresses and rejects malformed ones", () => {
+    for (const good of ["a@b.co", "jose.munoz@example.com", "first+tag@sub.domain.org"]) {
+      expect(isValidEmail(good), good).toBe(true);
+    }
+    for (const bad of ["", "jo", "no-at-sign.com", "a@b", "a b@c.com", "@example.com"]) {
+      expect(isValidEmail(bad), bad).toBe(false);
+    }
+  });
+
+  it("accepts only http and https URLs", () => {
+    expect(isValidUrl("https://example.com/x")).toBe(true);
+    expect(isValidUrl("http://example.com")).toBe(true);
+    for (const bad of ["", "example.com", "javascript:alert(1)", "mailto:a@b.co", "ftp://x.com"]) {
+      expect(isValidUrl(bad), bad).toBe(false);
+    }
+  });
+
+  it("ignores surrounding whitespace, matching how the schema trims", () => {
+    expect(isValidEmail("  a@b.co  ")).toBe(true);
+    expect(isValidUrl("  https://example.com  ")).toBe(true);
   });
 });

@@ -14,9 +14,9 @@
 | ------------------------ | ---------------- | -------------------------- |
 | P1 Foundation            | M0-T0, T1, T2    | ✅ Done (commit `578cc73`) |
 | P2 Document model + PDF  | M0-T3, T4        | ✅ Done                    |
-| P3 DOCX + TXT            | M0-T5, T6        | ⬜ Next                    |
-| P4 State + builder UI    | M0-T7, T8        | ⬜ Not started             |
-| P5 Preview + exports     | M0-T9, T10, T12  | ⬜ Not started             |
+| P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                    |
+| P4 State + builder UI    | M0-T7, T8        | ✅ Done                    |
+| P5 Preview + exports     | M0-T9, T10, T12  | ⬜ Next                    |
 | P6 Lint + tests + launch | M0-T11, T14, T13 | ⬜ Not started             |
 | P7–P14 (M1–M3)           | —                | ⬜ Not started             |
 
@@ -75,34 +75,66 @@ Byte-for-byte identity is not achievable, for two reasons both in _serialization
 
 #### The ASCII rule in TXT
 
-Everything *we* inject is ASCII; characters the user typed pass through untouched (mangling "José" in the body would be a correctness bug — M0-T12 transliterates for the download *filename* only). The one active fold is the en dash in date labels, which is safe because date labels are generated wholly by us from structured data. A test asserts every non-ASCII character in the output appears somewhere in the user's own input.
+Everything _we_ inject is ASCII; characters the user typed pass through untouched (mangling "José" in the body would be a correctness bug — M0-T12 transliterates for the download _filename_ only). The one active fold is the en dash in date labels, which is safe because date labels are generated wholly by us from structured data. A test asserts every non-ASCII character in the output appears somewhere in the user's own input.
 
 #### Two acceptance criteria that cannot be automated here
 
 M0-T5 asks for "opens clean in Word, LibreOffice, and Google Docs" and "page count matches the PDF". Both need a Word-compatible layout engine; LibreOffice is not installed in this environment. Automated instead: valid OPC package, required parts present, named styles defined and referenced, native numbering with no literal `•` in body text, exact page geometry, no tables/images/text boxes/headers/footers, no embedded font binaries, and word-for-word parity with the TXT emitter. **The application-level and page-parity passes remain owed to M0-T14 and belong in `docs/QA.md`.**
 
+### P4 — State + builder UI (M0-T7, M0-T8)
+
+**Store (M0-T7)**
+
+- `src/store/history.ts` — undo/redo as whole-document snapshots, bounded at 50. Coalescing by field key within a 700ms window, so typing a bullet is one undo step. Undo clears the coalesce key so the next keystroke cannot extend the entry just stepped out of.
+- `src/store/persistence.ts` — IndexedDB via `idb-keyval` behind an injectable `KeyValueBackend` (tests use a memory backend, mirroring the `FontSourceResolver` seam). 500ms debounced autosave with an explicit `flush()`; writes are serialized so a flush racing the timer cannot commit the older payload.
+- `src/store/resume.ts` — the Zustand store. **Zustand's `persist` middleware is deliberately unused**: it writes on every change, rehydrates synchronously, and offers no clean hook for routing reads through `migrate()` (D10). The store does those three things itself.
+- `installAutosaveFlush()` binds `visibilitychange`, `blur`, and `pagehide` — not `beforeunload`, which mobile browsers routinely skip when killing a backgrounded tab, losing exactly the edits it appears to protect.
+- Snapshots rather than inverse-command diffs: a document is a few KB, and a snapshot undo cannot desynchronize from the document.
+
+**Builder UI (M0-T8)**
+
+- `src/components/ui/control.tsx` — Input, Textarea, Select, Button, Field, Toggle.
+- `src/components/builder/` — `BuilderShell`, `StepNav` (progress + free navigation), `CommandPalette` (Ctrl/Cmd+K, on native `<dialog>`), `SectionManager` (reorder + show/hide), `BulletEditor` (Ctrl/Cmd+Enter adds and focuses the next bullet; Backspace on an empty bullet removes it), `SortableList` (dnd-kit with `KeyboardSensor`, so reordering works without a mouse), `DateRangeFields` (two selects — never a typed date string, per M0-T1), `EntryCard`, `empty-states.tsx`, `progress.ts`.
+- 8 step forms in `src/components/builder/steps/`, plus `src/app/builder/page.tsx`.
+- Tests: 45 store/history/persistence, 12 progress, 14 component (jsdom + Testing Library).
+- Dependencies added: `zustand`, `idb-keyval`, `@dnd-kit/{core,sortable,modifiers,utilities}`, `clsx`, `tailwind-merge`; dev-only `@testing-library/{react,user-event,jest-dom}`, `jsdom`.
+
+#### Schema amendment: email and URL are plain text now
+
+M0-T1 used `z.email()` / `z.url()`, but M0-T7 persists on every keystroke and the migration chain parses on load — so typing `jo` on the way to `jose@example.com` and then refreshing would have made the whole draft unparseable and discarded it. Both fields are now `text()`, with `isValidEmail` / `isValidUrl` exported from `lib/resume/schema.ts` and used by the builder forms (inline message as you type) and later by the lint engine (M0-T11). This makes the schema consistent with its own stated rule — structural integrity here, content quality in the lint engine — rather than weakening it. No D-numbered decision affected; no migration needed, since loosening a constraint keeps old documents valid.
+
+#### react-hook-form is installed but unused
+
+The store is the source of truth and owns undo/redo. RHF wants to own form state, and reconciling the two means either fighting the caret on every external change or reimplementing RHF's dirty-tracking against the history stack. Instead, inputs are controlled directly from the store and each step remounts on `externalRevision` — a counter bumped only by undo, redo, rehydrate, and clear. Validation is per-field and advisory, which is what the schema amendment above requires anyway. The dependency is left in place for P5/P6 in case a genuinely form-shaped surface appears; if none does, drop it.
+
+#### shadcn/ui components are hand-written
+
+The locked stack names shadcn/ui, whose model is "copy the component into your project and own it" — the CLI is a convenience, not the library. Running `init` would rewrite `globals.css` and the Tailwind config and add a `components.json` needing reconciliation with the existing Tailwind 4 setup. The primitives follow the same conventions, so any shadcn component can drop in beside them.
+
+#### One real bug found by the component tests
+
+`CustomStep` selected its sections with `.filter()` _inside_ the Zustand selector, which returns a new array each call, so the snapshot compared unequal on every render — an infinite render loop that would have hit any user opening the Custom step. Fixed by selecting the stable array and filtering during render.
+
 ---
 
 ## Next
 
-### P4 — State + builder UI (M0-T7, M0-T8)
+### P5 — Preview + exports (M0-T9, M0-T10, M0-T12)
 
-- [ ] `store/resume.ts` — Zustand store persisted to **IndexedDB** via `idb-keyval` as the `persist` storage adapter (localStorage is too small and synchronous). Nothing leaves the browser in M0 (D6).
-- [ ] Undo/redo: bounded command history (~50 entries) with coalescing, so typing a bullet is one undo step and not forty.
-- [ ] Autosave: 500ms debounce after last keystroke, plus flush on blur and `visibilitychange`.
-- [ ] "Clear all data" control that genuinely empties IndexedDB.
-- [ ] `components/builder/` — step forms with react-hook-form + zod resolvers: Contact → Summary → Experience → Education → Skills → Projects → Certifications → Custom.
-- [ ] Repeatable entries with add/remove/reorder (`dnd-kit`); section reorder and show/hide.
-- [ ] **Empty states carry this product** — every section needs a real, well-written example, not "No items yet". The Projects empty state is the single most important screen for a fresher.
-- [ ] Keyboard-first: `Ctrl/Cmd+Enter` adds the next bullet, `Ctrl/Cmd+K` command palette, correct tab order.
-- [ ] Accept: full resume buildable by keyboard alone; every field validates with a useful message; usable at 390px.
-- [ ] Dependencies to add: `zustand`, `idb-keyval`, `react-hook-form`, `@hookform/resolvers`, `@dnd-kit/*`, and shadcn/ui components.
+- [ ] **Browser font resolver first.** `renderPdf` takes a `FontSourceResolver`; only the Node/filesystem one exists (`lib/fonts/paths.node.ts`). The browser resolves by URL, so the `.ttf` files must be served — copy to `public/fonts/` in a build step, or import them as bundler assets. Nothing else in P5 works until this exists.
+- [ ] `components/preview/` — render the PDF blob to canvas with `pdfjs-dist`. Per D2 the preview _is_ the downloaded artifact.
+- [ ] Debounce re-render ~400ms; run it in a **Web Worker** so typing never stutters. Keep the previous frame visible during re-render — never flash blank.
+- [ ] **Real page chrome**: discrete pages, drop shadows, visible boundaries, page count. The plan calls this out as most of what makes the product feel like a document tool rather than a form.
+- [ ] Zoom: fit-width / fit-page / 100%. Desktop split screen, mobile tabbed.
+- [ ] `lib/layout/measure.ts` — canvas `measureText` against the same webfont, for line-level hints only. Authoritative page count still comes from the rendered PDF (D3).
+- [ ] M0-T10 page-fit indicator: `1.3 pages — 4 lines over`, with one highest-value suggestion when within ~15% of a boundary.
+- [ ] M0-T12 export UI: all three formats, filename `FirstName_LastName_Resume.pdf` (transliterate for the **filename only**, never the content), plus the per-destination format recommendation (Workday/Taleo → DOCX; Greenhouse/Lever/Ashby/email → PDF).
 
-**Depends on:** M0-T1 (schema) — done. This is a ~20h package with no natural mid-point; the plan says to expect it to span sittings and not read that as slippage.
+**Depends on:** M0-T4 (done) and M0-T8 (done).
 
-### Then P5 — Preview + exports (M0-T9, T10, T12)
+### Then P6 — Lint + tests + launch (M0-T11, M0-T14, M0-T13)
 
-Needs a browser font resolver: the PDF font seam (`FontSourceResolver`) currently only has the Node/filesystem implementation in `lib/fonts/paths.node.ts`. The browser resolves by URL, so the font files must be served (copied to `public/fonts/` or imported as bundler assets).
+M0-T11 is position-flexible and depends only on the schema — it could move ahead of P5 if quality feedback while building is worth more than shipping the engine last.
 
 ---
 
@@ -110,9 +142,11 @@ Needs a browser font resolver: the PDF font seam (`FontSourceResolver`) currentl
 
 - Plan header in `EXECUTION_PLAN.md` still says "Repository is empty" — stale, ignore it in favor of this file.
 - `DECISIONS.md` has one amendment (2026-08-13): stack is Next 16.3/React 19.2, not Next 15 as originally written. No D-numbered decision affected.
-- **`minPresenceAhead` reserves space *after* the node it is set on.** M0-T3's text says "a role's final bullet gets `minPresenceAhead`", but set there it would guard whatever follows the role, not the bullet. The hint goes on the block immediately *before* the final bullet. Documented at the top of `lib/layout/document.ts`.
+- **`minPresenceAhead` reserves space _after_ the node it is set on.** M0-T3's text says "a role's final bullet gets `minPresenceAhead`", but set there it would guard whatever follows the role, not the bullet. The hint goes on the block immediately _before_ the final bullet. Documented at the top of `lib/layout/document.ts`.
 - **Any react-pdf style that sets `fontSize` must also set `lineHeight`.** react-pdf inherits a unitless lineHeight as an absolute value, so a heading inherits a body-sized line box and collides with the line below. Silent failure; guarded by the `overlappingLines` test.
-- **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test will fail loudly if they drift, but the shared module is what stops it happening.
+- **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever. Select the stable reference and derive during render.
+- **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test fails loudly on drift, but the shared module is what prevents it.
 - The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff there means the machine-readable output changed; treat it as a product change, not a test annoyance.
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
-- Manual QA still owed (M0-T14): open generated DOCX in Word, LibreOffice, Google Docs; confirm DOCX page count matches the PDF. Record in `docs/QA.md`.
+- Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, which jsdom does not implement.
+- Manual QA still owed (M0-T14): open generated DOCX in Word, LibreOffice, Google Docs; confirm DOCX page count matches the PDF; build a resume end-to-end on a real phone. Record in `docs/QA.md`.

@@ -43,9 +43,40 @@ const idSchema = z.string().min(1, "Every entry needs a stable id.");
 /** User-entered text: trimmed and length-capped, but may be empty while editing. */
 const text = (max: number) => z.string().trim().max(max);
 
-/** Optional-format fields accept "" so a partially-typed value can persist. */
-const emailField = z.union([z.literal(""), z.email("Enter a valid email address.")]);
-const urlField = z.union([z.literal(""), z.url("Enter a full URL, including https://")]);
+/**
+ * Email and URL are stored as plain text, not as `z.email()` / `z.url()`.
+ *
+ * The store persists on every keystroke (M0-T7), so a document must be able
+ * to hold `"jo"` on the way to `"jose@example.com"`. A format-validating
+ * schema would reject that intermediate state, and since the migration chain
+ * parses on load, the user would lose the entire draft on refresh for the
+ * crime of reloading mid-word.
+ *
+ * That does not mean the format goes unchecked — it means the check belongs
+ * where the user can act on it. The builder form reports it inline as they
+ * type (M0-T8), and the lint engine reports it in "issues left" (M0-T11).
+ * Both use the predicates below, so there is one definition of valid.
+ *
+ * This is the same rule the rest of this schema already follows: structural
+ * integrity here, content quality in the lint engine.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_PATTERN.test(value.trim());
+}
+
+export function isValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const emailField = text(160);
+const urlField = text(400);
 
 /* -------------------------------------------------------------------------- */
 /* Dates                                                                       */

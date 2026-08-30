@@ -14,6 +14,7 @@ export default defineConfig({
     // per-file with `// @vitest-environment jsdom`.
     environment: "node",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    setupFiles: ["src/test/setup.ts"],
     // Font parsing and PDF rendering are slower than typical unit tests.
     testTimeout: 30_000,
   },
