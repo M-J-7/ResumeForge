@@ -1,0 +1,13 @@
+--- page 1 ---
+Ananya Sharma
+ananya.sharma@example.com +91 98765 43210 · Pune, India GitHub
+EDUCATION
+College of Engineering Pune Aug 2022 – Present
+BTech, Information Technology Pune, India · 8.7 CGPA
+SKILLS
+Technical: Java, React, SQL, Git
+PROJECTS
+Campus Placement Portal Jan 2024 – May 2024
+Team Lead
+• Built a placement portal used by 900 students across 14 departments in its first semester.
+• Cut shortlisting time from three days to under an hour by automating eligibility filtering.
