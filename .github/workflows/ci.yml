@@ -25,6 +25,8 @@ jobs:
       # the emitter tests read them from src/, so this is only needed for the
       # build. Run it anyway so a failure here is loud rather than latent.
       - run: pnpm fonts:sync
+      # The Prisma client is generated, not committed; typecheck fails without it.
+      - run: pnpm db:generate
       - run: pnpm verify
 
   e2e:
@@ -38,6 +40,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
       - run: pnpm exec playwright install --with-deps chromium
       # Covers the worker, canvas rasterization, and IndexedDB — none of
       # which the Node suite can exercise. pdfjs in particular behaves

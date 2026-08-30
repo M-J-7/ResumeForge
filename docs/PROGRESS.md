@@ -10,17 +10,18 @@
 
 ## Status at a glance
 
-| Package                  | Tasks            | Status                     |
-| ------------------------ | ---------------- | -------------------------- |
-| P1 Foundation            | M0-T0, T1, T2    | ✅ Done (commit `578cc73`) |
-| P2 Document model + PDF  | M0-T3, T4        | ✅ Done                    |
-| P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                    |
-| P4 State + builder UI    | M0-T7, T8        | ✅ Done                    |
-| P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                    |
-| P6 Lint + tests + launch | M0-T11, T14, T13 | 🔶 Code done, deploy owed  |
-| P7 X-Ray engine          | M1-T1, T2        | ✅ Done                    |
-| P8 X-Ray UI              | M1-T3, T4        | ✅ Done                    |
-| P9–P14 (M2–M3)           | —                | ⬜ Next                    |
+| Package                  | Tasks            | Status                      |
+| ------------------------ | ---------------- | --------------------------- |
+| P1 Foundation            | M0-T0, T1, T2    | ✅ Done (commit `578cc73`)  |
+| P2 Document model + PDF  | M0-T3, T4        | ✅ Done                     |
+| P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                     |
+| P4 State + builder UI    | M0-T7, T8        | ✅ Done                     |
+| P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                     |
+| P6 Lint + tests + launch | M0-T11, T14, T13 | 🔶 Code done, deploy owed   |
+| P7 X-Ray engine          | M1-T1, T2        | ✅ Done                     |
+| P8 X-Ray UI              | M1-T3, T4        | ✅ Done                     |
+| P9 Database + auth       | M2-T1, T2        | 🔶 M2-T1 done, auth blocked |
+| P10–P14 (M2–M3)          | —                | ⬜ Next                     |
 
 ---
 
@@ -211,25 +212,52 @@ The wedge: every competitor _claims_ ATS-friendliness; this measures it, because
 
 **Substring matching silently mis-assigned roles.** "Backend Engineer" is a substring of "Senior Backend Engineer", so a greedy match handed the junior role the senior role's employer and dates, then reported the mismatch as a parse failure that never happened. Roles are now claimed exact-first, each recovered role used once. Worth remembering anywhere resume fields get fuzzy-matched — M3's keyword scoring will hit the same shape.
 
+### P9 (partial) — Database layer (M2-T1)
+
+- `prisma/schema.prisma` — the §7 data model, plus Auth.js tables. No password column anywhere and there never will be (D7); a test asserts it.
+- `src/server/db.ts` — connection with the four required pragmas, each documented with the consequence of omitting it.
+- Migration created and applied; 9 tests covering clean migration, asserted pragma values, cascade delete across every table (M2-T6's hard delete depends on it), and the denormalized columns.
+- `prisma generate` wired into `prebuild`, `pretypecheck`, and CI — the client is generated, not committed.
+
+**Prisma 7 is not the Prisma you know.** `url` is no longer allowed in the schema's datasource block: the migration connection string moved to `prisma.config.ts`, and the runtime client takes a driver adapter (`@prisma/adapter-better-sqlite3`). Prisma 7 also does not read `.env` on its own — `prisma.config.ts` loads it explicitly, because the failure otherwise reads as a missing config rather than a missing file. The CLI's `latest` tag currently resolves to an 8.0 release candidate; both CLI and client are pinned to 7.10.0.
+
+`getPrisma()` is lazy and returns a promise. Importing a module must not open a database connection as a side effect — eager construction makes the module unimportable wherever `DATABASE_URL` is absent and turns a config problem into an import error far from its cause.
+
+#### Why M2-T2 (auth) is not done
+
+Its acceptance is "both flows work end-to-end", and neither can be verified here:
+
+- **Google OAuth** needs a real client id and secret from a Google Cloud project.
+- **Email magic links** need a transactional email provider account and credentials.
+
+Writing untested auth code and calling it done would be worse than leaving it. `.env.example` lists every variable the implementation will need. Once credentials exist, M2-T2 is a contained piece of work: Auth.js v5 with the Prisma adapter, sessions in the same SQLite file, and the tables are already in the schema.
+
 ---
 
 ## Next
 
-### Still owed: ship M0
+### Blocked on decisions and credentials only the owner can make
 
-M0 and M1 are both code-complete and green — 913 unit tests, 7 Playwright tests. But the plan says **ship M0 publicly before starting M1**, and that gate is still unmet: three manual checks and the deploy remain, all listed with checklists in `docs/QA.md`. M1 was built ahead of it because the deploy needs decisions only the owner can make (host, domain, product name — §12 open questions 2 and 3), not because the sequencing was reconsidered.
+Everything reachable without external accounts is done. What remains needs input:
 
-The feedback loop the plan wants — a week of real users before building accounts — has not happened. Weigh that before starting M2.
+| Blocked on                                                               | Needed for                              |
+| ------------------------------------------------------------------------ | --------------------------------------- |
+| Host choice, domain, product name (§12 Q2, Q3)                           | M0-T13 deploy                           |
+| Word / LibreOffice / Google Docs access, a physical phone                | The three manual checks in `docs/QA.md` |
+| Google OAuth client id + secret                                          | M2-T2                                   |
+| Transactional email provider credentials                                 | M2-T2 magic links                       |
+| S3-compatible bucket credentials                                         | M2-T5 Litestream                        |
+| A licensing decision on ESCO / O*NET, and the IDF corpus source (§12 Q1) | M3-T1, M3-T2                            |
 
-### P9 — Database + auth (M2-T1, M2-T2)
+### Unblocked work, in plan order
 
-- [ ] Prisma + better-sqlite3. On **every connection**: `PRAGMA journal_mode=WAL; busy_timeout=5000; synchronous=NORMAL; foreign_keys=ON`. Assert the pragma values in a test.
-- [ ] `better-sqlite3` is **synchronous** — a slow query blocks the event loop for every user. Keep queries indexed and small; note it in code comments.
-- [ ] `Json` columns on SQLite are TEXT and are **not queryable or indexable**. Denormalize anything sortable into real columns (`lastScore`, `pageCount`, `wordCount`) — the schema in §7 of the plan already does this.
-- [ ] Auth.js v5, Google OAuth + email magic link, **no passwords ever** (D7). Prisma adapter, sessions in the same SQLite file.
-- [ ] Accept: migrations run clean; both auth flows work end to end; sessions survive restart.
+- **P10 Sync + dashboard (M2-T3, M2-T4)** — draft claiming and the dashboard can be built against the database layer, but sign-in gates the useful half. Best done with M2-T2.
+- **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
+- **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
 
-### Then P10 (sync + dashboard), P11 (Litestream + **rehearsed** restore — the largest tail risk in the architecture, §10), P12–P14 (M3 scoring)
+### The sequencing gate, restated
+
+The plan says ship M0 before starting M1, and get a week of real feedback before building accounts. M1 was built ahead of that because the deploy was blocked, not because the gate was reconsidered. **Weigh the feedback loop before committing to M2.**
 
 ---
 
@@ -237,16 +265,17 @@ The feedback loop the plan wants — a week of real users before building accoun
 
 - Plan header in `EXECUTION_PLAN.md` still says "Repository is empty" — stale, ignore it in favor of this file.
 - `DECISIONS.md` has one amendment (2026-08-13): stack is Next 16.3/React 19.2, not Next 15 as originally written. No D-numbered decision affected.
-- **`minPresenceAhead` reserves space _after_ the node it is set on.** M0-T3's text says "a role's final bullet gets `minPresenceAhead`", but set there it would guard whatever follows the role, not the bullet. The hint goes on the block immediately _before_ the final bullet. Documented at the top of `lib/layout/document.ts`.
-- **Any react-pdf style that sets `fontSize` must also set `lineHeight`.** react-pdf inherits a unitless lineHeight as an absolute value, so a heading inherits a body-sized line box and collides with the line below. Silent failure; guarded by the `overlappingLines` test.
-- **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever. Select the stable reference and derive during render.
-- **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`. The parity test fails loudly on drift, but the shared module is what prevents it.
-- **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to the Vitest suite. Run `pnpm test:e2e` before believing anything about the preview or X-Ray.
+- **`minPresenceAhead` reserves space _after_ the node it is set on.** M0-T3's text says "a role's final bullet gets `minPresenceAhead`", but set there it would guard whatever follows the role, not the bullet. The hint goes on the block immediately _before_ the final bullet.
+- **Any react-pdf style that sets `fontSize` must also set `lineHeight`.** react-pdf inherits a unitless lineHeight as an absolute value, so a heading gets a body-sized line box and collides with the line below. Silent; guarded by the `overlappingLines` test.
+- **Never call `.filter()` or `.map()` inside a Zustand selector.** A new array every call means the snapshot never compares equal and the component re-renders forever.
+- **DOCX and TXT must not compose entries independently.** Use `lib/emit/shared/entry-lines.ts`.
+- **pdfjs needs `GlobalWorkerOptions.workerSrc` in a browser** but not under Node, so this class of bug is invisible to Vitest. Run `pnpm test:e2e` before believing anything about the preview or X-Ray.
 - **When asserting that text did not split across pages, match the whole string against one page's joined lines** — never head-fragment against tail-fragment.
-- **Fuzzy-matching resume fields needs exact-first, claim-once semantics.** Substrings otherwise mis-assign shorter titles to longer ones. See the P7 note.
-- `public/fonts/` and `public/pdf.worker.min.mjs` are generated and gitignored. If the preview 404s on a font, run `pnpm fonts:sync`.
-- The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff there means the machine-readable output changed; treat it as a product change, not a test annoyance.
+- **Fuzzy-matching resume fields needs exact-first, claim-once semantics.** Substrings otherwise mis-assign shorter titles to longer ones.
+- **Prisma migration SQL must have comments stripped before splitting on `;`** — every statement is preceded by a `-- CreateTable` comment, so filtering statements that start with `--` discards all of them.
+- `public/fonts/`, `public/pdf.worker.min.mjs`, and `src/generated/` are all generated and gitignored. Run `pnpm fonts:sync` and `pnpm db:generate` after a fresh clone.
+- The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff means the machine-readable output changed — a product change, not a test annoyance.
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
-- Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`, none of which jsdom implements.
-- **Email and URL are plain text in the schema**, validated by `isValidEmail`/`isValidUrl` in the form and the lint engine. See the P4 note for why; do not "fix" this by putting `z.email()` back.
-- M4-T1 (resume import) reuses `lib/xray/extract.ts` wholesale — it is the biggest onboarding unlock for the least new code.
+- Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`.
+- **Email and URL are plain text in the schema**, validated by `isValidEmail`/`isValidUrl`. See the P4 note; do not "fix" this by putting `z.email()` back.
+- M4-T1 (resume import) reuses `lib/xray/extract.ts` wholesale — the biggest onboarding unlock for the least new code.
