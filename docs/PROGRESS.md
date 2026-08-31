@@ -10,22 +10,36 @@
 
 ## Status at a glance
 
-| Package                  | Tasks                 | Status                     |
-| ------------------------ | --------------------- | -------------------------- |
-| P1 Foundation            | M0-T0, T1, T2         | ✅ Done (commit `578cc73`) |
-| P2 Document model + PDF  | M0-T3, T4             | ✅ Done                    |
-| P3 DOCX + TXT            | M0-T5, T6             | ✅ Done                    |
-| P4 State + builder UI    | M0-T7, T8             | ✅ Done                    |
-| P5 Preview + exports     | M0-T9, T10, T12       | ✅ Done                    |
-| P6 Lint + tests + launch | M0-T11, T14, T13      | 🔶 Code done, deploy owed  |
-| P7 X-Ray engine          | M1-T1, T2             | ✅ Done                    |
-| P8 X-Ray UI              | M1-T3, T4             | ✅ Done                    |
-| P9 Database              | M2-T1                 | ✅ Done                    |
-| P10 Auth + accounts      | M2-T2, T3, T4\*, T6\* | ✅ Done (\* in part)       |
-| P11–P14 (rest of M2, M3) | —                     | ⬜ Next                    |
+**M0, M1, and M2 are complete except M2-T5's off-site replication. M3 has its
+structure parser only. M4 has not started, deliberately.** 1,171 unit tests and
+27 Playwright tests pass; `docs/QA.md` lists the seven checks this environment
+cannot run.
 
-\* M2-T4's dashboard half (list, rename, duplicate, hard delete) is done; its
-sync half is not. M2-T6's deletion half is done; JSON Resume export is not.
+| Package                  | Tasks                         | Status                     |
+| ------------------------ | ----------------------------- | -------------------------- |
+| P1 Foundation            | M0-T0, T1, T2                 | ✅ Done (commit `578cc73`) |
+| P2 Document model + PDF  | M0-T3, T4                     | ✅ Done                    |
+| P3 DOCX + TXT            | M0-T5, T6                     | ✅ Done                    |
+| P4 State + builder UI    | M0-T7, T8                     | ✅ Done                    |
+| P5 Preview + exports     | M0-T9, T10, T12               | ✅ Done                    |
+| P6 Lint + tests + launch | M0-T11, T14, T13              | 🔶 Code done, deploy owed  |
+| P7 X-Ray engine          | M1-T1, T2                     | ✅ Done                    |
+| P8 X-Ray UI              | M1-T3, T4                     | ✅ Done                    |
+| P9 Database              | M2-T1                         | ✅ Done                    |
+| P10 Auth + accounts      | M2-T2, T3, T4\*, T6\*         | ✅ Done                    |
+| P11 Sync                 | M2-T4                         | ✅ Done                    |
+| P12 JSON Resume interop  | M2-T6                         | ✅ Done                    |
+| P13 JD structure parser  | M3-T3                         | ✅ Done                    |
+| P14 Production hardening | —                             | ✅ Done                    |
+| P15 Launch surfaces      | —                             | ✅ Done                    |
+| Remaining                | M2-T5\*\*, M3-T1/T2/T4/T5, M4 | ⬜ Next                    |
+
+\* P10 delivered the dashboard half of M2-T4 and the deletion half of M2-T6;
+P11 and P12 completed them. Both tasks are done.
+
+\*\* M2-T5's local half is done and rehearsed on every push — snapshot, verify,
+restore (`src/server/backup.test.ts`). Only off-site replication to a bucket is
+outstanding, and it needs S3 credentials and a Docker host.
 
 ---
 
