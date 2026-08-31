@@ -49,19 +49,22 @@ class of bug there is invisible to the unit suite.
 ephemeral functions do not provide. Next.js defaults push everyone toward Vercel, so this is worth
 stating plainly.
 
-Deploy the Docker image to a VM with a persistent volume — Railway, Render, Fly, or a plain VPS all
-work:
+Deploy to anything with a volume — Railway, Render, Fly, or a plain VPS:
 
 ```bash
-docker build -t ats-resume-builder .
-docker run -p 3000:3000 ats-resume-builder
+cp .env.example .env.production   # fill in AUTH_SECRET, AUTH_URL, EMAIL_*
+docker compose up -d --build
 ```
 
-The image is `node:20-bookworm-slim`, multi-stage, and runs as a non-root user.
+That is the whole first deploy. **There is no migrate step**: the server applies its own pending
+migrations on first use, using Prisma's own bookkeeping table and checksums, so `prisma migrate
+status` still reports correctly against it. Compose also starts an hourly local snapshot job.
 
-The volume holds `DATABASE_URL`'s SQLite file. Set `AUTH_SECRET`, `AUTH_URL`, and `EMAIL_SERVER`
-(plus `EMAIL_FROM`) in the environment; without a mail server, sign-in fails at the first attempt
-with an error that says exactly which variable is missing.
+The image is `node:24-bookworm-slim` (Node 20 is end-of-life), multi-stage, non-root, and its
+healthcheck touches the database rather than the landing page.
+
+Read [`docs/RUNBOOK.md`](docs/RUNBOOK.md) before going live — environment variables, backups,
+restores, and what is defended and how.
 
 ## Documentation
 
@@ -84,6 +87,14 @@ PDF blob the download hands over, so the two cannot drift.
 
 `lib/interop/json-resume.ts` maps the document to and from the published JSON Resume schema — the
 account export, the builder's import, and the reason leaving is possible.
+
+### Production behaviour worth knowing
+
+Sign-in is rate limited per address and per IP, with the counters in the database so they survive a
+restart. Security headers including a CSP are set in `next.config.ts` — `'unsafe-eval'` is absent,
+`'wasm-unsafe-eval'` is present because react-pdf lays out text with WebAssembly. Logs are scrubbed
+of resume content, addresses, and tokens, and Prisma is configured not to report statement
+parameters (which for a resume save is the whole resume).
 
 `server/` is everything an account touches: `db.ts` (SQLite plus the four required pragmas),
 `auth/` (Auth.js, passwordless only, with mail delivery behind an injectable transport),

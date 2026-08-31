@@ -111,47 +111,60 @@ Set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`, with
 development environment. CI builds the image on every push, which proves it
 builds — not that it serves.
 
-Two things in particular have never been executed, only reasoned about:
+What the automated suites already cover, so it is _not_ on this list: the
+schema is created from an empty database on every end-to-end run (the server
+applies its own migrations, and `pnpm test:e2e` deletes the database first),
+and the migration bookkeeping is checked against the real Prisma CLI in
+`src/server/migrate.test.ts`.
 
-- [ ] `better-sqlite3` loads in the standalone output. It is a native addon
-      and `serverExternalPackages` keeps it out of the bundle, so the runtime
-      image has to carry the compiled `.node` binary. Next's output tracing
-      normally handles this; it resolves through `bindings`, which is dynamic.
-      If it is missing, the first request that touches the database fails.
-- [ ] `prisma migrate deploy` against the production volume creates the schema
-      (`docs/RUNBOOK.md`, first deploy). The runtime image deliberately does
-      not carry the CLI.
+What has only been reasoned about:
+
+- [ ] `better-sqlite3` loads from the standalone output. It is a native addon
+      and `serverExternalPackages` keeps it out of the bundle, so the image has
+      to carry the compiled `.node` binary. Inspecting `.next/standalone` after
+      a build shows the binary present and reached through a pnpm symlink —
+      which Docker `COPY` preserves, but that has not been executed.
+- [ ] The `VOLUME /data` mount holds the database across a container
+      replacement, and the non-root `nextjs` user can write to it.
+- [ ] The healthcheck marks the container unhealthy when the database is
+      unreachable (stop the volume, watch `docker compose ps`).
+- [ ] The hourly `backup` service writes into `/data/backups` and prunes.
 
 Then, against a running container:
 
+- [ ] `/api/health` returns `{"status":"ok"}`.
 - [ ] `/` and `/signin` render.
 - [ ] A magic link arrives through the real `EMAIL_SERVER` and signs in.
-- [ ] The database file is on the mounted volume and survives a container
-      restart.
 
 **Result:** _not yet run._
 
-### 5. Backup restore rehearsal (M2-T5)
+### 5. Off-site restore rehearsal (M2-T5)
 
 **Why this cannot be automated here:** needs an S3-compatible bucket and a
-Docker host. The procedure, the Litestream config, and the measurements to
-record are written up in [`docs/RUNBOOK.md`](RUNBOOK.md).
+Docker host.
 
-This is the one owed item that is a _risk_ rather than a polish task. §10 of
-the execution plan names it as the largest tail risk in the architecture, and
-M2-T5's acceptance is explicitly the rehearsal, not the configuration.
+**Local snapshots are already rehearsed** — `src/server/backup.test.ts` takes a
+snapshot of a live database, verifies it, restores it to a fresh path, and
+confirms the app can serve from the result, on every push. That is the layer
+that recovers from a bad migration or a mistaken delete.
 
-- [ ] Restore from a real replica after an ungraceful kill.
-- [ ] `PRAGMA integrity_check` passes on the restored file.
+What remains owed is the layer that recovers from losing the machine: a
+Litestream replica, restored after an ungraceful kill, with the numbers
+recorded. §10 names this as the largest tail risk in the architecture, and
+M2-T5's acceptance is explicitly the rehearsal rather than the configuration.
+
+- [ ] Restore from a real S3 replica after `docker kill` (not `stop` — a
+      graceful stop lets Litestream flush, which was never the case in doubt).
+- [ ] `node scripts/backup.mjs verify` passes on the restored file.
 - [ ] RPO and RTO measured and recorded in the runbook's table.
 
 **Result:** _not yet run._
 
 ### 6. JD section split on ten real postings (M3-T3)
 
-**Why this cannot be automated here:** M3-T3'''s acceptance is a correct split
+**Why this cannot be automated here:** M3-T3's acceptance is a correct split
 on ten postings _collected from public listings_. Copying ten real postings
-into this repository would be republishing someone else'''s copyrighted text,
+into this repository would be republishing someone else's copyrighted text,
 and writing ten and calling them real would be worse. So the automated suite
 covers ten distinct structural **conventions** instead
 (`src/test/fixtures/job-descriptions.ts`), and the check against genuinely
@@ -204,6 +217,12 @@ usable, not whether it renders. An emulator answers the wrong question.
   embedded font subset tag and react-pdf flushes font streams in async
   completion order. `pdfFingerprint` normalizes both; the document is identical,
   the serialization is not. See `src/lib/emit/pdf/determinism.ts`.
+- **The PDF preview needs a browser with `'wasm-unsafe-eval'` support** —
+  Chrome 97+, Firefox 102+, Safari 16.4+. react-pdf lays out text with a
+  WebAssembly build of Yoga, and the CSP allows WebAssembly without allowing
+  `eval` of JavaScript. On an older browser the builder still works and the
+  preview does not. Widening the policy to `'unsafe-eval'` would fix it and
+  give up the protection entirely, so it is recorded here instead.
 - **The development mail outbox never runs in production.** `AUTH_DEV_OUTBOX`
   writes sign-in emails to disk so the flow is usable without an email account;
   it throws under `NODE_ENV=production`. The E2E run therefore does not use it —

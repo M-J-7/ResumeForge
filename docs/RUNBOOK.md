@@ -1,16 +1,15 @@
 # Runbook
 
-Operating the deployed app: what to set, what to run, and what to do when the
-database is gone.
+Operating the deployed app: what to set, how to deploy, how backups work, and
+what to do when the database is gone.
 
-> **Status.** Everything below is _designed_, and the parts that can be
-> verified without a server have been. **The restore rehearsal that M2-T5
-> requires has not been run** — there is no Docker daemon and no bucket in the
-> development environment. Until it has, treat the backup section as a plan
-> rather than as a backup. An untested backup is not a backup, and the plan
-> (§10) names this as the single largest tail risk in the architecture.
->
-> `docs/QA.md` tracks the checks this file is waiting on.
+> **What is verified and what is not.** The deploy path, the schema creation,
+> and the backup/restore cycle are exercised automatically — the end-to-end
+> suite starts from an empty database on every run, and `src/server/backup.test.ts`
+> takes a snapshot, verifies it, and restores it on every push. What has
+> **not** been run is the container itself (no Docker daemon in the
+> development environment) and Litestream's off-site replication (no bucket).
+> Both are tracked in [`docs/QA.md`](QA.md).
 
 ---
 
@@ -23,8 +22,10 @@ database is gone.
 | `AUTH_URL`                              | yes in production   | The public origin, e.g. `https://example.com`                               |
 | `EMAIL_SERVER`                          | yes                 | SMTP URL for the transactional provider                                     |
 | `EMAIL_FROM`                            | yes                 | The From address on sign-in emails                                          |
+| `BACKUP_DIR`                            | recommended         | Where snapshots go. Must be on the volume                                   |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | no                  | Both or neither. Google sign-in is hidden when absent                       |
-| `AUTH_DEV_OUTBOX`                       | never in production | Development only; the transport refuses to run under `NODE_ENV=production`  |
+| `SKIP_AUTO_MIGRATE`                     | no                  | `1` to apply migrations by hand instead of at startup                       |
+| `AUTH_DEV_OUTBOX`                       | never in production | Development only; refuses to run under `NODE_ENV=production`                |
 
 Generate the secret with:
 
@@ -32,71 +33,91 @@ Generate the secret with:
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-**`AUTH_URL` matters more than it looks.** Auth.js builds sign-in callback URLs
-from the request's `Host` header unless told otherwise. Behind a proxy that
-does not normalise it, a forged header can send a working sign-in link
+**`AUTH_URL` matters more than it looks.** Auth.js builds sign-in callback
+URLs from the request's `Host` header unless told otherwise. Behind a proxy
+that does not normalise it, a forged header can send a working sign-in link
 somewhere else. Set it explicitly.
 
 ### Why not Vercel
 
-The architecture assumes a persistent filesystem holding a SQLite file that
-the process writes to directly. Vercel's functions have neither. Deploy the
-Docker image to something with a volume: Railway, Render, Fly, or a plain VPS.
+The architecture assumes a persistent filesystem holding a SQLite file the
+process writes to directly. Vercel's functions have neither. Deploy the Docker
+image to something with a volume: Railway, Render, Fly, or a plain VPS.
 
 ---
 
-## First deploy
-
-1. **Provision a volume** and mount it at `/data`. Everything durable lives
-   there: the database, its WAL, and (later) Litestream's local state.
-
-2. **Create the schema.** The runtime image carries the app server only — no
-   Prisma CLI, no migration SQL — so migrations are applied as a deliberate
-   step rather than on every container start. With a single-writer SQLite
-   database that is the right trade: two containers racing `migrate deploy` at
-   boot is a worse failure than one manual command.
-
-   From a checkout, against the production database:
-
-   ```bash
-   DATABASE_URL="file:/data/app.db" pnpm db:deploy
-   ```
-
-   `prisma.config.ts` prefers an explicit `DATABASE_URL` over anything in a
-   local `.env`, so this cannot be quietly redirected at a development
-   database by a stale file.
-
-3. **Start the app**, then check `/` responds and `/signin` renders.
-
-4. **Send yourself a sign-in link.** The first real test of `EMAIL_SERVER` is
-   the first sign-in; there is no earlier signal. If it fails, the message
-   names the missing variable.
-
-## Upgrades
+## Deploying
 
 ```bash
-DATABASE_URL="file:/data/app.db" pnpm db:deploy   # if the release adds a migration
-# then roll the container
+cp .env.example .env.production   # fill in AUTH_SECRET, AUTH_URL, EMAIL_*
+docker compose up -d --build
 ```
 
-Migrations here are additive by convention. A destructive one (dropping or
-narrowing a column) needs a backup taken immediately before it — see below —
-because SQLite's `ALTER TABLE` rewrites are not transactional across a crash.
+That is the whole first deploy. **There is no separate migrate step**: the
+server applies its own pending migrations the first time it touches the
+database (`src/server/db.ts` → `src/server/migrate.ts`), using Prisma's own
+`_prisma_migrations` table and checksums, so `prisma migrate status` still
+reports correctly against it. A migration that fails runs inside a
+transaction and leaves nothing behind, so a retry is safe rather than a guess.
+
+Then check, in order:
+
+1. `curl -fsS https://your-host/api/health` returns `{"status":"ok"}`. This
+   touches the database, so a pass means more than "the page rendered".
+2. `/` and `/signin` load.
+3. **Send yourself a sign-in link.** The first real test of `EMAIL_SERVER` is
+   the first sign-in; there is no earlier signal. If it fails, the error names
+   the missing variable.
+
+### Upgrades
+
+Roll the container. Pending migrations apply on first use.
+
+An operator who would rather apply migrations deliberately can set
+`SKIP_AUTO_MIGRATE=1` and run, from a checkout:
+
+```bash
+DATABASE_URL="file:/data/app.db" pnpm db:deploy
+```
+
+`prisma.config.ts` prefers an explicit `DATABASE_URL` over anything in a local
+`.env`, so this cannot be quietly redirected at a development database.
+
+**Before a destructive migration** — one that drops or narrows a column — take
+a snapshot first (below). SQLite rewrites the table to do it, and a crash
+mid-rewrite is not something a transaction saves you from.
 
 ---
 
-## Backups (M2-T5) — designed, not yet rehearsed
+## Backups
 
-**Design (D9):** [Litestream](https://litestream.io) runs as a sidecar,
-streaming the SQLite WAL to an S3-compatible bucket continuously. It is not a
-snapshot tool: it replicates every write shortly after it happens, which is
-what makes the recovery point measured in seconds rather than hours.
+Two layers, answering different failures. Neither substitutes for the other.
 
-It works because of `PRAGMA journal_mode=WAL` (`src/server/db.ts`). Without
-WAL there is no stream to replicate, so **that pragma is a backup dependency,
-not only a concurrency setting.**
+### 1. Local snapshots — running, and rehearsed on every push
 
-`litestream.yml`:
+The `backup` service in `docker-compose.yml` runs hourly and keeps 48:
+
+```bash
+node scripts/backup.mjs create --keep 48
+node scripts/backup.mjs list
+node scripts/backup.mjs verify /data/backups/app-....db
+```
+
+This uses SQLite's **online backup API**, not `cp`. Copying a live SQLite file
+copies it mid-write: the result usually opens, usually looks fine, and is
+missing the last transactions — the worst failure mode there is, because it is
+silent. `create` verifies its own output and exits non-zero if the snapshot is
+not restorable, so a failing cron job is a failing cron job rather than a
+directory full of unusable files.
+
+Recovers from: a bad migration, a mistaken delete, corruption.
+Does not recover from: losing the volume.
+
+### 2. Litestream — off-site, still owed
+
+**Design (D9):** [Litestream](https://litestream.io) as a sidecar, streaming
+the WAL to an S3-compatible bucket continuously. Uncomment the service in
+`docker-compose.yml` and add `litestream.yml`:
 
 ```yaml
 dbs:
@@ -113,51 +134,61 @@ dbs:
 Credentials go in the environment (`LITESTREAM_ACCESS_KEY_ID`,
 `LITESTREAM_SECRET_ACCESS_KEY`), never in the file.
 
-Run the app under Litestream so replication starts before the first write and
-stops after the last:
+It works because of `PRAGMA journal_mode=WAL` (`src/server/db.ts`). Without
+WAL there is no stream to replicate, so **that pragma is a backup dependency,
+not only a concurrency setting.**
+
+Recovers from: losing the machine.
+
+> **Not yet rehearsed.** M2-T5's acceptance is a restore that has actually
+> been performed with a measured RPO and RTO, and that needs a bucket and a
+> Docker host. Until it has been done, treat this layer as a plan. The
+> procedure is below; the table is empty on purpose.
+
+---
+
+## Restoring
+
+`restore` never writes over an existing file. Restoring over the live database
+destroys the only other copy at the exact moment you have least slack.
 
 ```bash
-litestream replicate -exec "node server.js"
+# 1. Stop the app. Do not let it write to a half-restored file.
+docker compose stop app
+
+# 2. Restore beside the live database, never onto it.
+node scripts/backup.mjs restore /data/backups/app-2026-08-31T09-00-00-000Z.db /data/restored.db
+
+# 3. The command already ran integrity_check, foreign_key_check, and row
+#    counts. Read them. If anything looks short, try an older snapshot before
+#    touching the original.
+
+# 4. Swap, keeping the original.
+mv /data/app.db /data/app.db.broken
+mv /data/restored.db /data/app.db
+
+# 5. Start, and check /api/health.
+docker compose start app
 ```
 
-### The restore rehearsal — the actual deliverable
+From a Litestream replica the equivalent of step 2 is:
 
-M2-T5's acceptance is not "Litestream is configured". It is a **documented,
-rehearsed restore with a measured RPO and RTO.** Configuration that has never
-been restored from is a belief, not a backup.
+```bash
+litestream restore -o /data/restored.db s3://BUCKET/app.db
+node scripts/backup.mjs verify /data/restored.db
+```
 
-Procedure, to be run and the results recorded here:
+### Then tell people
 
-1. Note the current row counts:
+Write down what was lost, and tell the people it belonged to. Resumes are work
+nobody can reproduce from memory, and a product whose whole position is that
+it does not hold your work hostage does not get to be quiet about losing it.
 
-   ```bash
-   sqlite3 /data/app.db "SELECT (SELECT COUNT(*) FROM User), (SELECT COUNT(*) FROM Resume);"
-   ```
+### The measured rehearsal (M2-T5's acceptance)
 
-2. Make a change through the UI (edit a resume) and note the wall-clock time.
-
-3. Kill the container **without a clean shutdown** — `docker kill`, not `stop`.
-   A graceful stop lets Litestream flush, which is the case that was never in
-   doubt.
-
-4. Restore to a fresh path on a fresh volume:
-
-   ```bash
-   litestream restore -o /data/restored.db s3://BUCKET/app.db
-   ```
-
-5. Verify integrity and content:
-
-   ```bash
-   sqlite3 /data/restored.db "PRAGMA integrity_check;"    # expect: ok
-   sqlite3 /data/restored.db "SELECT (SELECT COUNT(*) FROM User), (SELECT COUNT(*) FROM Resume);"
-   ```
-
-   Then start the app against the restored file and confirm the edit from
-   step 2 is present, or determine exactly how much was lost.
-
-6. **Record the numbers below.** RPO is how much data the restore lost (step 2
-   minus what survived). RTO is how long steps 4–5 took, wall clock.
+To be run against a real deployment and recorded here. Kill the container with
+`docker kill`, not `stop` — a graceful stop lets everything flush, which is
+the case that was never in doubt.
 
 | Date | RPO (data lost)  | RTO (time to serve) | Notes                             |
 | ---- | ---------------- | ------------------- | --------------------------------- |
@@ -165,29 +196,37 @@ Procedure, to be run and the results recorded here:
 
 ---
 
-## Losing the database entirely
+## What is already defended, and how
 
-Until the rehearsal above has been done, the honest answer is that recovery is
-unproven. The order of operations when it becomes real:
+Worth knowing before changing any of it.
 
-1. Stop the app. Do not let it write to a half-restored file.
-2. Restore to a **new** path — never over the live file, so a failed restore
-   leaves the original evidence intact.
-3. `PRAGMA integrity_check` before anything else touches it.
-4. Point `DATABASE_URL` at the restored file and start.
-5. Write down what was lost, and tell the people it belonged to.
-
-That last step is not optional. Resumes are work people cannot reproduce from
-memory, and a product whose whole position is that it does not hold your work
-hostage does not get to be quiet about losing it.
+- **Sign-in is rate limited** (`src/server/rate-limit.ts`): 5 links per address
+  per hour, 60 per IP per hour. The endpoint sends mail to any address it is
+  given, so without this it is both a way to bomb a stranger's inbox and a way
+  to run up your provider bill. The counters are rows, so they survive a
+  restart — and a deploy loop is not a way around them.
+- **Security headers** are set in `next.config.ts`, including a CSP with no
+  `'unsafe-eval'`. `'wasm-unsafe-eval'` is present because react-pdf lays out
+  text with a WebAssembly build of Yoga; removing it silently breaks the
+  preview, the page-fit indicator, X-Ray, and the PDF download.
+- **Logs are scrubbed** (`src/server/logging.ts`), and Prisma is configured
+  with `errorFormat: "minimal"` so a failed write does not report the
+  statement's parameters — which, for a resume save, is the whole resume.
+- **Sessions are database rows**, so signing out revokes rather than forgets.
+- **Deleting an account is a hard delete** across every table, which works
+  only because `PRAGMA foreign_keys=ON` is applied on every connection.
 
 ---
 
 ## Routine checks
 
+- **`/api/health`** — wire it to whatever watches the service. It touches the
+  database, so it fails when the app is up and the data is not.
+- **Backups are landing.** `node scripts/backup.mjs list`. A gap in the
+  timestamps is a cron job that has been failing quietly.
 - **Database size.** `ls -la /data/app.db*`. A WAL that never shrinks means a
   reader is holding a transaction open.
+- **Migrations are applied.** `DATABASE_URL=... pnpm exec prisma migrate status`.
 - **Sign-in works.** The email path has one external dependency and it fails
   silently from the app's point of view — nobody reports "I did not receive an
   email" quickly.
-- **Migrations are applied.** `DATABASE_URL=... pnpm exec prisma migrate status`.

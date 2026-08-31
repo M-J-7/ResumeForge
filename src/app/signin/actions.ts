@@ -16,6 +16,9 @@ import { signIn, signOut } from "@/server/auth";
 import { EMAIL_PROVIDER_ID, GOOGLE_PROVIDER_ID } from "@/server/auth/config";
 import { describeAuthError, errorFromRedirectUrl, FALLBACK_AUTH_ERROR } from "@/server/auth/errors";
 import { isValidEmail } from "@/lib/resume/schema";
+import { checkSignInAllowed, retryAfterMessage } from "@/server/rate-limit";
+import { logError } from "@/server/logging";
+import { clientIp } from "@/server/request";
 import type { SignInState } from "./state";
 
 /** Where a successful sign-in lands. */
@@ -34,6 +37,18 @@ export async function requestMagicLinkAction(
     return { error: "That does not look like an email address. Check it and try again." };
   }
 
+  // Before anything is sent. This endpoint delivers mail to whatever address
+  // it is given, so without a limit it is both a way to bomb a stranger'''s
+  // inbox and a way to run up someone else'''s provider bill.
+  const allowance = await checkSignInAllowed(email, await clientIp());
+  if (!allowance.allowed) {
+    return {
+      error:
+        `Too many sign-in links have been requested. Try again ${retryAfterMessage(allowance.retryAfterMs)}. ` +
+        `Any link already sent to you still works.`,
+    };
+  }
+
   let destination: string;
   try {
     destination = await signIn(EMAIL_PROVIDER_ID, {
@@ -44,10 +59,9 @@ export async function requestMagicLinkAction(
   } catch (error) {
     if (error instanceof AuthError)
       return { error: describeAuthError(error.type) ?? FALLBACK_AUTH_ERROR };
-    // A transport failure reaches here as a plain Error. The address is
-    // deliberately left out of the message: it is already on screen, and
-    // repeating it in an error string is how it ends up in a log.
-    console.error("Magic link request failed", error);
+    // A transport failure reaches here as a plain Error, and an SMTP error
+    // routinely names the recipient. `logError` strips it (§9).
+    logError("signin/email", error);
     return { error: "The sign-in email could not be sent. Try again in a moment." };
   }
 
@@ -64,7 +78,7 @@ export async function signInWithGoogleAction(): Promise<SignInState> {
   } catch (error) {
     if (error instanceof AuthError)
       return { error: describeAuthError(error.type) ?? FALLBACK_AUTH_ERROR };
-    console.error("Google sign-in failed", error);
+    logError("signin/google", error);
     return { error: FALLBACK_AUTH_ERROR };
   }
   redirect(destination);

@@ -481,6 +481,89 @@ could read "benefits" as something asked of the candidate.
    still looking correct on screen. Source files with regex escapes go
    through the Write tool.
 
+### P14 — Production hardening
+
+Not a plan task. The work needed to deploy this and charge for it, found by
+asking what would break or cost money on the first real day.
+
+**Deployment actually works now**
+
+- `src/server/migrate.ts` — the server applies its own pending migrations,
+  using Prisma's `_prisma_migrations` table and its checksum definition
+  (SHA-256 of the file). The runtime image carries no CLI, and the
+  alternative — a manual `migrate deploy` before every deploy — is a step that
+  gets forgotten exactly once and then serves errors until somebody notices.
+  Each migration runs in a transaction, so a failure leaves nothing behind.
+  **A test runs the real Prisma CLI against a database this code migrated**,
+  because "compatible with Prisma" is a claim that has to be checked against
+  Prisma.
+- `pnpm test:e2e` now deletes the database and runs **no migrate step**, so
+  every run exercises the real first-deploy path: empty volume, server starts,
+  schema appears, sign-in works.
+- `Dockerfile`: Node 24 (Node 20 reached end of life in April 2026 — shipping
+  an EOL runtime is shipping unpatched CVEs), `VOLUME /data`, the migration SQL
+  and backup tooling copied in, and a healthcheck that touches the database.
+- `docker-compose.yml` — app, hourly snapshots, and a commented Litestream
+  service. `docker compose up -d --build` is the whole first deploy.
+
+**Backups that have actually been restored**
+
+- `src/server/backup.ts` — SQLite's online backup API, a verify step that
+  checks integrity _and_ row counts _and_ foreign keys, and a restore that
+  refuses to write over an existing file.
+- `src/server/backup.test.ts` is the rehearsal M2-T5 asks for, run on every
+  push: snapshot a live database, verify, restore, and serve from the result.
+  The off-site half still needs a bucket.
+
+**Abuse and cost**
+
+- `src/server/rate-limit.ts` — sign-in is limited to 5 links per address and
+  60 per IP per hour. The endpoint sends mail to any address it is given, so
+  without this it is a way to bomb a stranger's inbox _and_ a way to run up
+  the operator's provider bill. Counters are rows, so a deploy loop is not a
+  way around them, and the decision is one atomic upsert so two concurrent
+  requests cannot both pass.
+
+**Disclosure**
+
+- Security headers and a CSP in `next.config.ts`; `poweredByHeader` off.
+- `src/server/logging.ts` — §9 says error reporting is scrubbed of resume
+  content, and the obvious reading misses where it escapes: a failing write is
+  reported by the driver with the statement _and its parameters_, and the
+  parameter to `saveResume` is the whole resume. Prisma is set to
+  `errorFormat: "minimal"` and every log line is scrubbed of blobs,
+  addresses, tokens, and connection strings.
+- `/api/health` says `ok` or `unhealthy` and nothing else. Version numbers and
+  row counts on an unauthenticated endpoint are reconnaissance.
+
+- 111 new tests (1169 total) and 3 new E2E tests (23 total).
+
+#### Four defects this turned up
+
+1. **Two different native SQLite builds were installed.** Our direct
+   dependency was `better-sqlite3@13`, while the Prisma adapter hard-depends
+   on `^12` — so pnpm compiled and shipped both, and the backup tooling was
+   opening the same file with a different SQLite than the server. Pinned to
+   one.
+2. **The Docker base image was Node 20**, which went EOL in April 2026.
+3. **`sharp` was being traced into the standalone output** — a platform
+   native binary for a feature that does not exist. Excluded.
+4. **The first CSP broke the entire PDF pipeline.** react-pdf lays out text
+   with a WebAssembly build of Yoga, and `WebAssembly.instantiate` is blocked
+   unless the policy says so. The fix is `'wasm-unsafe-eval'`, which permits
+   compiling WebAssembly and still blocks `eval` of JavaScript — not
+   `'unsafe-eval'`, which would have given up the whole protection. Caught by
+   the Playwright suite, which is the argument for having it.
+
+#### And one the rate limiter caught on itself
+
+The E2E suite started failing on its twelfth sign-in, because the per-IP
+counter had accumulated across several runs inside the same hour. The limiter
+was working. Two things came out of it: the E2E run now starts from a deleted
+database, and the per-IP limit went from 20 to 60 — an office or a mobile
+carrier's CGNAT puts thousands of real users behind one address, and the
+per-address limit is the one doing the real work.
+
 ---
 
 ## Next
@@ -505,15 +588,13 @@ asserted, with only the live consent round trip owed.
 
 ### Unblocked work, in plan order
 
-- **M2-T5 Litestream** — the single largest tail risk in the architecture, and
-  the only part of M2 still outstanding. Needs an S3-compatible bucket and a
-  Docker host. The config, the restore procedure, and the table to record RPO
-  and RTO into are written up in `docs/RUNBOOK.md`; **the rehearsal is the
-  deliverable**, and it is what is missing. An untested backup is not a backup.
+- **M2-T5's off-site half** — local snapshots are running and rehearsed on
+  every push; replication to a bucket is not. Needs S3 credentials and a
+  Docker host. `docs/RUNBOOK.md` has the config and the procedure, and an
+  empty table for the measured RPO and RTO.
 - **Running the container at all** — CI proves the image builds, not that it
-  serves. Two things have only been reasoned about: whether `better-sqlite3`'s
-  native binary survives Next's standalone tracing, and applying migrations to
-  the production volume. Both are in `docs/QA.md` check 4.
+  serves. `docs/QA.md` check 4 lists what has only been reasoned about; the
+  schema-creation path it used to list is now covered by the E2E run.
 - **P14 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
 - **Scoring engine (M3-T4)** — blocked behind the taxonomy and the IDF corpus.
   The structure parser it depends on (M3-T3) is done.

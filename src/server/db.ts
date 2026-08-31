@@ -30,6 +30,8 @@
 
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
+import { applyPendingMigrations } from "./migrate";
+import { logWarning } from "./logging";
 
 /** What `assertPragmas` requires. `synchronous: 1` is NORMAL. */
 export const REQUIRED_PRAGMAS = {
@@ -78,7 +80,17 @@ export function createPrismaClient(url: string = databaseUrl()): PrismaClient {
     // `applyPragmas` has run.
     timeout: REQUIRED_PRAGMAS.busy_timeout,
   });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({
+    adapter,
+    /**
+     * Minimal error format, because Prisma's default includes the failing
+     * statement **and its parameters** — and the parameter to `saveResume` is
+     * the whole resume. Nobody would write `console.log(document)`; this is
+     * how the document ends up in a log anyway. §9 forbids exactly that.
+     * `src/server/logging.ts` scrubs whatever still gets through.
+     */
+    errorFormat: "minimal",
+  });
 }
 
 /** A client with the pragmas already applied. Prefer this over the raw constructor. */
@@ -106,13 +118,54 @@ const globalForPrisma = globalThis as unknown as {
   prismaReady?: Promise<PrismaClient>;
 };
 
-/** Returns the shared client with its pragmas already applied. */
+/**
+ * Brings the schema up to date on first use.
+ *
+ * The runtime image is Next's standalone output and carries no Prisma CLI, so
+ * the alternative is a manual `migrate deploy` before every deploy — a step
+ * that gets forgotten exactly once and then serves errors until somebody
+ * notices. Applying pending migrations here is idempotent and costs one
+ * indexed read when there is nothing to do.
+ *
+ * `SKIP_AUTO_MIGRATE=1` turns it off, for an operator who would rather run
+ * migrations as a deliberate step (see `docs/RUNBOOK.md`).
+ */
+async function migrateIfNeeded(client: PrismaClient): Promise<void> {
+  if (process.env.SKIP_AUTO_MIGRATE === "1") return;
+
+  const outcome = await applyPendingMigrations(client);
+  if (outcome.applied.length > 0) {
+    console.info(
+      `[db] applied ${outcome.applied.length} migration(s): ${outcome.applied.join(", ")}`,
+    );
+  }
+  if (outcome.unknownToThisBuild.length > 0) {
+    // The database knows about a migration this build does not — almost
+    // always a rolled-back deploy. Worth saying out loud; not worth refusing
+    // to start over, because the schema is ahead rather than broken.
+    logWarning(
+      "db",
+      `the database has migrations this build does not know about: ${outcome.unknownToThisBuild.join(", ")}`,
+    );
+  }
+}
+
+/** Returns the shared client, pragmas applied and schema up to date. */
 export function getPrisma(): Promise<PrismaClient> {
   if (globalForPrisma.prismaReady) return globalForPrisma.prismaReady;
 
   const client = globalForPrisma.prisma ?? createPrismaClient();
   globalForPrisma.prisma = client;
-  globalForPrisma.prismaReady = applyPragmas(client).then(() => client);
+  globalForPrisma.prismaReady = applyPragmas(client)
+    .then(() => migrateIfNeeded(client))
+    .then(() => client)
+    .catch((error: unknown) => {
+      // A failed startup must not leave a poisoned promise cached, or every
+      // later request gets the same stale error with no way to recover.
+      globalForPrisma.prisma = undefined;
+      globalForPrisma.prismaReady = undefined;
+      throw error;
+    });
   return globalForPrisma.prismaReady;
 }
 

@@ -219,3 +219,58 @@ test("exports a JSON Resume file and reads it back (M2-T6)", async ({ page }) =>
     "Calculated launch windows by hand.",
   );
 });
+
+test("serves the security headers a production deployment needs", async ({ request }) => {
+  const response = await request.get("/");
+  const headers = response.headers();
+
+  // A CSP that is present but wrong is worse than none: it looks like a
+  // control and is not one. These are the directives the product depends on.
+  const csp = headers["content-security-policy"] ?? "";
+  expect(csp).toContain("default-src 'self'");
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toContain("object-src 'none'");
+  // The PDF is generated in a worker and painted from a blob.
+  expect(csp).toContain("worker-src 'self' blob:");
+  // No telemetry endpoint exists, and this is what makes that structural.
+  expect(csp).toContain("connect-src 'self'");
+  // `'wasm-unsafe-eval'` is present and is a different, much narrower thing:
+  // it lets react-pdf compile its layout engine and still blocks `eval` of
+  // JavaScript. A substring check would confuse the two.
+  expect(csp).toContain("'wasm-unsafe-eval'");
+  expect(csp).not.toMatch(/(^|\s)'unsafe-eval'/);
+
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["strict-transport-security"]).toContain("max-age=");
+  expect(headers["x-powered-by"]).toBeUndefined();
+});
+
+test("reports its own health by touching the database", async ({ request }) => {
+  // A container serving a perfect landing page over a database it cannot
+  // open is exactly the state a healthcheck exists to catch.
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toEqual({ status: "ok" });
+  expect(response.headers()["cache-control"]).toContain("no-store");
+});
+
+test("loads the builder with no console errors under the CSP", async ({ page }) => {
+  // The CSP is the one change that can break the product silently: a blocked
+  // worker or font shows up as a violation in the console and an empty
+  // preview, not as a failed request.
+  const violations: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") violations.push(message.text());
+  });
+
+  await page.goto("/builder");
+  await page.getByLabel("Full name").fill("Ada Lovelace");
+  const preview = page.getByRole("region", { name: "Document preview" });
+  await expect(preview.getByRole("img", { name: "Resume page 1" })).toBeVisible({
+    timeout: 30_000,
+  });
+
+  expect(violations.filter((text) => /Content Security Policy|Refused to/i.test(text))).toEqual([]);
+});

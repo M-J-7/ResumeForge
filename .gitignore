@@ -72,3 +72,6 @@ next-env.d.ts
 # generated: magic-link emails written to disk by the development mail
 # transport (src/server/auth/mail.ts). Never present in production.
 /.mail-outbox/
+
+# local database snapshots (scripts/backup.mjs)
+/backups/

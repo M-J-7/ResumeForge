@@ -1,0 +1,81 @@
+# A running deployment, in one file.
+#
+#   cp .env.example .env.production   # then fill in the four required values
+#   docker compose up -d --build
+#
+# Everything durable is on the `data` volume: the SQLite database, its WAL,
+# and the local snapshots. The container applies its own pending migrations on
+# first use, so there is no separate migrate step to forget.
+#
+# See docs/RUNBOOK.md for what each variable does and what to do when the
+# database is gone.
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.production
+    environment:
+      # Overridden here rather than left to the image default so the path is
+      # visible next to the volume that has to hold it.
+      DATABASE_URL: "file:/data/app.db"
+      BACKUP_DIR: "/data/backups"
+    volumes:
+      - data:/data
+    healthcheck:
+      # Repeated from the Dockerfile so `docker compose ps` reports health
+      # even when the image is pulled rather than built here.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # Hourly snapshots on the same volume, pruned to the last two days.
+  #
+  # This is the layer that recovers from a bad migration or a mistaken delete.
+  # It does **not** recover from losing the volume — that is what the
+  # Litestream service below is for, and the two are not substitutes.
+  backup:
+    build: .
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'while true; do node scripts/backup.mjs create --keep 48 || echo "backup FAILED"; sleep 3600; done'
+    environment:
+      DATABASE_URL: "file:/data/app.db"
+      BACKUP_DIR: "/data/backups"
+    volumes:
+      - data:/data
+    depends_on:
+      - app
+
+  # Off-site, continuous replication (D9, M2-T5). Uncomment once a bucket
+  # exists, fill in litestream.yml, and then — before relying on it — run the
+  # restore rehearsal in docs/RUNBOOK.md. An untested backup is not a backup.
+  #
+  # litestream:
+  #   image: litestream/litestream:0.3
+  #   restart: unless-stopped
+  #   command: replicate
+  #   environment:
+  #     LITESTREAM_ACCESS_KEY_ID: "${LITESTREAM_ACCESS_KEY_ID}"
+  #     LITESTREAM_SECRET_ACCESS_KEY: "${LITESTREAM_SECRET_ACCESS_KEY}"
+  #   volumes:
+  #     - data:/data
+  #     - ./litestream.yml:/etc/litestream.yml:ro
+  #   depends_on:
+  #     - app
+
+volumes:
+  data:

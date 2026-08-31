@@ -171,3 +171,17 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+/// Fixed-window counters (production hardening).
+///
+/// Kept in SQLite rather than in memory because the limit has to survive a
+/// restart: an in-process counter is reset by every deploy, and by every
+/// crash an attacker can provoke. One row per key, expired rows swept
+/// opportunistically.
+model RateLimit {
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

@@ -28,9 +28,14 @@ export default defineConfig({
   webServer: {
     // Production build: the dev server's on-demand compilation makes the
     // first render slow enough to look like a timeout rather than a bug.
-    // `migrate deploy` runs against the E2E database specifically, so a
-    // developer's working `dev.db` is never the thing under test.
-    command: "pnpm build && pnpm db:deploy && pnpm start",
+    //
+    // The database is deleted first and **no migrate step is run**. That is
+    // deliberate: the server applies its own pending migrations on first use
+    // (`src/server/db.ts`), so every E2E run exercises the real first-deploy
+    // path — empty volume, container starts, schema appears, sign-in works.
+    // Running `migrate deploy` here would test the CLI instead of the thing
+    // that actually happens in production.
+    command: "node scripts/reset-e2e-db.mjs && pnpm build && pnpm start",
     url: "http://localhost:3000/builder",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
@@ -38,6 +43,7 @@ export default defineConfig({
       // Its own file, so signing in during a test run does not leave rows in
       // the database a developer is building against.
       DATABASE_URL: E2E_DATABASE_URL,
+      E2E_DATABASE_FILE,
       // A fixed value rather than a generated one: the sessions it signs
       // have to stay valid across the build step and every worker.
       AUTH_SECRET: "e2e-only-secret-never-used-outside-playwright",
