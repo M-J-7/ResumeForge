@@ -641,22 +641,38 @@ _building_ anything. The email flow is implemented and verified end to end
 against a real SMTP conversation; Google is implemented and its configuration
 asserted, with only the live consent round trip owed.
 
-### Unblocked work, in plan order
+| §11 monetization (D13 constrains it: downloads are never paywalled) | Charging for anything |
 
-- **M2-T5's off-site half** — local snapshots are running and rehearsed on
-  every push; replication to a bucket is not. Needs S3 credentials and a
-  Docker host. `docs/RUNBOOK.md` has the config and the procedure, and an
-  empty table for the measured RPO and RTO.
-- **Running the container at all** — CI proves the image builds, not that it
-  serves. `docs/QA.md` check 4 lists what has only been reasoned about; the
-  schema-creation path it used to list is now covered by the E2E run.
-- **P14 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
-- **Scoring engine (M3-T4)** — blocked behind the taxonomy and the IDF corpus.
-  The structure parser it depends on (M3-T3) is done.
+### What is left, and what it needs
+
+- **The deploy itself.** `docker compose up -d --build` is the whole thing —
+  no migrate step, backups start with it. What it needs is a host, a domain,
+  and the four environment variables in `docs/RUNBOOK.md`.
+- **M2-T5's off-site half.** Local snapshots run hourly and the whole
+  take-verify-restore cycle is rehearsed on every push. Replication to a
+  bucket is not: it needs S3 credentials and a Docker host, and the rehearsal
+  is its acceptance criterion. `docs/RUNBOOK.md` has the config, the
+  procedure, and an empty table for the measured RPO and RTO.
+- **Running the container at all.** CI proves the image builds, not that it
+  serves. `docs/QA.md` check 4 lists what has only been reasoned about.
+- **Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan
+  says verify current terms before shipping, and that is a decision, not a
+  lookup. The scoring engine (M3-T4) sits behind them; the structure parser it
+  depends on (M3-T3) is done.
 
 ### The sequencing gate, restated
 
-The plan says ship M0 before starting M1, and get a week of real feedback before building accounts. M1 was built ahead of that because the deploy was blocked, not because the gate was reconsidered. **Weigh the feedback loop before committing to M2.**
+The plan says ship M0 before starting M1, and get a week of real feedback
+before building accounts. M1 and M2 were both built ahead of that because the
+deploy was blocked, not because the gate was reconsidered.
+
+**That gate now matters more, not less.** M3's scope is explicitly meant to be
+reassessed against real users, and §11 says decide monetization after M0
+feedback — which does not exist yet. D13 constrains the answer regardless:
+downloads are never paywalled, so whatever gets charged for has to be
+something other than getting your own work back out.
+
+Deploy, then listen, then decide.
 
 ---
 
