@@ -8,55 +8,20 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { REQUIRED_PRAGMAS, applyPragmas, createPrismaClient, databaseUrl, readPragmas } from "./db";
+import { REQUIRED_PRAGMAS, databaseUrl, readPragmas } from "./db";
+import { createTestDatabase, type TestDatabase } from "@/test/database";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-const MIGRATIONS_DIR = path.join(process.cwd(), "prisma", "migrations");
-
-/** The migration SQL, in the order Prisma would apply it. */
-function migrationStatements(): string[] {
-  const dirs = readdirSync(MIGRATIONS_DIR, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort();
-
-  const statements: string[] = [];
-  for (const dir of dirs) {
-    const sql = readFileSync(path.join(MIGRATIONS_DIR, dir, "migration.sql"), "utf8");
-    // Prisma prefixes each statement with a `-- CreateTable` comment, so the
-    // comments have to be stripped *before* splitting — filtering statements
-    // that begin with `--` afterwards silently discards every real one.
-    const withoutComments = sql
-      .split("\n")
-      .filter((line) => !line.trim().startsWith("--"))
-      .join("\n");
-
-    for (const statement of withoutComments.split(";")) {
-      const trimmed = statement.trim();
-      if (trimmed.length > 0) statements.push(trimmed);
-    }
-  }
-  return statements;
-}
-
+let database: TestDatabase;
 let client: PrismaClient;
-let directory: string;
 
 beforeEach(async () => {
-  directory = mkdtempSync(path.join(tmpdir(), "resume-db-"));
-  client = createPrismaClient(`file:${path.join(directory, "test.db")}`);
-  await applyPragmas(client);
-  for (const statement of migrationStatements()) {
-    await client.$executeRawUnsafe(statement);
-  }
+  database = await createTestDatabase();
+  client = database.client;
 });
 
 afterEach(async () => {
-  await client.$disconnect();
-  rmSync(directory, { recursive: true, force: true });
+  await database.destroy();
 });
 
 describe("migrations", () => {
@@ -162,6 +127,21 @@ describe("schema shape", () => {
     for (const field of ["lastScore", "pageCount", "wordCount", "schemaVersion"]) {
       expect(names, `Resume.${field} should be a real column`).toContain(field);
     }
+  });
+
+  it("carries the User columns Auth.js's adapter writes, and no others", async () => {
+    // `emailVerified` is not optional for us: the adapter sets it on create
+    // and again on the callback, and its absence fails the sign-in with an
+    // "Unknown argument" error from Prisma rather than anything about auth.
+    const columns = await client.$queryRawUnsafe<{ name: string }[]>(
+      `SELECT name FROM pragma_table_info('User')`,
+    );
+    const names = columns.map((c) => c.name);
+    expect(names).toContain("emailVerified");
+    // Deliberately absent: Auth.js's default Google mapping would store an
+    // avatar URL, nothing renders one, and unused personal data is a
+    // liability. `buildAuthConfig` maps the profile so it is never sent.
+    expect(names).not.toContain("image");
   });
 
   it("keeps schemaVersion on every stored resume (D10)", async () => {

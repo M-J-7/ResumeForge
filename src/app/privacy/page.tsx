@@ -1,12 +1,16 @@
 /**
  * Privacy policy (§9: live before launch, not after).
  *
- * Short because there is genuinely little to disclose in M0 — no server, no
- * account, no analytics on the builder. Written to be accurate rather than
- * defensive; a policy that overstates what is collected "to be safe" is as
- * misleading as one that understates it.
+ * Written to be accurate rather than defensive; a policy that overstates
+ * what is collected "to be safe" is as misleading as one that understates
+ * it.
  *
- * When M2 adds accounts and cloud sync, this needs revising.
+ * Revised for M2, which added optional accounts. The previous version said
+ * there was "no account system and no database", and it promised this page
+ * would be updated before that changed — so this revision is part of
+ * shipping accounts, not a follow-up to it. Signing in is still optional and
+ * the guest path is unchanged; what changed is that there is now a second
+ * path, and it has to be described as precisely as the first.
  */
 
 import type { Metadata } from "next";
@@ -23,18 +27,18 @@ export default function PrivacyPage() {
       <div>
         <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50">Privacy</h1>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          Last updated 30 August 2026.
+          Last updated 31 August 2026.
         </p>
       </div>
 
       <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Your resume stays in your browser
+          Without an account, your resume stays in your browser
         </h2>
         <p>
-          Everything you type is saved to IndexedDB, a storage area belonging to this site inside
-          your own browser. It is not transmitted to us, because there is no account system and no
-          database to transmit it to. Clearing your browser data, or using the &ldquo;Clear all
+          The builder works without signing in, and that is the default. Everything you type is
+          saved to IndexedDB, a storage area belonging to this site inside your own browser. It is
+          not transmitted to us. Clearing your browser data, or using the &ldquo;Clear all
           data&rdquo; button in the builder, deletes it permanently.
         </p>
         <p>
@@ -45,11 +49,34 @@ export default function PrivacyPage() {
 
       <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          If you create an account
+        </h2>
+        <p>
+          An account exists for one reason: so your resumes follow you between devices. Creating one
+          is optional, and nothing you build is sent to us until you explicitly save it.
+        </p>
+        <p>
+          Signing in stores your email address. If you sign in with Google we also store the name
+          Google gives us; we do not ask Google for anything else, and we do not store your profile
+          picture. Saving a resume stores its content, its title, and when it changed.
+        </p>
+        <p>
+          <strong className="font-medium">There is no password.</strong> You sign in with a link
+          emailed to you, or with Google. We never hold a password, so there is none to leak, reuse,
+          or reset. Sending that link is the only time your email address is handed to another
+          company — a transactional email provider — and the message contains a login link and
+          nothing else. No part of your resume is ever included.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           Your files are generated on your device
         </h2>
         <p>
           The PDF, DOCX, and text files are built in your browser and handed straight to your
-          downloads. They are never uploaded, never generated on a server, and never stored by us.
+          downloads. They are never uploaded, never generated on a server, and never stored by us —
+          with or without an account.
         </p>
       </section>
 
@@ -68,18 +95,29 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Server logs</h2>
         <p>
           Serving the site produces ordinary web-server logs — IP address, timestamp, and which page
-          was requested. These record that a page was fetched; they do not and cannot contain any
-          part of your resume, since none of it is sent to the server.
+          was requested. These record that a page was fetched. They never contain resume content:
+          error reports are scrubbed of it, and without an account none of it reaches the server at
+          all.
         </p>
       </section>
 
       <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Your rights</h2>
         <p>
-          Because we hold no personal data about you, there is nothing for us to export, correct, or
-          erase on request. Your data is already entirely under your control: it is on your device,
-          and the builder can delete it. If that ever changes — for example when optional accounts
-          are added — this page will be updated before the change ships.
+          Without an account we hold no personal data about you at all, so there is nothing for us
+          to export, correct, or erase — your data is on your device, and the builder can delete it.
+        </p>
+        <p>
+          With an account, deletion is in your hands and takes effect immediately. Deleting a resume
+          removes it and its history outright; deleting your account removes the account, every
+          resume on it, and everything derived from them. There is no trash, no grace period, and no
+          backup copy we could restore from, which is the same trade as the guest path: we cannot
+          undo it for you because we did not keep it.
+        </p>
+        <p>
+          A one-click export of everything on your account, in the interoperable JSON Resume format,
+          is not built yet. Until it is, every resume can be downloaded in full as PDF, DOCX, and
+          plain text from the builder, for nothing and without limits.
         </p>
       </section>
 

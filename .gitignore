@@ -68,3 +68,7 @@ next-env.d.ts
 /prisma/*.db-wal
 /prisma/*.db-shm
 /src/generated/
+
+# generated: magic-link emails written to disk by the development mail
+# transport (src/server/auth/mail.ts). Never present in production.
+/.mail-outbox/

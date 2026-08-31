@@ -4,24 +4,28 @@
 > Task IDs and package IDs (`P1`, `M0-T3`, …) refer to `docs/EXECUTION_PLAN.md`.
 > Update this file as work completes — one line per task, moved from Next → Done.
 
-**Last updated:** 2026-08-30
+**Last updated:** 2026-08-31
 
 ---
 
 ## Status at a glance
 
-| Package                  | Tasks            | Status                      |
-| ------------------------ | ---------------- | --------------------------- |
-| P1 Foundation            | M0-T0, T1, T2    | ✅ Done (commit `578cc73`)  |
-| P2 Document model + PDF  | M0-T3, T4        | ✅ Done                     |
-| P3 DOCX + TXT            | M0-T5, T6        | ✅ Done                     |
-| P4 State + builder UI    | M0-T7, T8        | ✅ Done                     |
-| P5 Preview + exports     | M0-T9, T10, T12  | ✅ Done                     |
-| P6 Lint + tests + launch | M0-T11, T14, T13 | 🔶 Code done, deploy owed   |
-| P7 X-Ray engine          | M1-T1, T2        | ✅ Done                     |
-| P8 X-Ray UI              | M1-T3, T4        | ✅ Done                     |
-| P9 Database + auth       | M2-T1, T2        | 🔶 M2-T1 done, auth blocked |
-| P10–P14 (M2–M3)          | —                | ⬜ Next                     |
+| Package                  | Tasks                 | Status                     |
+| ------------------------ | --------------------- | -------------------------- |
+| P1 Foundation            | M0-T0, T1, T2         | ✅ Done (commit `578cc73`) |
+| P2 Document model + PDF  | M0-T3, T4             | ✅ Done                    |
+| P3 DOCX + TXT            | M0-T5, T6             | ✅ Done                    |
+| P4 State + builder UI    | M0-T7, T8             | ✅ Done                    |
+| P5 Preview + exports     | M0-T9, T10, T12       | ✅ Done                    |
+| P6 Lint + tests + launch | M0-T11, T14, T13      | 🔶 Code done, deploy owed  |
+| P7 X-Ray engine          | M1-T1, T2             | ✅ Done                    |
+| P8 X-Ray UI              | M1-T3, T4             | ✅ Done                    |
+| P9 Database              | M2-T1                 | ✅ Done                    |
+| P10 Auth + accounts      | M2-T2, T3, T4\*, T6\* | ✅ Done (\* in part)       |
+| P11–P14 (rest of M2, M3) | —                     | ⬜ Next                    |
+
+\* M2-T4's dashboard half (list, rename, duplicate, hard delete) is done; its
+sync half is not. M2-T6's deletion half is done; JSON Resume export is not.
 
 ---
 
@@ -212,7 +216,7 @@ The wedge: every competitor _claims_ ATS-friendliness; this measures it, because
 
 **Substring matching silently mis-assigned roles.** "Backend Engineer" is a substring of "Senior Backend Engineer", so a greedy match handed the junior role the senior role's employer and dates, then reported the mismatch as a parse failure that never happened. Roles are now claimed exact-first, each recovered role used once. Worth remembering anywhere resume fields get fuzzy-matched — M3's keyword scoring will hit the same shape.
 
-### P9 (partial) — Database layer (M2-T1)
+### P9 — Database layer (M2-T1)
 
 - `prisma/schema.prisma` — the §7 data model, plus Auth.js tables. No password column anywhere and there never will be (D7); a test asserts it.
 - `src/server/db.ts` — connection with the four required pragmas, each documented with the consequence of omitting it.
@@ -223,14 +227,106 @@ The wedge: every competitor _claims_ ATS-friendliness; this measures it, because
 
 `getPrisma()` is lazy and returns a promise. Importing a module must not open a database connection as a side effect — eager construction makes the module unimportable wherever `DATABASE_URL` is absent and turns a config problem into an import error far from its cause.
 
-#### Why M2-T2 (auth) is not done
+### P10 — Auth, accounts, and the dashboard (M2-T2, M2-T3, M2-T4 in part, M2-T6 in part)
 
-Its acceptance is "both flows work end-to-end", and neither can be verified here:
+The previous session left M2-T2 undone because its acceptance is "both flows
+work end-to-end" and neither could be verified without buying credentials.
+That reasoning was right about the standard; it was wrong that the standard
+was unreachable. **Delivery is now a seam, so the email flow is verified for
+real.**
 
-- **Google OAuth** needs a real client id and secret from a Google Cloud project.
-- **Email magic links** need a transactional email provider account and credentials.
+**Auth (M2-T2)**
 
-Writing untested auth code and calling it done would be worse than leaving it. `.env.example` lists every variable the implementation will need. Once credentials exist, M2-T2 is a contained piece of work: Auth.js v5 with the Prisma adapter, sessions in the same SQLite file, and the tables are already in the schema.
+- `src/server/auth/mail.ts` — `MailTransport` with three implementations:
+  `smtpTransport` (production, lazy-imports nodemailer), `outboxTransport`
+  (writes each message to disk for local development), `memoryTransport`
+  (unit tests). `resolveMailTransport` picks from the environment, always
+  preferring a configured `EMAIL_SERVER`. **The outbox throws under
+  `NODE_ENV=production`** — a deploy that forgets `EMAIL_SERVER` must fail
+  loudly, not write everyone's sign-in links to the server's disk.
+- `src/server/auth/email.ts` — the message. No remote asset of any kind (a
+  remote image is a tracking pixel whether or not it was meant as one), no
+  resume content, and it states that the link is single-use and when it
+  expires. Tests assert all three as policy.
+- `src/server/auth/config.ts` — `buildAuthConfig` as a pure function of its
+  dependencies, so provider composition is unit-testable without booting
+  Next or opening a database. Email provider always; Google only when both
+  credential halves are present.
+- `src/server/auth/errors.ts` — Auth.js codes translated into something
+  actionable. `OAuthAccountNotLinked` matters most: it is the likeliest error
+  in a two-provider passwordless setup and reads as "my account is broken" if
+  left as a code.
+- `src/server/auth/session.ts` — `requireSessionUser()`. The gate is here and
+  in every action, **not in `proxy.ts`**: proxy is documented as CDN-edge
+  deployable (where `better-sqlite3` cannot load), and it only sees page
+  requests, while Server Actions are reachable by direct POST.
+- `/signin`, `/signin/check-email`, `/dashboard`, and the Auth.js route
+  handler. `/signin` doubles as `pages.error`, so a failure lands on the
+  screen that can fix it.
+
+**Draft claiming (M2-T3)** — `claimDraft` plus `ClaimDraftPrompt`. Ordering is
+the whole design: read local → send → **wait for confirmation** → clear local.
+Every failure path leaves the draft exactly where it was. It always creates a
+new resume, never overwrites: an unwanted extra costs one click to delete, an
+overwrite destroys work with no other copy.
+
+**Dashboard (M2-T4, in part)** — `src/server/resumes.ts` and `ResumeList`:
+list, rename, duplicate, hard delete. Sync is not done.
+
+**Account deletion (M2-T6, in part)** — `src/server/accounts.ts`. One
+statement, because the cascades do the work; the test asserts row counts
+across every table rather than the return value, because the way this breaks
+is `foreign_keys` being off, not a wrong boolean. JSON Resume export is not
+done.
+
+- 76 new unit tests (998 total) and 9 new E2E tests (15 total). All green.
+
+#### Ownership is an argument, never an inference
+
+Every function in `resumes.ts` takes `userId` first and puts it in the `where`
+clause — `updateMany({ where: { id, userId } })`, not `update({ where: { id } })`.
+The wrong owner changes zero rows and the caller sees "not found", rather than
+the row being located, modified, and only then checked. There is no code path
+that loads a resume by id alone, so there is no code path an authorization
+check can be forgotten on.
+
+#### Five things this ran into
+
+1. **`@prisma/client-runtime-utils` was unresolvable.** The generated client
+   lives at `src/generated/prisma/`, outside `node_modules`, so its imports
+   resolve from the project root — where pnpm's strict layout does not expose
+   its parent's dependencies. Choosing a custom `output` makes the generated
+   code's runtime dependencies yours; it is now a direct dependency.
+2. **`emailVerified` was missing from `User`.** §7's data model omitted it,
+   but Auth.js's Prisma adapter writes it on create and again on callback. The
+   failure was `Unknown argument 'emailVerified'` from Prisma — nothing about
+   auth at all. Added, with a migration. `image` was deliberately **not**
+   added: the Google profile mapper drops the avatar URL rather than storing
+   personal data nothing renders.
+3. **A `"use server"` file can only export async functions.** `EMPTY_SIGN_IN_STATE`
+   was a plain object export in `actions.ts`, which fails the build (types are
+   erased and would have been fine). It lives in `./state.ts` now.
+4. **The dev outbox and the E2E build are incompatible by design.** `next start`
+   runs with `NODE_ENV=production`, which the outbox refuses. Rather than
+   weaken the guard, the E2E run points the **real** SMTP transport at a
+   capture server — so the production path is what gets tested, and nodemailer's
+   quoted-printable wrapping of the long sign-in URL has to be undone before
+   the link can be read back (`e2e/mail-server.ts`).
+5. **`getByRole("alert")` is ambiguous in Next.** There is always a
+   permanently-present, empty route announcer with that role.
+
+#### Two deliberate deviations
+
+- **Account linking stays off.** Signing in by magic link and later using
+  Google with the same address gives `OAuthAccountNotLinked` rather than
+  merging. Automatic linking trusts a provider's email claim; the recovery
+  here is good (the magic link always works), so the sign-in page explains it
+  rather than the config weakening it.
+- **The privacy policy was rewritten as part of this work, not after it.** The
+  previous version said there was "no account system and no database" and
+  promised to be updated _before_ that changed. It now describes both paths,
+  and states plainly that JSON export does not exist yet rather than implying
+  it does.
 
 ---
 
@@ -240,18 +336,27 @@ Writing untested auth code and calling it done would be worse than leaving it. `
 
 Everything reachable without external accounts is done. What remains needs input:
 
-| Blocked on                                                               | Needed for                              |
-| ------------------------------------------------------------------------ | --------------------------------------- |
-| Host choice, domain, product name (§12 Q2, Q3)                           | M0-T13 deploy                           |
-| Word / LibreOffice / Google Docs access, a physical phone                | The three manual checks in `docs/QA.md` |
-| Google OAuth client id + secret                                          | M2-T2                                   |
-| Transactional email provider credentials                                 | M2-T2 magic links                       |
-| S3-compatible bucket credentials                                         | M2-T5 Litestream                        |
-| A licensing decision on ESCO / O*NET, and the IDF corpus source (§12 Q1) | M3-T1, M3-T2                            |
+| Blocked on                                                               | Needed for                                       |
+| ------------------------------------------------------------------------ | ------------------------------------------------ |
+| Host choice, domain, product name (§12 Q2, Q3)                           | M0-T13 deploy                                    |
+| Word / LibreOffice / Google Docs access, a physical phone                | Manual checks 1, 2, and 4 in `docs/QA.md`        |
+| Google OAuth client id + secret                                          | Manual check 3 — the live Google round trip only |
+| Transactional email provider credentials                                 | Production magic links (the flow itself is done) |
+| S3-compatible bucket credentials                                         | M2-T5 Litestream                                 |
+| A licensing decision on ESCO / O*NET, and the IDF corpus source (§12 Q1) | M3-T1, M3-T2                                     |
+
+Note what moved: Google credentials and an email provider no longer block
+_building_ anything. The email flow is implemented and verified end to end
+against a real SMTP conversation; Google is implemented and its configuration
+asserted, with only the live consent round trip owed.
 
 ### Unblocked work, in plan order
 
-- **P10 Sync + dashboard (M2-T3, M2-T4)** — draft claiming and the dashboard can be built against the database layer, but sign-in gates the useful half. Best done with M2-T2.
+- **P11 Sync + export (rest of M2-T4, rest of M2-T6)** — server autosave
+  alongside local, opening a saved resume back into the builder, offline edits
+  syncing on reconnect, and the JSON Resume export/import pair. The dashboard,
+  the data layer, and account deletion are already in place; this is the half
+  that makes an account worth having.
 - **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
 - **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
 
@@ -278,4 +383,20 @@ The plan says ship M0 before starting M1, and get a week of real feedback before
 - Fixtures live in `src/test/fixtures/resumes.ts` with **hardcoded ids and literal dates** — `createId()` and `openDateRange()` are nondeterministic and would break the determinism tests.
 - Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `HTMLDialogElement.showModal`/`close`, `ResizeObserver`, and `URL.createObjectURL`.
 - **Email and URL are plain text in the schema**, validated by `isValidEmail`/`isValidUrl`. See the P4 note; do not "fix" this by putting `z.email()` back.
+- **Auth.js's Prisma adapter needs `User.emailVerified`.** Without it sign-in
+  fails with `Unknown argument 'emailVerified'`, which reads as a Prisma bug
+  rather than a schema gap. There is deliberately no `image` column — the
+  Google profile mapper in `buildAuthConfig` drops the avatar URL.
+- **A `"use server"` module may only export async functions.** A type export is
+  fine (erased); a plain object export fails the build.
+- **`@prisma/client-runtime-utils` must stay a direct dependency** while the
+  generated client lives outside `node_modules`.
+- **Never gate authorization in `proxy.ts` alone.** Server Actions are reachable
+  by direct POST, so the gate belongs in the actions and in the data layer;
+  the route-level check is for the redirect, not for the security.
+- **Auth.js's `signIn(..., { redirect: false })` returns failures as a URL**
+  rather than throwing, so an action must inspect what it got back or a mail
+  failure is reported to the user as success.
+- **`getByRole("alert")` is ambiguous in Playwright against a Next app** — the
+  route announcer always matches.
 - M4-T1 (resume import) reuses `lib/xray/extract.ts` wholesale — the biggest onboarding unlock for the least new code.

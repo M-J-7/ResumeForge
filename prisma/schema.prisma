@@ -28,9 +28,22 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+
+  /// Set by Auth.js when the address is proven — by following a magic link,
+  /// or by Google asserting it. Required by the adapter, and meaningful in
+  /// its own right: it is the only evidence we hold that this address
+  /// belongs to whoever is signing in.
+  ///
+  /// There is deliberately no `image` column beside it. Auth.js's default
+  /// Google profile mapping would store an avatar URL; §7 does not ask for
+  /// one, nothing renders one, and an unused piece of personal data is a
+  /// liability rather than a feature. `buildAuthConfig` maps the profile
+  /// explicitly so the field is never sent.
+  emailVerified DateTime?
+
   createdAt DateTime @default(now())
 
   resumes  Resume[]

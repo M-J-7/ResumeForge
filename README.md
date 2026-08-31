@@ -1,16 +1,26 @@
 # ATS Resume Builder
 
-Build a single-column resume and download it as PDF, DOCX, and plain text. Runs entirely in the
-browser: no account, no server-side rendering of your document, and nothing uploaded.
+Build a single-column resume and download it as PDF, DOCX, and plain text. The builder runs
+entirely in the browser — no account needed, no server-side rendering of your document, nothing
+uploaded. An optional passwordless account syncs resumes between devices; nothing is sent to the
+server until you save it there.
 
 ## Getting started
 
 ```bash
 pnpm install
+cp .env.example .env   # then set AUTH_SECRET
+pnpm db:migrate
 pnpm dev
 ```
 
 Then open <http://localhost:3000>.
+
+`.env.example` documents every variable. Only two matter for local development: `DATABASE_URL` and
+`AUTH_SECRET`. With `AUTH_DEV_OUTBOX` set (it is, in the example), sign-in emails are **written to
+that directory as JSON** instead of being sent, so the whole magic-link flow works without an email
+account. That transport refuses to run under `NODE_ENV=production`; a real deploy needs
+`EMAIL_SERVER`.
 
 `predev` and `prebuild` run `scripts/sync-public-fonts.mjs`, which copies the vendored font files
 and pdfjs's worker into `public/`. Both are generated and gitignored — the ~2.8MB of fonts lives in
@@ -49,6 +59,10 @@ docker run -p 3000:3000 ats-resume-builder
 
 The image is `node:20-bookworm-slim`, multi-stage, and runs as a non-root user.
 
+The volume holds `DATABASE_URL`'s SQLite file. Set `AUTH_SECRET`, `AUTH_URL`, and `EMAIL_SERVER`
+(plus `EMAIL_FROM`) in the environment; without a mail server, sign-in fails at the first attempt
+with an error that says exactly which variable is missing.
+
 ## Documentation
 
 | File                     | Contents                                               |
@@ -65,6 +79,10 @@ an ordered list of semantic blocks carrying keep-together hints — the four bre
 once, and all three emitters read them. `lib/emit/{pdf,docx,text}/` render those blocks;
 `lib/emit/shared/` holds the composition DOCX and TXT must agree on. The preview renders the _same_
 PDF blob the download hands over, so the two cannot drift.
+
+`server/` is everything an account touches: `db.ts` (SQLite plus the four required pragmas),
+`auth/` (Auth.js, passwordless only, with mail delivery behind an injectable transport),
+`resumes.ts` and `accounts.ts` (every query scoped by `userId` as an argument, never inferred).
 
 ## Claims
 

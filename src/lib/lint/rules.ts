@@ -68,8 +68,15 @@ function allBullets(doc: ResumeDocument): BulletRef[] {
   return refs;
 }
 
-/** Total words across everything that renders — the basis for the length rule. */
-function documentWordCount(doc: ResumeDocument): number {
+/**
+ * Total words across everything that renders — the basis for the length rule.
+ *
+ * Exported because the dashboard denormalizes this into `Resume.wordCount`
+ * (M2-T1). A second definition of "word count" would let the number on the
+ * dashboard disagree with the number in the checklist, which reads as a bug
+ * in whichever one the user looked at second.
+ */
+export function documentWordCount(doc: ResumeDocument): number {
   return buildDocument(doc).reduce((total, block) => {
     switch (block.type) {
       case "summary":

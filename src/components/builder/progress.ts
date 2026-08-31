@@ -129,6 +129,20 @@ export function isReadyToDownload(doc: ResumeDocument): boolean {
   return progress.contact?.status === "complete" && hasEvidence;
 }
 
+/**
+ * True when the document holds anything a person actually typed.
+ *
+ * Used by draft claiming (M2-T3) to decide whether a browser draft is worth
+ * offering to save. A pristine document created by simply opening the
+ * builder is not; prompting to save it teaches people to dismiss the prompt.
+ *
+ * Defined in terms of `stepProgress` so "empty" means the same thing here
+ * as it does in the indicator the user has already been reading.
+ */
+export function hasAnyContent(doc: ResumeDocument): boolean {
+  return Object.values(stepProgress(doc)).some((step) => step.status !== "empty");
+}
+
 export function completedCount(doc: ResumeDocument): { done: number; total: number } {
   const progress = stepProgress(doc);
   const entries = Object.values(progress);
