@@ -295,3 +295,28 @@ test("refuses indexing on a deployment with no configured origin", async ({ requ
   expect(robots).toContain("Disallow: /");
   expect(robots).not.toContain("Allow: /");
 });
+
+test("builds absolute URLs from the runtime origin, not the build's", async ({ page }) => {
+  // Prerendering the marketing pages would freeze `metadataBase` as it was at
+  // build time, and an image built in CI has no idea what host it will run
+  // on. The symptom is silent: correct-looking pages whose canonical links
+  // and social cards all point somewhere else.
+  await page.goto("/privacy");
+
+  const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
+  const ogUrl = await page.locator('meta[property="og:url"]').getAttribute("content");
+
+  expect(canonical).toContain("http://localhost:3000");
+  expect(ogUrl).toContain("http://localhost:3000");
+});
+
+test("titles read as a page name plus the product, exactly once", async ({ page }) => {
+  await page.goto("/privacy");
+  await expect(page).toHaveTitle("Privacy — ATS Resume Builder");
+
+  // The landing page owns its title outright rather than inheriting the
+  // template, which would otherwise append the product name to a title that
+  // already carries it.
+  await page.goto("/");
+  await expect(page).toHaveTitle(/^ATS Resume Builder — free downloads/);
+});

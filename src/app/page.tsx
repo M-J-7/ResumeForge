@@ -61,6 +61,20 @@ const HOW_IT_WORKS = [
   },
 ];
 
+/**
+ * Rendered per request so its metadata reads the runtime environment.
+ *
+ * `metadataBase` — and with it every canonical and Open Graph URL — comes
+ * from the deployment's origin. Prerendering this page would freeze the
+ * origin as it was at *build* time, and an image built in CI has no idea
+ * what host it will be run on. The symptom is silent: correct-looking pages
+ * whose canonical links and social cards all point at `localhost`.
+ *
+ * The cost is rendering a page of static text per request, which for a
+ * single-container deployment with no CDN in front of it is nothing.
+ */
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col">

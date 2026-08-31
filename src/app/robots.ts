@@ -15,6 +15,18 @@
 import type { MetadataRoute } from "next";
 import { isPublicDeployment, siteUrl } from "@/lib/site";
 
+/**
+ * Evaluated per request, not at build time.
+ *
+ * The origin comes from the environment, and the environment at build time is
+ * not the environment at run time — an image built in CI and run in
+ * production would otherwise bake in CI's answer. Since that answer is "no
+ * origin configured", the production site would serve a `robots.txt` that
+ * disallows everything, and nobody would notice until the search traffic
+ * never arrived.
+ */
+export const dynamic = "force-dynamic";
+
 export default function robots(): MetadataRoute.Robots {
   if (!isPublicDeployment()) {
     return { rules: [{ userAgent: "*", disallow: "/" }] };

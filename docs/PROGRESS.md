@@ -594,6 +594,17 @@ The pages and metadata a product needs before anyone outside can reach it.
   resume on the account, and `better-sqlite3` is synchronous, so a tight loop
   over it stalls the event loop for everyone.
 
+#### Prerendering would have shipped the wrong URLs
+
+`robots.txt`, `sitemap.xml`, and the three marketing pages were all static,
+which means their absolute URLs were frozen as they were at **build** time —
+and an image built in CI has no idea what host it will run on. The production
+site would have served a `robots.txt` that disallows everything and canonical
+links pointing at `localhost`, and nothing would have failed: the pages render
+correctly, the search traffic simply never arrives. All five are now
+`force-dynamic`, which for a single-container deployment with no CDN costs
+nothing.
+
 #### The rate limiter was storing personal data
 
 A key like `signin:email:ada@example.com` puts an address in a table that no
