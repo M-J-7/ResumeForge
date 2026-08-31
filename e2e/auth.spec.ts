@@ -105,6 +105,7 @@ async function claimADraft(page: Page, name: string): Promise<void> {
 
 /** Requests a link for `email` and returns the URL that arrived. */
 async function requestSignInLink(page: Page, email: string): Promise<string> {
+  const already = mail.messages.length;
   await page.goto("/signin");
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Email me a sign-in link" }).click();
@@ -112,7 +113,7 @@ async function requestSignInLink(page: Page, email: string): Promise<string> {
   await expect(page.getByRole("heading", { name: "Check your email" })).toBeVisible();
   await expect(page.getByText(email)).toBeVisible();
 
-  return signInLinkFrom(await mail.waitFor(email));
+  return signInLinkFrom(await mail.waitFor(email, { after: already }));
 }
 
 async function signIn(page: Page, email: string): Promise<void> {
@@ -295,4 +296,86 @@ test("deletes the account and everything on it (M2-T6)", async ({ page }) => {
 
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+});
+
+/* -------------------------------------------------------------------------- */
+/* Sync (M2-T4)                                                                */
+/* -------------------------------------------------------------------------- */
+
+/** The builder's sync indicator, which carries its state as a data attribute. */
+function syncStatus(page: Page) {
+  return page.locator("[data-sync-status]");
+}
+
+test("keeps the guest builder entirely local (D6)", async ({ page }) => {
+  await page.goto("/builder");
+  // No account in play means no push, and the wording has to keep saying so —
+  // the promise on the landing page depends on it.
+  await expect(syncStatus(page)).toHaveAttribute("data-sync-status", "idle");
+  await expect(page.getByText("Saved in this browser only")).toBeVisible();
+});
+
+test("edits made on one device appear on another (M2-T4)", async ({ page, browser }) => {
+  const email = uniqueEmail("sync");
+  await signIn(page, email);
+  await claimADraft(page, "Alan Turing");
+
+  // `exact` matters: the dashboard header also has an "Open the builder"
+  // link, which a substring match reaches first and which carries no id.
+  await page.getByRole("link", { name: "Open", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/builder\?resume=/);
+  const builderUrl = page.url();
+
+  await page.getByLabel("Full name").fill("Alan Turing (updated)");
+  await expect(syncStatus(page)).toHaveAttribute("data-sync-status", "synced", {
+    timeout: 15_000,
+  });
+
+  // A second browser, signed into the same account. Nothing is shared between
+  // the two but the server.
+  const second = await browser.newContext();
+  const other = await second.newPage();
+  try {
+    await signIn(other, email);
+    await other.goto(builderUrl);
+    await expect(other.getByLabel("Full name")).toHaveValue("Alan Turing (updated)");
+  } finally {
+    await second.close();
+  }
+});
+
+test("holds offline edits locally and sends them on reconnect (M2-T4)", async ({
+  page,
+  context,
+}) => {
+  const email = uniqueEmail("offline");
+  await signIn(page, email);
+  await claimADraft(page, "Grace Hopper");
+
+  // `exact` matters: the dashboard header also has an "Open the builder"
+  // link, which a substring match reaches first and which carries no id.
+  await page.getByRole("link", { name: "Open", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/builder\?resume=/);
+  const builderUrl = page.url();
+
+  await context.setOffline(true);
+  await page.getByLabel("Full name").fill("Grace Hopper (offline edit)");
+
+  // Not an error state: the edit is already durable in this browser, and
+  // telling someone on a train that something failed would have them stop
+  // typing over work that is perfectly safe.
+  await expect(syncStatus(page)).toHaveAttribute("data-sync-status", "offline", {
+    timeout: 15_000,
+  });
+  await expect(page.getByText(/back online/)).toBeVisible();
+
+  await context.setOffline(false);
+  await expect(syncStatus(page)).toHaveAttribute("data-sync-status", "synced", {
+    timeout: 20_000,
+  });
+
+  // And the server really has it: a fresh load of the same URL shows the edit
+  // that was made while there was no connection.
+  await page.goto(builderUrl);
+  await expect(page.getByLabel("Full name")).toHaveValue("Grace Hopper (offline edit)");
 });

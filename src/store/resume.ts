@@ -25,6 +25,7 @@ import {
   type CommitOptions,
   type History,
 } from "./history";
+import { createRemoteSync, type RemoteSync, type SyncStatus, type SyncTarget } from "./sync";
 import { createEmptyResume } from "@/lib/resume/factory";
 import { safeMigrate } from "@/lib/resume/migrate";
 import type {
@@ -49,6 +50,20 @@ export interface ResumeState {
   /** Set when a persisted draft existed but could not be migrated. */
   loadError: string | null;
 
+  /**
+   * The account resume being edited, or null for a guest draft (M2-T4).
+   * Guest is still the default: the builder never requires an account.
+   */
+  remoteId: string | null;
+  /** Where the open document currently lives. Drives the sync indicator. */
+  syncStatus: SyncStatus;
+  /**
+   * Pages, as measured from the rendered PDF by the preview (D3 — measured
+   * from the artifact, never predicted). Null until something has rendered.
+   * Pushed to the server so the dashboard can show it without rendering.
+   */
+  measuredPageCount: number | null;
+
   document: () => ResumeDocument;
   canUndo: () => boolean;
   canRedo: () => boolean;
@@ -59,6 +74,18 @@ export interface ResumeState {
   redo: () => void;
   flush: () => Promise<void>;
   clearAll: () => Promise<void>;
+
+  /**
+   * Points the store at an account resume and loads `document` into it.
+   *
+   * Pass `unsynced` when `document` came from this browser rather than from
+   * the server — it is then pushed immediately, and recorded as not yet
+   * confirmed, so closing the tab before the push lands does not lose it.
+   */
+  attachRemote: (input: { id: string; document: ResumeDocument; unsynced?: boolean }) => void;
+  /** Returns to guest editing — what signing out leaves behind. */
+  detachRemote: () => void;
+  setMeasuredPageCount: (pageCount: number | null) => void;
 
   setContact: (contact: Contact, options?: CommitOptions) => void;
   setSettings: (settings: Partial<Settings>) => void;
@@ -114,13 +141,76 @@ export function configurePersistence(
   draftStore = createDraftStore(backend, options);
 }
 
+/**
+ * The queue that pushes to the account (M2-T4), or null when there is no
+ * account in play — which includes every guest session and every test that
+ * has not asked for one.
+ *
+ * Injected the same way the persistence backend is, and for the same reason:
+ * the store must remain importable and fully functional with no server
+ * anywhere near it.
+ */
+let remoteSync: RemoteSync | null = null;
+
+export function configureRemoteSync(
+  target: SyncTarget | null,
+  options?: Parameters<typeof createRemoteSync>[1],
+): void {
+  remoteSync?.dispose();
+  remoteSync = target
+    ? createRemoteSync(target, {
+        ...options,
+        onStatusChange: (status) => {
+          useResumeStore.setState({ syncStatus: status });
+          // Once the server has confirmed the newest revision, the local copy
+          // is no longer ahead of it. Recorded so a reload knows which side
+          // to believe without comparing two machines' clocks.
+          if (status === "synced") {
+            const state = useResumeStore.getState();
+            draftStore.save({
+              document: state.history.present,
+              savedAt: Date.now(),
+              remoteId: state.remoteId,
+              pendingSync: false,
+            });
+          }
+          options?.onStatusChange?.(status);
+        },
+      })
+    : null;
+  if (!target) useResumeStore.setState({ syncStatus: "idle" });
+}
+
+/** Exposed so the builder can flush and retry without reaching into the store. */
+export function activeRemoteSync(): RemoteSync | null {
+  return remoteSync;
+}
+
 export const useResumeStore = create<ResumeState>((set, get) => {
+  /**
+   * Writes the document everywhere it belongs.
+   *
+   * Local first and always — that write does not depend on a network, an
+   * account, or a server being up. The remote push is queued behind it and
+   * is allowed to fail.
+   */
+  const persist = (document: ResumeDocument) => {
+    const remoteId = get().remoteId;
+    draftStore.save({
+      document,
+      savedAt: Date.now(),
+      remoteId,
+      pendingSync: remoteId !== null,
+    });
+    remoteSync?.queue(document);
+  };
+
   /** Records a document change in history and queues an autosave. */
   const applyChange = (next: ResumeDocument, options?: CommitOptions) => {
     const history = commit(get().history, next, options);
     if (history === get().history) return;
     set({ history });
-    draftStore.save({ document: history.present, savedAt: Date.now() });
+    persist(history.present);
   };
 
   return {
@@ -128,6 +218,9 @@ export const useResumeStore = create<ResumeState>((set, get) => {
     hydrated: false,
     externalRevision: 0,
     loadError: null,
+    remoteId: null,
+    syncStatus: "idle",
+    measuredPageCount: null,
 
     document: () => get().history.present,
     canUndo: () => canUndo(get().history),
@@ -151,7 +244,15 @@ export const useResumeStore = create<ResumeState>((set, get) => {
         hydrated: true,
         loadError: null,
         externalRevision: get().externalRevision + 1,
+        // A draft that was last edited against an account keeps that link, so
+        // reopening `/builder` with no query string continues the resume the
+        // user was on rather than silently forking a guest copy of it.
+        remoteId: draft.remoteId ?? null,
       });
+      remoteSync?.setResumeId(draft.remoteId ?? null);
+      // Edits made while the server was unreachable go out as soon as the
+      // tab is open again, without waiting for the next keystroke.
+      if (draft.remoteId && draft.pendingSync) remoteSync?.queue(result.document);
     },
 
     update(updater, options) {
@@ -162,25 +263,61 @@ export const useResumeStore = create<ResumeState>((set, get) => {
       const history = undo(get().history);
       if (history === get().history) return;
       set({ history, externalRevision: get().externalRevision + 1 });
-      draftStore.save({ document: history.present, savedAt: Date.now() });
+      persist(history.present);
     },
 
     redo() {
       const history = redo(get().history);
       if (history === get().history) return;
       set({ history, externalRevision: get().externalRevision + 1 });
-      draftStore.save({ document: history.present, savedAt: Date.now() });
+      persist(history.present);
     },
 
-    flush: () => draftStore.flush(),
+    // Flushes local first: it is the copy that must survive the tab closing.
+    async flush() {
+      await draftStore.flush();
+      await remoteSync?.flush();
+    },
 
     async clearAll() {
       await draftStore.clear();
+      remoteSync?.setResumeId(null);
       set({
         history: createHistory(createEmptyResume()),
         loadError: null,
         externalRevision: get().externalRevision + 1,
+        remoteId: null,
+        syncStatus: "idle",
       });
+    },
+
+    attachRemote({ id, document, unsynced = false }) {
+      set({
+        remoteId: id,
+        history: reset(document),
+        hydrated: true,
+        loadError: null,
+        externalRevision: get().externalRevision + 1,
+      });
+      remoteSync?.setResumeId(id);
+
+      if (unsynced) {
+        // Straight out, rather than waiting for the next keystroke — the
+        // user may have no more edits to make.
+        persist(document);
+      } else {
+        draftStore.save({ document, savedAt: Date.now(), remoteId: id, pendingSync: false });
+      }
+    },
+
+    detachRemote() {
+      remoteSync?.setResumeId(null);
+      set({ remoteId: null, syncStatus: "idle" });
+    },
+
+    setMeasuredPageCount(pageCount) {
+      if (get().measuredPageCount === pageCount) return;
+      set({ measuredPageCount: pageCount });
     },
 
     setContact(contact, options) {
@@ -240,14 +377,20 @@ export function installAutosaveFlush(): () => void {
   const onVisibility = () => {
     if (document.visibilityState === "hidden") flush();
   };
+  // Coming back online is the one moment a queued push is certain to
+  // succeed. Waiting out the backoff instead would leave the indicator
+  // saying "on this device" long after the connection returned.
+  const onOnline = () => remoteSync?.retryNow();
 
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("blur", flush);
   window.addEventListener("pagehide", flush);
+  window.addEventListener("online", onOnline);
 
   return () => {
     document.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("blur", flush);
     window.removeEventListener("pagehide", flush);
+    window.removeEventListener("online", onOnline);
   };
 }

@@ -16,8 +16,11 @@ import { CertificationsStep } from "./steps/CertificationsStep";
 import { CustomStep } from "./steps/CustomStep";
 import { Button } from "@/components/ui/control";
 import { PreviewPane } from "@/components/preview/PreviewPane";
+import { SyncStatus } from "./SyncStatus";
 import { cn } from "@/lib/utils";
-import { installAutosaveFlush, useResumeStore } from "@/store/resume";
+import { configureRemoteSync, installAutosaveFlush, useResumeStore } from "@/store/resume";
+import { createDraftStore, idbBackend } from "@/store/persistence";
+import { safeMigrate } from "@/lib/resume/migrate";
 
 const STEP_COMPONENTS: Record<string, () => React.JSX.Element | null> = {
   contact: ContactStep,
@@ -38,7 +41,15 @@ const STEP_COMPONENTS: Record<string, () => React.JSX.Element | null> = {
  */
 type MobileView = "edit" | "preview";
 
-export function BuilderShell() {
+/** A resume opened from the signed-in account, if there is one (M2-T4). */
+export interface RemoteResume {
+  id: string;
+  title: string;
+  /** The server's copy, serialized. */
+  document: string;
+}
+
+export function BuilderShell({ remote }: { remote?: RemoteResume }) {
   const [activeStep, setActiveStep] = useState(DEFAULT_STEP_ID);
   const [mobileView, setMobileView] = useState<MobileView>("edit");
   const { open, setOpen } = useCommandPalette();
@@ -55,10 +66,48 @@ export function BuilderShell() {
   // re-syncs uncontrolled inputs without touching the caret mid-keystroke.
   const externalRevision = useResumeStore((s) => s.externalRevision);
 
+  const attachRemote = useResumeStore((s) => s.attachRemote);
+
   useEffect(() => {
-    void hydrate();
-    return installAutosaveFlush();
-  }, [hydrate]);
+    const teardown = installAutosaveFlush();
+
+    if (!remote) {
+      configureRemoteSync(null);
+      void hydrate();
+      return teardown;
+    }
+
+    void (async () => {
+      // Imported here rather than at the top of the file so a guest session
+      // never loads it. It reaches a Server Action, and through it the whole
+      // `next-auth` tree — which a signed-out visitor has no use for, and
+      // which cannot be resolved under the jsdom component tests at all.
+      const { createServerSyncTarget } = await import("./serverSync");
+      configureRemoteSync(createServerSyncTarget());
+
+      // The local draft is consulted *before* the server copy is adopted.
+      // If this browser holds edits that never reached the account — made
+      // offline, or with the tab closed mid-push — they are newer than what
+      // the server has, and overwriting them with a stale server copy would
+      // be the one unrecoverable outcome in the whole sync design.
+      const draft = await createDraftStore(idbBackend).read();
+      const unsyncedLocal =
+        draft?.remoteId === remote.id && draft.pendingSync === true
+          ? safeMigrate(draft.document)
+          : null;
+
+      if (unsyncedLocal?.ok) {
+        attachRemote({ id: remote.id, document: unsyncedLocal.document, unsynced: true });
+        return;
+      }
+
+      const server = safeMigrate(JSON.parse(remote.document));
+      if (server.ok) attachRemote({ id: remote.id, document: server.document });
+      else void hydrate();
+    })();
+
+    return teardown;
+  }, [hydrate, attachRemote, remote]);
 
   // Undo/redo shortcuts. Registered on the window so they work wherever
   // focus happens to be, which is the point of a document-level action.
@@ -171,7 +220,7 @@ export function BuilderShell() {
 
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Saved in this browser only. Nothing is uploaded.{" "}
+              <SyncStatus />{" "}
               <kbd className="rounded border border-zinc-300 px-1 dark:border-zinc-700">Ctrl</kbd>
               {" + "}
               <kbd className="rounded border border-zinc-300 px-1 dark:border-zinc-700">K</kbd> to

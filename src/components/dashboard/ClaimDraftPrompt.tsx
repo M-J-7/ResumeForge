@@ -27,6 +27,7 @@
  */
 
 import { useCallback, useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/control";
 import { hasAnyContent } from "@/components/builder/progress";
@@ -40,7 +41,7 @@ type State =
   | { phase: "none" }
   | { phase: "offer"; serialized: string; summary: string }
   | { phase: "error"; message: string; serialized: string; summary: string }
-  | { phase: "claimed"; title: string };
+  | { phase: "claimed"; title: string; id: string };
 
 /** A one-line description of the draft, so the offer is about something. */
 function describeDraft(fullName: string, wordCount: number): string {
@@ -95,7 +96,7 @@ export function ClaimDraftPrompt() {
         }
         // Only now is it safe to drop the local copy.
         await createDraftStore(idbBackend).clear();
-        setState({ phase: "claimed", title: result.value.title });
+        setState({ phase: "claimed", title: result.value.title, id: result.value.id });
         router.refresh();
       });
     },
@@ -111,7 +112,14 @@ export function ClaimDraftPrompt() {
         className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200"
       >
         Saved <strong className="font-medium">{state.title}</strong> to your account. It is no
-        longer stored only in this browser.
+        longer stored only in this browser.{" "}
+        <Link
+          href={`/builder?resume=${encodeURIComponent(state.id)}`}
+          className="underline underline-offset-2"
+        >
+          Keep editing it
+        </Link>
+        .
       </p>
     );
   }

@@ -24,8 +24,14 @@ export interface MailServer {
   /** `smtp://…` — what the app should be given as `EMAIL_SERVER`. */
   url: string;
   messages: CapturedMail[];
-  /** Resolves with the first message to `address` that arrives, or rejects. */
-  waitFor(address: string, timeoutMs?: number): Promise<CapturedMail>;
+  /**
+   * Resolves with a message to `address`.
+   *
+   * `after` skips messages already in the log — a test that signs the same
+   * account in twice would otherwise be handed the first link again, which
+   * has already been spent.
+   */
+  waitFor(address: string, options?: { after?: number; timeoutMs?: number }): Promise<CapturedMail>;
   close(): Promise<void>;
 }
 
@@ -88,11 +94,11 @@ export async function startMailServer(port: number = MAIL_PORT): Promise<MailSer
     url: `smtp://127.0.0.1:${port}`,
     messages,
 
-    async waitFor(address, timeoutMs = 20_000) {
+    async waitFor(address, { after = 0, timeoutMs = 20_000 } = {}) {
       const wanted = address.toLowerCase();
       const deadline = Date.now() + timeoutMs;
       for (;;) {
-        const found = messages.find((message) => message.to.includes(wanted));
+        const found = messages.slice(after).find((message) => message.to.includes(wanted));
         if (found) return found;
         if (Date.now() > deadline) {
           throw new Error(

@@ -328,6 +328,60 @@ check can be forgotten on.
   and states plainly that JSON export does not exist yet rather than implying
   it does.
 
+### P11 — Sync (M2-T4)
+
+Completes M2-T4: "edits on device A appear on device B; offline edits sync on
+reconnect; deletes are hard deletes."
+
+- `src/store/sync.ts` — the push queue. Pure module: no server action, no
+  `next/*` import, nothing to stub. Debounced at 2s (the local autosave stays
+  at 500ms and never waits on it), retries with a levelling-off backoff, and
+  short-circuits the wait when `online` fires.
+- `src/app/builder/actions.ts` — one action, re-reading the session and
+  passing the user id into the `where` clause. The document arrives untrusted
+  and goes through the migration chain, so a direct POST cannot write
+  arbitrary text into the content column.
+- `src/components/builder/serverSync.ts` — the concrete push. **Dynamically
+  imported**, so a guest session never loads the `next-auth` tree behind it.
+- `/builder?resume=<id>` loads a saved resume server-side. Without the
+  parameter, and for anyone signed out, the builder behaves exactly as it did
+  in M0 — D6 survives accounts existing, and an E2E test asserts it.
+- `SyncStatus` in the builder footer, plus Open links from the dashboard and
+  from the claim confirmation.
+- 11 unit tests for the queue, 3 E2E tests: guest stays local, an edit on one
+  browser appears in another, and an offline edit reaches the server on
+  reconnect.
+
+#### Local wins over the server, but only when it has something to win with
+
+On opening `?resume=X`, the local draft is consulted first. If it names the
+same resume **and** carries `pendingSync: true`, this browser holds edits the
+server never received — made offline, or with the tab closed mid-push — and
+they are adopted and pushed. Otherwise the server copy wins.
+
+`pendingSync` is a flag rather than a timestamp comparison on purpose.
+Deciding "is local newer?" by comparing a browser clock to a server clock is
+wrong whenever the two disagree, and a user with a fast clock would silently
+overwrite good server state. The flag is set and cleared by the same device
+that owns both events.
+
+#### Two bugs the tests caught
+
+1. **The backoff skipped its first entry.** `attempt += 1` ran before the
+   delay was read, so the first retry waited 5s instead of 1s. Found by the
+   test that asserts each successive wait, not by the one that asserts a
+   retry happens at all.
+2. **`getByRole("link", { name: "Open" })` matched "Open the builder"** in the
+   dashboard header — a substring match, reached first, carrying no id. The
+   test looked like a routing bug for a few minutes.
+
+#### Page count comes from the preview, not from the server
+
+`Resume.pageCount` is measured from the rendered PDF (D3) and pushed with the
+document. The server does not render and never guesses: a resume that has not
+been previewed shows "—" on the dashboard rather than a predicted number that
+could disagree with the download.
+
 ---
 
 ## Next
@@ -352,11 +406,10 @@ asserted, with only the live consent round trip owed.
 
 ### Unblocked work, in plan order
 
-- **P11 Sync + export (rest of M2-T4, rest of M2-T6)** — server autosave
-  alongside local, opening a saved resume back into the builder, offline edits
-  syncing on reconnect, and the JSON Resume export/import pair. The dashboard,
-  the data layer, and account deletion are already in place; this is the half
-  that makes an account worth having.
+- **P12 JSON Resume export/import (rest of M2-T6)** — the interop format, a
+  trust signal, and GDPR data-export for free. Its acceptance is "export
+  re-imports cleanly", so the importer is part of it. The privacy policy
+  currently states this gap outright; closing it removes that paragraph.
 - **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
 - **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
 

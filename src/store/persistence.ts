@@ -47,6 +47,21 @@ export interface PersistedDraft {
   /** The raw document, migrated on read rather than on write (D10). */
   document: unknown;
   savedAt: number;
+  /**
+   * The account resume this draft mirrors, when there is one (M2-T4). Null
+   * or absent means a guest draft, which is still the default path.
+   */
+  remoteId?: string | null;
+  /**
+   * True while this browser holds edits the server has not confirmed.
+   *
+   * A flag rather than a timestamp comparison. Deciding "is local newer than
+   * the server copy?" by comparing a browser clock to a server clock is
+   * wrong whenever they disagree, and they disagree often enough that a
+   * user with a fast clock would silently overwrite good server state. The
+   * flag is set and cleared by the same device that owns both events.
+   */
+  pendingSync?: boolean;
 }
 
 export interface DraftStore {

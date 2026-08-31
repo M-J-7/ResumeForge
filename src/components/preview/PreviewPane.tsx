@@ -24,6 +24,7 @@ export function PreviewPane({ className }: { className?: string }) {
   const { bytes, pageCount, rendering, error } = usePdfPreview();
   const resume = useResumeStore((s) => s.history.present);
   const update = useResumeStore((s) => s.update);
+  const setMeasuredPageCount = useResumeStore((s) => s.setMeasuredPageCount);
 
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
@@ -43,6 +44,13 @@ export function PreviewPane({ className }: { className?: string }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
+
+  // The page count the account stores comes from here, not from an estimate:
+  // it is read back out of the PDF that was actually produced (D3), so the
+  // dashboard column and the download can never disagree.
+  useEffect(() => {
+    setMeasuredPageCount(pageCount > 0 ? pageCount : null);
+  }, [pageCount, setMeasuredPageCount]);
 
   // Fit is measured from the rendered artifact, never predicted (D3).
   useEffect(() => {

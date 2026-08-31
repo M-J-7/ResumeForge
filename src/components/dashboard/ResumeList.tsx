@@ -17,6 +17,7 @@
  */
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui/control";
 import {
@@ -155,6 +156,12 @@ export function ResumeList({ resumes }: { resumes: ResumeRow[] }) {
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/builder?resume=${encodeURIComponent(resume.id)}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-sky-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-sky-800 focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-sky-600 dark:hover:bg-sky-500"
+                >
+                  Open
+                </Link>
                 <Button disabled={pending} onClick={() => setRenaming(resume.id)}>
                   Rename
                 </Button>
