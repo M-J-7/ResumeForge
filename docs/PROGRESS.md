@@ -453,9 +453,14 @@ asserted, with only the live consent round trip owed.
 ### Unblocked work, in plan order
 
 - **M2-T5 Litestream** — the single largest tail risk in the architecture, and
-  the only part of M2 still outstanding. Needs an S3-compatible bucket. The
-  restore rehearsal is the deliverable, not the sidecar: an untested backup is
-  not a backup.
+  the only part of M2 still outstanding. Needs an S3-compatible bucket and a
+  Docker host. The config, the restore procedure, and the table to record RPO
+  and RTO into are written up in `docs/RUNBOOK.md`; **the rehearsal is the
+  deliverable**, and it is what is missing. An untested backup is not a backup.
+- **Running the container at all** — CI proves the image builds, not that it
+  serves. Two things have only been reasoned about: whether `better-sqlite3`'s
+  native binary survives Next's standalone tracing, and applying migrations to
+  the production volume. Both are in `docs/QA.md` check 4.
 - **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
 - **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
 

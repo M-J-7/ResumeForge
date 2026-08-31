@@ -6,9 +6,9 @@ when they are done.
 
 M0-T14 requires a manual pass before launch. Two of its acceptance criteria are
 listed as outstanding below — they are not optional, and M0 is not "shipped"
-until they are recorded here with a date and an outcome. M2-T2 adds a fourth
-item: the Google sign-in round trip, which needs credentials that do not exist
-in this environment.
+until they are recorded here with a date and an outcome. M2 adds three more,
+all needing an environment this one does not have: a Google Cloud project, a
+Docker host, and an S3-compatible bucket.
 
 ---
 
@@ -105,7 +105,49 @@ Set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`, with
 
 **Result:** _not yet run._
 
-### 4. Build a resume end-to-end on a real phone
+### 4. The container actually runs (M0-T13, M2)
+
+**Why this cannot be automated here:** there is no Docker daemon in the
+development environment. CI builds the image on every push, which proves it
+builds — not that it serves.
+
+Two things in particular have never been executed, only reasoned about:
+
+- [ ] `better-sqlite3` loads in the standalone output. It is a native addon
+      and `serverExternalPackages` keeps it out of the bundle, so the runtime
+      image has to carry the compiled `.node` binary. Next's output tracing
+      normally handles this; it resolves through `bindings`, which is dynamic.
+      If it is missing, the first request that touches the database fails.
+- [ ] `prisma migrate deploy` against the production volume creates the schema
+      (`docs/RUNBOOK.md`, first deploy). The runtime image deliberately does
+      not carry the CLI.
+
+Then, against a running container:
+
+- [ ] `/` and `/signin` render.
+- [ ] A magic link arrives through the real `EMAIL_SERVER` and signs in.
+- [ ] The database file is on the mounted volume and survives a container
+      restart.
+
+**Result:** _not yet run._
+
+### 5. Backup restore rehearsal (M2-T5)
+
+**Why this cannot be automated here:** needs an S3-compatible bucket and a
+Docker host. The procedure, the Litestream config, and the measurements to
+record are written up in [`docs/RUNBOOK.md`](RUNBOOK.md).
+
+This is the one owed item that is a _risk_ rather than a polish task. §10 of
+the execution plan names it as the largest tail risk in the architecture, and
+M2-T5's acceptance is explicitly the rehearsal, not the configuration.
+
+- [ ] Restore from a real replica after an ungraceful kill.
+- [ ] `PRAGMA integrity_check` passes on the restored file.
+- [ ] RPO and RTO measured and recorded in the runbook's table.
+
+**Result:** _not yet run._
+
+### 6. Build a resume end-to-end on a real phone
 
 **Why this cannot be automated here:** the criterion is about whether it is
 usable, not whether it renders. An emulator answers the wrong question.

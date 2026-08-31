@@ -71,6 +71,8 @@ with an error that says exactly which variable is missing.
 | `docs/PROGRESS.md`       | **What is done and where to pick up.** Read this first |
 | `docs/DECISIONS.md`      | Locked architecture decisions (D1–D14) and why         |
 | `docs/ATTRIBUTION.md`    | Font and data-source licensing                         |
+| `docs/RUNBOOK.md`        | Deploying, environment variables, backup and restore   |
+| `docs/QA.md`             | Manual checks that cannot run here, and what they owe  |
 
 ## Architecture in one paragraph
 
