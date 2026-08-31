@@ -28,6 +28,7 @@
  * limit is set low enough that 2× is still harmless.
  */
 
+import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getPrisma } from "@/server/db";
 
@@ -144,6 +145,33 @@ export async function consume(
   };
 }
 
+/**
+ * Builds a counter key that identifies a subject without storing it.
+ *
+ * An email address and an IP are both personal data, and a key like
+ * `signin:email:ada@example.com` puts an address in a table that no relation
+ * connects to a user — so **deleting an account would not delete it**, and
+ * someone who only ever requested a link and never signed in would be in
+ * there too. Neither is defensible when the product's position is that
+ * deletion means deletion (§9, M2-T6).
+ *
+ * Hashing fixes it at the source rather than by remembering to clean up:
+ * the same input always produces the same key, so the limit still works, and
+ * there is nothing personal in the table to delete in the first place.
+ *
+ * A plain SHA-256 with no secret, because the threat model here is a database
+ * or a backup being read, not an attacker testing guesses — and a keyed hash
+ * would tie every counter to `AUTH_SECRET`, so rotating the secret would
+ * silently reset every limit.
+ */
+export function signInKey(kind: "email" | "ip", subject: string): string {
+  const normalized = kind === "email" ? subject.trim().toLowerCase() : subject.trim();
+  const digest = createHash("sha256").update(`${kind}:${normalized}`).digest("hex");
+  // Half the digest: still 128 bits, and a shorter primary key on a table
+  // that is read on every sign-in attempt.
+  return `signin:${kind}:${digest.slice(0, 32)}`;
+}
+
 /** Human phrasing for a rejection, in minutes rather than milliseconds. */
 export function retryAfterMessage(retryAfterMs: number): string {
   const minutes = Math.max(1, Math.ceil(retryAfterMs / 60_000));
@@ -162,9 +190,9 @@ export async function checkSignInAllowed(
   ip: string | null,
   options: { client?: PrismaClient; now?: number; sweep?: boolean } = {},
 ): Promise<RateLimitResult> {
-  const byEmail = await consume(`signin:email:${email.toLowerCase()}`, SIGN_IN_PER_EMAIL, options);
+  const byEmail = await consume(signInKey("email", email), SIGN_IN_PER_EMAIL, options);
   const byIp = ip
-    ? await consume(`signin:ip:${ip}`, SIGN_IN_PER_IP, options)
+    ? await consume(signInKey("ip", ip), SIGN_IN_PER_IP, options)
     : { allowed: true, remaining: SIGN_IN_PER_IP.limit, retryAfterMs: 0 };
 
   if (byEmail.allowed && byIp.allowed) {

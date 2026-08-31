@@ -17,6 +17,7 @@ import {
   consume,
   retryAfterMessage,
   shouldSweep,
+  signInKey,
 } from "./rate-limit";
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -152,7 +153,8 @@ describe("checkSignInAllowed", () => {
       await checkSignInAllowed("ada@example.com", "203.0.113.9", at(T0));
     }
     const rows = await client.$queryRawUnsafe<{ count: number | bigint }[]>(
-      `SELECT "count" FROM "RateLimit" WHERE "key" = 'signin:ip:203.0.113.9'`,
+      `SELECT "count" FROM "RateLimit" WHERE "key" = ?`,
+      signInKey("ip", "203.0.113.9"),
     );
     expect(Number(rows[0]?.count)).toBeGreaterThan(SIGN_IN_PER_EMAIL.limit);
   });
@@ -182,6 +184,30 @@ describe("checkSignInAllowed", () => {
     // never be locked out; the limit exists for automation, not for people.
     expect(SIGN_IN_PER_EMAIL.limit).toBeGreaterThanOrEqual(5);
     expect(SIGN_IN_PER_IP.limit).toBeGreaterThan(SIGN_IN_PER_EMAIL.limit);
+  });
+});
+
+describe("the counter table holds no personal data", () => {
+  it("stores neither the address nor the IP that a key identifies", async () => {
+    await checkSignInAllowed("ada@example.com", "203.0.113.9", at(T0));
+
+    const rows = await client.$queryRawUnsafe<{ key: string }[]>(`SELECT "key" FROM "RateLimit"`);
+    const keys = rows.map((row) => row.key).join(" ");
+
+    // Nothing relates this table to a User, so a row keyed by a raw address
+    // would survive account deletion — and would exist for people who only
+    // ever requested a link and never signed in.
+    expect(keys).not.toContain("ada@example.com");
+    expect(keys).not.toContain("203.0.113.9");
+    expect(rows).toHaveLength(2);
+  });
+
+  it("still identifies the same subject every time", () => {
+    expect(signInKey("email", "Ada@Example.com ")).toBe(signInKey("email", "ada@example.com"));
+    expect(signInKey("email", "ada@example.com")).not.toBe(signInKey("email", "bob@example.com"));
+    // The kind is part of the input, so an address and an IP that happened to
+    // hash alike could not share a counter.
+    expect(signInKey("ip", "ada@example.com")).not.toBe(signInKey("email", "ada@example.com"));
   });
 });
 

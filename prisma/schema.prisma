@@ -87,7 +87,7 @@ model ResumeVersion {
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   /// Immutable snapshot.
-  content String
+  content   String
   /// e.g. "Sent to Google, 12 Aug"
   label     String?
   createdAt DateTime @default(now())
@@ -116,7 +116,7 @@ model ParseCheck {
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   /// "PDF" | "DOCX"
-  format String
+  format        String
   /// Per-field pass/fail against ground truth.
   fieldRecovery String
   recoveryScore Int
@@ -178,7 +178,14 @@ model VerificationToken {
 /// restart: an in-process counter is reset by every deploy, and by every
 /// crash an attacker can provoke. One row per key, expired rows swept
 /// opportunistically.
+///
+/// **No relation to User, and none is needed** — because `key` is a hash, not
+/// an address. A key like `signin:email:ada@example.com` would be personal
+/// data in a table nothing cascades from, so account deletion would leave it
+/// behind, and it would exist for people who only ever requested a link.
+/// See `signInKey` in `src/server/rate-limit.ts`.
 model RateLimit {
+  /// `signin:email:<sha256>` / `signin:ip:<sha256>` / `export:<userId>`.
   key       String   @id
   count     Int      @default(0)
   expiresAt DateTime

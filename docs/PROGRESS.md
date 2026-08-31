@@ -594,6 +594,20 @@ The pages and metadata a product needs before anyone outside can reach it.
   resume on the account, and `better-sqlite3` is synchronous, so a tight loop
   over it stalls the event loop for everyone.
 
+#### The rate limiter was storing personal data
+
+A key like `signin:email:ada@example.com` puts an address in a table that no
+relation connects to a `User` — so **account deletion would not have removed
+it**, and it existed for people who only ever requested a link and never
+signed in. Neither is defensible when the product's position is that deletion
+means deletion.
+
+Fixed at the source rather than by remembering to clean up: `signInKey` hashes
+the subject, so the same input still maps to the same counter and there is
+nothing personal in the table to delete. A plain SHA-256 with no secret — a
+keyed hash would tie every counter to `AUTH_SECRET`, and rotating the secret
+would silently reset every limit.
+
 ---
 
 ## Next
