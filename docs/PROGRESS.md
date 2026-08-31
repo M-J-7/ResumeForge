@@ -428,6 +428,59 @@ of 400 would render a broken PDF rather than an ugly one.
   comma, which is the shape the builder's own guidance asks for. A city whose
   name contains a comma is the documented lossy case.
 
+### P13 — JD structure parser (M3-T3)
+
+The one piece of M3 that needs no external data, and the piece the rest of
+the scoring engine rests on.
+
+- `src/lib/jd/parse.ts` — splits a posting into sections and weights them.
+  Required 3, responsibilities 2, preferred 1, boilerplate 0 (§6's ratio,
+  with responsibilities placed between because a listed duty is what the job
+  _is_, while still not being stated as a bar).
+- `weightedLines` drops zero-weight sections entirely rather than returning
+  them with a weight of 0. "Ignore boilerplate entirely" has to mean a
+  company's own tech stack under _About us_ cannot contribute to a match at
+  all — otherwise a candidate looks like a fit for having read the page.
+- Per-line overrides: "Experience with Terraform (nice to have)" inside a
+  Requirements list is demoted individually. Real postings do this constantly,
+  and a section-level classification alone scores it as a hard bar.
+- `scripts/parse-jd.mjs` prints the split for a pasted posting, which is what
+  makes QA.md's manual check one command.
+- 62 tests, including a sweep over ten postings covering ten structural
+  conventions.
+
+#### Heading detection is shape first, words second
+
+"Requirements" appears mid-sentence. A line is treated as a heading only if
+it _looks_ like one — not a bullet, short, and either colon-terminated,
+markdown-marked, or unpunctuated. Only then is it classified by phrase.
+
+Five to eight unmarked words is genuinely ambiguous: "Who we are" and "The
+final scope will vary depending on requirements" have the same shape. What
+separates them is what comes next — a heading of that length introduces a
+list. Deciding on length alone splits paragraphs in half.
+
+#### The pattern table's order is the feature
+
+"Preferred Qualifications" contains "Qualifications". Test the general
+pattern first and every posting that separates the two collapses into one
+required block — losing exactly the distinction the module exists for. Same
+for boilerplate: "Perks & Benefits" has to be reached before anything that
+could read "benefits" as something asked of the candidate.
+
+#### Two mistakes worth remembering
+
+1. **Smart apostrophes.** Postings are pasted from styled web pages, so
+   "What you’ll do" arrives with U+2019. A pattern written with only `'`
+   silently fails on the commonest heading there is, and the section quietly
+   becomes `unknown`. Both forms are matched, and so is the uncontracted
+   "What you will do" — which the smoke test caught after the tests passed.
+2. **The Bash tool eats `` inside a heredoc.** Writing this file through a
+   `python - <<EOF` heredoc turned every `` word boundary into a literal
+   backspace character, and the whole pattern table stopped matching while
+   still looking correct on screen. Source files with regex escapes go
+   through the Write tool.
+
 ---
 
 ## Next
@@ -461,8 +514,9 @@ asserted, with only the live consent round trip owed.
   serves. Two things have only been reasoned about: whether `better-sqlite3`'s
   native binary survives Next's standalone tracing, and applying migrations to
   the production volume. Both are in `docs/QA.md` check 4.
-- **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
-- **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
+- **P14 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
+- **Scoring engine (M3-T4)** — blocked behind the taxonomy and the IDF corpus.
+  The structure parser it depends on (M3-T3) is done.
 
 ### The sequencing gate, restated
 
@@ -503,4 +557,8 @@ The plan says ship M0 before starting M1, and get a week of real feedback before
   failure is reported to the user as success.
 - **`getByRole("alert")` is ambiguous in Playwright against a Next app** — the
   route announcer always matches.
+- **Never write a source file containing regex escapes through a heredoc.**
+  The Bash tool unescapes heredoc content once, so `` reaches Python as
+  `` → a literal backspace byte in the file. The regex still _looks_
+  right. Use the Write tool for anything with backslashes.
 - M4-T1 (resume import) reuses `lib/xray/extract.ts` wholesale — the biggest onboarding unlock for the least new code.

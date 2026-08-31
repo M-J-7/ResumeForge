@@ -147,7 +147,35 @@ M2-T5's acceptance is explicitly the rehearsal, not the configuration.
 
 **Result:** _not yet run._
 
-### 6. Build a resume end-to-end on a real phone
+### 6. JD section split on ten real postings (M3-T3)
+
+**Why this cannot be automated here:** M3-T3'''s acceptance is a correct split
+on ten postings _collected from public listings_. Copying ten real postings
+into this repository would be republishing someone else'''s copyrighted text,
+and writing ten and calling them real would be worse. So the automated suite
+covers ten distinct structural **conventions** instead
+(`src/test/fixtures/job-descriptions.ts`), and the check against genuinely
+collected postings is here.
+
+```bash
+node scripts/parse-jd.mjs path/to/posting.txt   # or pipe it in on stdin
+```
+
+For each of ten postings, from ten different companies and at least three
+different job boards:
+
+- [ ] Every heading is given the kind you would have given it yourself.
+- [ ] Requirements and preferences end up in different sections — this is the
+      distinction the whole module exists for.
+- [ ] Nothing under `ignored` is something the posting actually asks of a
+      candidate.
+- [ ] No paragraph is split in the middle by a mis-read heading.
+- [ ] Record any heading wording that came back `unknown`; that is the list
+      of patterns to add.
+
+**Result:** _not yet run._
+
+### 7. Build a resume end-to-end on a real phone
 
 **Why this cannot be automated here:** the criterion is about whether it is
 usable, not whether it renders. An emulator answers the wrong question.
