@@ -17,7 +17,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy — ATS Resume Builder",
+  title: "Privacy",
   description: "What this app stores, where it stores it, and what it never collects.",
 };
 

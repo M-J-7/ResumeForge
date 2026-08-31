@@ -4,8 +4,12 @@
  * Positioning is constrained by D14 and §9: no "beat the bots", no
  * "guaranteed to pass", no invented interview-rate lift. Every claim here is
  * one we can actually substantiate — the downloads really are free, the
- * builder really does work without an account, and no resume content is ever
- * sent anywhere, because there is no server to send it to in M0.
+ * builder really does work without an account, and nothing is sent anywhere
+ * until the user signs in and asks for it.
+ *
+ * Revised when M2 added optional accounts. The hero used to say "there is no
+ * account", which stopped being true — and a landing page that overstates a
+ * privacy position is the same failure as one that overstates a result.
  *
  * The honest version is also the stronger one: "we won't write lies for you"
  * and "here is what the machine actually reads" are things no competitor
@@ -16,7 +20,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "ATS Resume Builder — free downloads, nothing uploaded",
+  // `absolute` so the root layout's "%s — ATS Resume Builder" template does
+  // not append the product name to a title that already carries it.
+  title: { absolute: "ATS Resume Builder — free downloads, nothing uploaded" },
   description:
     "Build a resume that parses cleanly. PDF, DOCX, and plain text, free forever. Works without an account, and your resume never leaves your browser.",
 };
@@ -27,8 +33,8 @@ const PROMISES = [
     body: "PDF, DOCX, and plain text. No paywall at the last step, no watermark, no account needed to get your own work back out.",
   },
   {
-    title: "Nothing is uploaded",
-    body: "Your resume is written to storage inside your browser and stays there. There is no server holding it, which is a stronger guarantee than a promise not to look.",
+    title: "Nothing is uploaded unless you ask",
+    body: "Without an account your resume is written to storage inside your browser and stays there. An account is optional, adds syncing between devices, and deletes on request — every resume, immediately, with no copy kept.",
   },
   {
     title: "No AI writes your resume",
@@ -65,8 +71,8 @@ export default function Home() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
             Build a single-column resume in three formats, download all of them for nothing, and
-            keep every word you wrote. It runs entirely in your browser — there is no account, and
-            your resume is never sent anywhere.
+            keep every word you wrote. It runs in your browser, and works without an account —
+            nothing is sent anywhere unless you sign in and save it.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <Link
@@ -76,7 +82,7 @@ export default function Home() {
               Start building
             </Link>
             <span className="text-sm text-zinc-500 dark:text-zinc-400">
-              No sign-up. Nothing to cancel.
+              No sign-up needed. Nothing to cancel.
             </span>
           </div>
         </div>

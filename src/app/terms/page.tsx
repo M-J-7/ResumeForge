@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms — ATS Resume Builder",
+  title: "Terms",
   description: "The terms covering use of this resume builder.",
 };
 
@@ -64,6 +64,29 @@ export default function TermsPage() {
       </section>
 
       <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+          If you create an account
+        </h2>
+        <p>
+          An account is optional and free, and exists so your resumes follow you between devices.
+          There is no password — you sign in with a link sent to your address, or with Google. Keep
+          access to that address; without it we cannot let you back in, because there is no other
+          proof that the account is yours.
+        </p>
+        <p>
+          You can delete any resume, or the whole account, at any time from your dashboard. Deletion
+          is immediate and permanent: no trash, no grace period, and no backup copy we can restore
+          from. Export everything first if you might want it — the button is on the same page, and
+          the format is one other tools read.
+        </p>
+        <p>
+          We may close an account that is being used to send sign-in mail to people who did not ask
+          for it, or to attack the service. That is the only reason we would, and your resumes
+          remain downloadable to you first wherever we are able to reach you.
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Fair use</h2>
         <p>
           Use this to build resumes — your own, or one you are helping someone else with. Do not use
@@ -76,7 +99,10 @@ export default function TermsPage() {
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Provided as-is</h2>
         <p>
           This is offered free and without warranty. We are not liable for the outcomes of your job
-          search, nor for data lost from your browser&rsquo;s storage.
+          search, nor for data lost from your browser&rsquo;s storage, nor for interruptions to the
+          service. Backups are taken and tested, but no backup is a promise — keep your own copy of
+          anything you would be sorry to lose. That advice is the same with an account as without
+          one, and it is honest rather than defensive: it is what we would tell a friend.
         </p>
       </section>
 

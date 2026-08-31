@@ -1,0 +1,47 @@
+/**
+ * The public origin, in one place.
+ *
+ * §12 Q2 is still open — no domain has been chosen. Everything that needs an
+ * absolute URL (canonical links, Open Graph, `robots.txt`, the sitemap) reads
+ * it from here, so answering that question is one environment variable rather
+ * than a search through the app.
+ *
+ * `AUTH_URL` is reused as the fallback because it already has to be the real
+ * public origin for sign-in links to work (see `docs/RUNBOOK.md`). Two
+ * variables that must agree are two variables that will eventually disagree.
+ */
+
+import { PRODUCT_NAME } from "./product";
+
+const DEVELOPMENT_ORIGIN = "http://localhost:3000";
+
+export function siteOrigin(): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.AUTH_URL;
+  if (!configured) return DEVELOPMENT_ORIGIN;
+  try {
+    return new URL(configured).origin;
+  } catch {
+    return DEVELOPMENT_ORIGIN;
+  }
+}
+
+export function siteUrl(pathname = "/"): string {
+  return new URL(pathname, siteOrigin()).toString();
+}
+
+/**
+ * True once a real origin is configured.
+ *
+ * `robots.ts` uses it to refuse indexing anywhere that is not the real site,
+ * so a staging deployment cannot quietly compete with production in search
+ * results — a mistake that is easy to make and slow to undo.
+ */
+export function isPublicDeployment(): boolean {
+  return siteOrigin() !== DEVELOPMENT_ORIGIN;
+}
+
+export const SITE_NAME = PRODUCT_NAME;
+
+export const SITE_DESCRIPTION =
+  "Build a resume that parses cleanly. PDF, DOCX, and plain text, free forever. " +
+  "Works without an account, and nothing is uploaded unless you ask.";

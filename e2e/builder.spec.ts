@@ -274,3 +274,24 @@ test("loads the builder with no console errors under the CSP", async ({ page }) 
 
   expect(violations.filter((text) => /Content Security Policy|Refused to/i.test(text))).toEqual([]);
 });
+
+test("serves a 404 that reassures rather than alarms", async ({ page }) => {
+  const response = await page.goto("/no-such-page");
+  expect(response?.status()).toBe(404);
+
+  // Someone who has spent forty minutes writing a resume and hits an error
+  // screen assumes they have lost it. The page has to say otherwise.
+  await expect(page.getByRole("heading", { name: /nothing at this address/i })).toBeVisible();
+  await expect(page.getByText(/draft is untouched/i)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the builder" })).toBeVisible();
+});
+
+test("refuses indexing on a deployment with no configured origin", async ({ request }) => {
+  // The E2E server runs on localhost, which `isPublicDeployment` treats as
+  // not-the-real-site. A staging copy that gets indexed competes with
+  // production in search results, which is easy to do and slow to undo.
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toContain("User-Agent: *");
+  expect(robots).toContain("Disallow: /");
+  expect(robots).not.toContain("Allow: /");
+});

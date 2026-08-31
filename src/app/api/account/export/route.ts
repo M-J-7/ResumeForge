@@ -16,14 +16,39 @@
 
 import { getSessionUser } from "@/server/auth/session";
 import { listResumes, loadResume } from "@/server/resumes";
+import { consume, retryAfterMessage } from "@/server/rate-limit";
 import { toJsonResume, type AccountExport } from "@/lib/interop/json-resume";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Generous for a person, bounded for a script.
+ *
+ * This reads and serializes every resume on the account, and `better-sqlite3`
+ * is synchronous — a tight loop over it stalls the event loop for every other
+ * user, not just the caller. Nobody legitimately exports their data twelve
+ * times in an hour.
+ */
+const EXPORT_LIMIT = { limit: 12, windowMs: 60 * 60 * 1000 };
+
 export async function GET(): Promise<Response> {
   const user = await getSessionUser();
   if (!user) return new Response("Not signed in.", { status: 401 });
+
+  const allowance = await consume(`export:${user.id}`, EXPORT_LIMIT);
+  if (!allowance.allowed) {
+    return new Response(
+      `Too many exports. Try again ${retryAfterMessage(allowance.retryAfterMs)}.`,
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(allowance.retryAfterMs / 1000)),
+          "Cache-Control": "no-store",
+        },
+      },
+    );
+  }
 
   const summaries = await listResumes(user.id);
 

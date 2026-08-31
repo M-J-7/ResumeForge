@@ -16,7 +16,7 @@ import Link from "next/link";
 import { MAGIC_LINK_MAX_AGE_SECONDS } from "@/server/auth/config";
 
 export const metadata: Metadata = {
-  title: "Check your email — ATS Resume Builder",
+  title: "Check your email",
   description: "A sign-in link is on its way.",
 };
 

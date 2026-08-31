@@ -17,7 +17,7 @@ import { ResumeList, type ResumeRow } from "@/components/dashboard/ResumeList";
 import { signOutAction } from "@/app/signin/actions";
 
 export const metadata: Metadata = {
-  title: "Your resumes — ATS Resume Builder",
+  title: "Your resumes",
   description: "Resumes saved to your account.",
 };
 

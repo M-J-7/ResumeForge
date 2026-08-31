@@ -564,6 +564,36 @@ database, and the per-IP limit went from 20 to 60 — an office or a mobile
 carrier's CGNAT puts thousands of real users behind one address, and the
 per-address limit is the one doing the real work.
 
+### P15 — Launch surfaces
+
+The pages and metadata a product needs before anyone outside can reach it.
+
+- **The landing page said "there is no account".** That stopped being true in
+  P10, and a landing page that overstates a privacy position is the same
+  failure as one that overstates a result (D14). Rewritten, along with the
+  "nothing is uploaded" promise, to say what is actually the case: works
+  without an account, nothing leaves the browser unless you sign in and save.
+- **Terms now cover accounts** — no password so keep access to the address,
+  deletion is immediate and permanent, export first, and the one reason an
+  account would be closed.
+- `error.tsx`, `global-error.tsx`, `not-found.tsx`. The first thing each says
+  is that the draft is safe: someone forty minutes into writing a resume who
+  hits an error screen assumes they have lost it, and the reasonable response
+  to that assumption is to close the tab — the one action that would make it
+  true if an autosave were still pending. `global-error` uses inline styles,
+  because if the stylesheet is what failed, a page full of class names is the
+  least reassuring thing on screen.
+- `robots.ts`, `sitemap.ts`, and `src/lib/site.ts`. A deployment with no
+  configured origin refuses indexing entirely, so a staging copy cannot
+  quietly compete with production in search results.
+- Root metadata: `metadataBase`, a title template, Open Graph, and
+  `formatDetection: { telephone: false }` — iOS Safari otherwise linkifies
+  anything that looks like a phone number, and a resume preview is full of
+  dates that qualify.
+- The account export is rate limited to 12/hour. It reads and serializes every
+  resume on the account, and `better-sqlite3` is synchronous, so a tight loop
+  over it stalls the event loop for everyone.
+
 ---
 
 ## Next

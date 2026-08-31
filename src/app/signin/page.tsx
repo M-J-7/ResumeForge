@@ -20,7 +20,7 @@ import { resolveMailTransport } from "@/server/auth/mail";
 import { SignInForm } from "./SignInForm";
 
 export const metadata: Metadata = {
-  title: "Sign in — ATS Resume Builder",
+  title: "Sign in",
   description: "Sign in with an email link or Google. There is no password, by design.",
 };
 
