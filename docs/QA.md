@@ -139,9 +139,6 @@ usable, not whether it renders. An emulator answers the wrong question.
   it throws under `NODE_ENV=production`. The E2E run therefore does not use it —
   it points the real SMTP transport at a capture server (`e2e/mail-server.ts`),
   which is the code that actually ships.
-- **JSON Resume export is not built yet** (M2-T6's second half). Account and
-  resume deletion are; the privacy policy states the gap rather than implying
-  the export exists.
 - **`ResizeObserver`, `HTMLDialogElement.showModal`, and `URL.createObjectURL`
   are stubbed in jsdom** (`src/test/setup.ts`). Anything depending on their real
   behaviour must be covered by the Playwright suite instead.

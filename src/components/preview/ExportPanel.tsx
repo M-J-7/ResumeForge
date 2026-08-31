@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/control";
 import { DESTINATION_ADVICE, resumeFileName, type ExportFormat } from "@/lib/emit/filename";
 import { renderDocx } from "@/lib/emit/docx/render";
 import { renderText } from "@/lib/emit/text/render";
+import { toJsonResume } from "@/lib/interop/json-resume";
 import { useResumeStore } from "@/store/resume";
 
 function download(blob: Blob, fileName: string): void {
@@ -56,6 +57,19 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
     download(blob, nameFor("txt"));
   };
 
+  /**
+   * JSON Resume (M2-T6): not a format to send an employer, but the one that
+   * makes leaving possible. It carries everything — including the parts no
+   * PDF can hold, like section order and settings — so this file can rebuild
+   * the resume here or be read by any other tool that speaks the format.
+   */
+  const exportJson = () => {
+    const blob = new Blob([JSON.stringify(toJsonResume(resume), null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    download(blob, nameFor("json"));
+  };
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
@@ -66,6 +80,16 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
           {busy === "docx" ? "Preparing…" : "Download DOCX"}
         </Button>
         <Button onClick={exportText}>Download TXT</Button>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="ghost" onClick={exportJson}>
+          Download JSON Resume
+        </Button>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Your data in an open format. Not for sending to an employer — for keeping, or for taking
+          somewhere else.
+        </span>
       </div>
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400">

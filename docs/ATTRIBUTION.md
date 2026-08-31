@@ -32,6 +32,23 @@ The charset covers Latin (Basic, Latin-1, Extended-A, Extended-B), Greek, Cyrill
 
 This matters because the product targets a global audience, and it is precisely the silent trust failure the glyph test exists to prevent — just displaced from "we dropped a glyph" to "the family never had one". The mitigation, when it becomes a priority, is a Noto fallback chain registered after the primary family (the risk register in the execution plan §10 already anticipates this). Until then, `UNSUPPORTED_SCRIPTS` in [`src/lib/fonts/charset.ts`](../src/lib/fonts/charset.ts) records the gap in code.
 
+## Data formats
+
+### JSON Resume (MIT)
+
+The account export and the builder's import read and write the **JSON Resume**
+schema, v1.0.0 — <https://jsonresume.org>, schema at
+<https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json>.
+The schema is MIT-licensed. Nothing from the project is vendored here: the
+mapping in [`src/lib/interop/json-resume.ts`](../src/lib/interop/json-resume.ts)
+is written against the published field names, and the schema URL appears in
+exported files as a `$schema` reference only.
+
+Using someone else's format is the point rather than a convenience. An export
+in a format we invented would be a file only we can read, which is not
+portability; M2-T6 asks for interop, and interop means the format has to
+outlive us.
+
 ## Libraries
 
 Runtime and build dependencies are listed in `package.json` with their own licenses. Notable choices:

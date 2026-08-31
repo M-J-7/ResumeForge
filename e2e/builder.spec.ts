@@ -9,6 +9,8 @@
  */
 
 import { expect, test, type Page } from "@playwright/test";
+import path from "node:path";
+import { tmpdir } from "node:os";
 
 async function fillContact(page: Page, name: string, email: string) {
   await page.getByLabel("Full name").fill(name);
@@ -173,4 +175,47 @@ test("X-Ray shows what a parser reads back from the generated PDF", async ({ pag
   await expect(
     preview.getByText("Analytical Engine Programmer", { exact: false }).first(),
   ).toBeVisible();
+});
+
+test("exports a JSON Resume file and reads it back (M2-T6)", async ({ page }) => {
+  // M2-T6's acceptance is "export re-imports cleanly". The unit tests prove
+  // the mapping; this proves the two ends actually meet in a browser — the
+  // download, the file on disk, and the file input that reads it.
+  await fillContact(page, "Katherine Johnson", "katherine@example.com");
+  await addRole(page, "Aerospace Technologist", "NASA", "Calculated launch windows by hand.");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download JSON Resume" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("Katherine_Johnson_Resume.json");
+
+  const saved = path.join(tmpdir(), `e2e-${Date.now()}-${download.suggestedFilename()}`);
+  await download.saveAs(saved);
+
+  // Wipe the draft entirely, so nothing that comes back could have survived
+  // locally rather than been read out of the file.
+  await page.getByRole("button", { name: "Clear all data" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+
+  // `addRole` left the Experience step open; the contact fields are only on
+  // screen once we navigate back to them.
+  await page
+    .getByRole("button", { name: /^Contact/ })
+    .first()
+    .click();
+  await expect(page.getByLabel("Full name")).toHaveValue("");
+
+  await page.locator('input[type="file"]').setInputFiles(saved);
+  await expect(page.getByLabel("Full name")).toHaveValue("Katherine Johnson");
+  await expect(page.getByLabel("Email", { exact: true })).toHaveValue("katherine@example.com");
+
+  await page
+    .getByRole("button", { name: /^Experience/ })
+    .first()
+    .click();
+  await expect(page.getByLabel("Job title")).toHaveValue("Aerospace Technologist");
+  await expect(page.getByLabel("Organization")).toHaveValue("NASA");
+  await expect(page.getByRole("textbox", { name: /bullet 1/i })).toHaveValue(
+    "Calculated launch windows by hand.",
+  );
 });

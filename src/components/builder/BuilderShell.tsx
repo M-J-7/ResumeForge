@@ -16,6 +16,7 @@ import { CertificationsStep } from "./steps/CertificationsStep";
 import { CustomStep } from "./steps/CustomStep";
 import { Button } from "@/components/ui/control";
 import { PreviewPane } from "@/components/preview/PreviewPane";
+import { ImportJsonResume } from "./ImportJsonResume";
 import { SyncStatus } from "./SyncStatus";
 import { cn } from "@/lib/utils";
 import { configureRemoteSync, installAutosaveFlush, useResumeStore } from "@/store/resume";
@@ -226,7 +227,10 @@ export function BuilderShell({ remote }: { remote?: RemoteResume }) {
               <kbd className="rounded border border-zinc-300 px-1 dark:border-zinc-700">K</kbd> to
               jump sections.
             </p>
-            <ClearAllButton onConfirm={clearAll} />
+            <div className="flex flex-wrap items-center gap-2">
+              <ImportJsonResume />
+              <ClearAllButton onConfirm={clearAll} />
+            </div>
           </footer>
         </main>
       </div>

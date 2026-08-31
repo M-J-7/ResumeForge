@@ -382,6 +382,52 @@ document. The server does not render and never guesses: a resume that has not
 been previewed shows "—" on the dashboard rather than a predicted number that
 could disagree with the download.
 
+### P12 — JSON Resume interop (M2-T6)
+
+Completes M2-T6: "JSON export in JSON Resume schema… export re-imports
+cleanly."
+
+- `src/lib/interop/json-resume.ts` — `toJsonResume` / `fromJsonResume`,
+  mapped against the published v1.0.0 schema (fetched, not recalled).
+- `GET /api/account/export` — every resume on the account, each a standalone
+  JSON Resume document, in a thin envelope. A route handler rather than a
+  Server Action because the point is to hand the browser a file: a real
+  `Content-Disposition` response downloads from a plain anchor with no
+  JavaScript involved.
+- A JSON Resume download in the builder's export panel, and an import beside
+  "Clear all data" that goes through the **history stack** — Ctrl+Z brings the
+  previous draft back, which is a better guarantee than a confirmation dialog
+  asking for a decision before the user can see the result.
+- 34 unit tests, including the round trip over all seven fixtures and an
+  idempotence check, plus 2 E2E tests.
+
+#### `additionalProperties: false` at the root decided the design
+
+The schema forbids unknown top-level keys and permits them everywhere else.
+So everything JSON Resume has no place for — section order, section
+visibility, custom sections, our rendering settings — lives under
+`meta.x_atsResumeBuilder`, and per-entry extras (`x_id`, `x_credentialId`)
+live on the entries. The file stays valid for a third-party consumer _and_
+lossless for us. Without the extension block, re-importing your own export
+would silently reorder your resume.
+
+`fromJsonResume` works on a foreign file too, falling back to the default
+section order and settings — which is the right answer when the source
+genuinely had none. Settings from a file are re-parsed through the schema
+rather than trusted: they drive page geometry, and a hand-edited `fontSizePt`
+of 400 would render a broken PDF rather than an ugly one.
+
+#### Two things the mapping had to decide rather than copy
+
+- **Education bullets have no standard field.** JSON Resume offers `courses`,
+  which these are not — a bullet describes what someone did, a course is a
+  subject they sat. Exported as `highlights` (clearly named, non-standard),
+  and `courses` is _read_ on import so a foreign file's data is not dropped.
+- **Our location is one string; JSON Resume models the parts.** Split on the
+  last comma, rejoined with ", ". Round-trips every location with at most one
+  comma, which is the shape the builder's own guidance asks for. A city whose
+  name contains a comma is the documented lossy case.
+
 ---
 
 ## Next
@@ -406,10 +452,10 @@ asserted, with only the live consent round trip owed.
 
 ### Unblocked work, in plan order
 
-- **P12 JSON Resume export/import (rest of M2-T6)** — the interop format, a
-  trust signal, and GDPR data-export for free. Its acceptance is "export
-  re-imports cleanly", so the importer is part of it. The privacy policy
-  currently states this gap outright; closing it removes that paragraph.
+- **M2-T5 Litestream** — the single largest tail risk in the architecture, and
+  the only part of M2 still outstanding. Needs an S3-compatible bucket. The
+  restore rehearsal is the deliverable, not the sidecar: an untested backup is
+  not a backup.
 - **P12 Taxonomy + IDF (M3-T1, M3-T2)** — needs the licensing call first. The plan says verify current terms before shipping, and that is a decision, not a lookup.
 - **P13 Scoring engine (M3-T3, M3-T4)** — the JD structure parser (M3-T3) needs no external data and could start now. Its acceptance is a correct section split on 10 real job postings, which means collecting them.
 

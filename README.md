@@ -80,6 +80,9 @@ once, and all three emitters read them. `lib/emit/{pdf,docx,text}/` render those
 `lib/emit/shared/` holds the composition DOCX and TXT must agree on. The preview renders the _same_
 PDF blob the download hands over, so the two cannot drift.
 
+`lib/interop/json-resume.ts` maps the document to and from the published JSON Resume schema — the
+account export, the builder's import, and the reason leaving is possible.
+
 `server/` is everything an account touches: `db.ts` (SQLite plus the four required pragmas),
 `auth/` (Auth.js, passwordless only, with mail delivery behind an injectable transport),
 `resumes.ts` and `accounts.ts` (every query scoped by `userId` as an argument, never inferred).

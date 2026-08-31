@@ -30,6 +30,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { E2E_DATABASE_FILE } from "../playwright.config";
 import { signInLinkFrom, startMailServer, type MailServer } from "./mail-server";
@@ -378,4 +379,26 @@ test("holds offline edits locally and sends them on reconnect (M2-T4)", async ({
   // that was made while there was no connection.
   await page.goto(builderUrl);
   await expect(page.getByLabel("Full name")).toHaveValue("Grace Hopper (offline edit)");
+});
+
+test("exports every resume on the account as JSON Resume (M2-T6)", async ({ page }) => {
+  const email = uniqueEmail("export");
+  await signIn(page, email);
+  await claimADraft(page, "Katherine Johnson");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("link", { name: "Download everything" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^resumes-\d{4}-\d{2}-\d{2}\.json$/);
+
+  const file = await download.path();
+  const payload = JSON.parse(readFileSync(file, "utf8")) as {
+    resumes: { title: string; resume: { basics: { name: string }; $schema: string } }[];
+  };
+
+  // The full content, not a summary of it — this is the GDPR data export as
+  // much as it is a convenience.
+  expect(payload.resumes).toHaveLength(1);
+  expect(payload.resumes[0]?.resume.basics.name).toBe("Katherine Johnson");
+  expect(payload.resumes[0]?.resume.$schema).toContain("jsonresume");
 });

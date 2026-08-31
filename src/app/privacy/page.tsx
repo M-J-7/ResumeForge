@@ -115,9 +115,19 @@ export default function PrivacyPage() {
           undo it for you because we did not keep it.
         </p>
         <p>
-          A one-click export of everything on your account, in the interoperable JSON Resume format,
-          is not built yet. Until it is, every resume can be downloaded in full as PDF, DOCX, and
-          plain text from the builder, for nothing and without limits.
+          Export is one click and needs no request: &ldquo;Download everything&rdquo; on your
+          dashboard gives you every resume on the account in the open{" "}
+          <a
+            href="https://jsonresume.org"
+            className="underline underline-offset-2"
+            rel="noreferrer noopener"
+            target="_blank"
+          >
+            JSON Resume
+          </a>{" "}
+          format — the full content, not a summary, in a format we did not invent and other tools
+          already read. Every resume can also be downloaded as PDF, DOCX, and plain text from the
+          builder, for nothing and without limits.
         </p>
       </section>
 

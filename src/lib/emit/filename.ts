@@ -50,7 +50,8 @@ export function transliterate(value: string): string {
   );
 }
 
-export type ExportFormat = "pdf" | "docx" | "txt";
+/** `json` is JSON Resume (M2-T6), not a format any ATS reads. */
+export type ExportFormat = "pdf" | "docx" | "txt" | "json";
 
 /**
  * `FirstName_LastName_Resume.pdf`, falling back to `Resume.pdf` when the

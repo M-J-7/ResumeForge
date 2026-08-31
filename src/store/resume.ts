@@ -99,6 +99,15 @@ export interface ResumeState {
   addCustomSection: (section: CustomSection) => void;
   removeSection: (sectionId: string) => void;
   replaceDocument: (document: ResumeDocument) => void;
+  /**
+   * Replaces the document with one the user brought from outside (M2-T6).
+   *
+   * Distinct from `replaceDocument` only in bumping `externalRevision`: an
+   * import changes every field at once for a reason no open form caused, so
+   * the steps have to remount rather than keep showing the old values.
+   * Undoable, because it is the one action that can wipe out a draft.
+   */
+  importDocument: (document: ResumeDocument) => void;
 }
 
 /** Moves an item within an array, returning a new array. */
@@ -358,6 +367,11 @@ export const useResumeStore = create<ResumeState>((set, get) => {
 
     replaceDocument(document) {
       applyChange(document);
+    },
+
+    importDocument(document) {
+      applyChange(document);
+      set({ externalRevision: get().externalRevision + 1, loadError: null });
     },
   };
 });
