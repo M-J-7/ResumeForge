@@ -16,12 +16,19 @@ Everything that could be built without an account has been. What is left is
 three sign-ups and one DNS record, and each is written out with what to paste
 where in **`deploy/oracle/README.md`**.
 
-| #   | Yours to do                              | Then                                               |
-| --- | ---------------------------------------- | -------------------------------------------------- |
-| 1   | `git push origin master`                 | The instance builds from master, not from a laptop |
-| 2   | An Oracle Cloud account, home region     | `terraform apply` — expect to retry for capacity   |
-| 3   | A domain (~£10/yr, the only cost)        | One `A` record at the printed IP                   |
-| 4   | An SMTP provider (Brevo or Resend, free) | `sudo ./deploy/oracle/bootstrap.sh`, twice         |
+| #   | Yours to do                              | Then                                                 | Status         |
+| --- | ---------------------------------------- | ---------------------------------------------------- | -------------- |
+| 1   | Merge `launch/six-seconds-resume`        | The instance builds from master, not from a laptop   | **Outstanding** |
+| 2   | An Oracle Cloud account, home region     | `terraform apply` — expect to retry for capacity     | **Outstanding** |
+| 3   | A domain                                 | One `A` record at the printed IP                     | Done — `sixseconds.tech`, 2026-09-10 |
+| 4   | An SMTP provider (Brevo or Resend, free) | `sudo ./deploy/oracle/bootstrap.sh`, twice           | **Outstanding** |
+
+**Step 1 is not a formality.** `origin/master` is still `P1: project
+foundation` — the skeleton. `cloud-init.yaml` clones the default branch and
+`deploy.sh` runs `git reset --hard origin/master`, so deploying before the
+merge builds an empty project and serves it over TLS with a valid
+certificate: a deployment that looks entirely successful and contains no
+product.
 
 The second run of `bootstrap.sh` is the deploy. The first writes
 `.env.production` with a generated `AUTH_SECRET`, tells you which four lines to
@@ -72,7 +79,7 @@ host and work out how to deploy to it". It is now two sign-ups and a wait:
 | Step                              | Who      | Notes                                                                                     |
 | --------------------------------- | -------- | ----------------------------------------------------------------------------------------- |
 | Oracle Cloud account, home region | **You**  | The region cannot be changed later and decides how hard step 3 is                         |
-| A registrable domain              | **You**  | ~£10/yr, the only cost. A free subdomain ships a working product without Google sign-in   |
+| A registrable domain              | ~~**You**~~ | **Done.** `sixseconds.tech`, registered 2026-09-10. Registrable, so not on the Public Suffix List — which is what keeps B3 (Google sign-in) reachable |
 | `terraform apply`                 | Scripted | `Out of host capacity` is the normal first outcome; the README has the retry loop         |
 | DNS A record                      | **You**  | One record. `bootstrap.sh` refuses to start until it resolves — Let's Encrypt allows five |
 |                                   |          | failed attempts per hostname per week                                                     |

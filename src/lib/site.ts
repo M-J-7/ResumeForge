@@ -1,10 +1,17 @@
 /**
  * The public origin, in one place.
  *
- * §12 Q2 is still open — no domain has been chosen. Everything that needs an
- * absolute URL (canonical links, Open Graph, `robots.txt`, the sitemap) reads
- * it from here, so answering that question is one environment variable rather
- * than a search through the app.
+ * §12 Q2 is answered: the origin is `https://sixseconds.tech`, registered
+ * 2026-09-10. Everything that needs an absolute URL (canonical links, Open
+ * Graph, `robots.txt`, the sitemap) reads it from here, so it stayed one
+ * environment variable rather than a search through the app — and moving to a
+ * different domain later is still only `.env.production` plus DNS, with no
+ * rebuild.
+ *
+ * Nothing hardcodes the hostname, deliberately. `Caddyfile` takes it as
+ * `{$SITE_DOMAIN}` and Auth.js takes it as `AUTH_URL`; the two must agree, and
+ * `deploy/oracle/bootstrap.sh` refuses to start the stack until DNS actually
+ * resolves to the instance.
  *
  * `AUTH_URL` is reused as the fallback because it already has to be the real
  * public origin for sign-in links to work (see `docs/RUNBOOK.md`). Two

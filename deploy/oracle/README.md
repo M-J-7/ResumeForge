@@ -85,10 +85,17 @@ Then, locally:
 oci setup config          # writes ~/.oci/config and an API key
 ```
 
-### 2. **You** — a domain
+### 2. ~~**You** — a domain~~ Done: `sixseconds.tech`
 
-Buy one. About £10 a year, and it is the only thing on this page that costs
-money.
+Registered 2026-09-10. It is registrable rather than a subdomain, so it is not
+on the Public Suffix List and Google sign-in stays available (B3).
+
+`.tech` renews at roughly three times `.me` and five times `.com`, which is
+worth knowing at renewal time rather than discovering then. Moving is cheap
+while nothing is indexed and there are no accounts, and expensive afterwards —
+`src/lib/site.ts` reads the origin at runtime, so the code side is only
+`.env.production` plus DNS, but search ranking and email sending reputation
+both restart from zero on a new hostname.
 
 **Why not a free subdomain.** `*.duckdns.org` and friends work for everything
 except Google sign-in: Google refuses redirect URIs whose host is on the
