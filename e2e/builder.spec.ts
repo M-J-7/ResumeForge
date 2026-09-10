@@ -312,11 +312,11 @@ test("builds absolute URLs from the runtime origin, not the build's", async ({ p
 
 test("titles read as a page name plus the product, exactly once", async ({ page }) => {
   await page.goto("/privacy");
-  await expect(page).toHaveTitle("Privacy — ATS Resume Builder");
+  await expect(page).toHaveTitle("Privacy — Six Seconds Resume");
 
   // The landing page owns its title outright rather than inheriting the
   // template, which would otherwise append the product name to a title that
   // already carries it.
   await page.goto("/");
-  await expect(page).toHaveTitle(/^ATS Resume Builder — free downloads/);
+  await expect(page).toHaveTitle(/^Six Seconds Resume — free downloads/);
 });

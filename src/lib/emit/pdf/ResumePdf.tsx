@@ -21,8 +21,11 @@ import { buildStyles } from "./styles";
 /** Fixed epoch for reproducible output. Arbitrary, but must never change. */
 export const PINNED_PDF_DATE = new Date(Date.UTC(2020, 0, 1, 0, 0, 0));
 
-export const PDF_PRODUCER = "ATS Resume Builder";
-export const PDF_CREATOR = "ATS Resume Builder";
+// Literals rather than `PRODUCT_NAME`, so that renaming the product cannot
+// silently change exported PDF bytes. They only have to be *fixed*, not to
+// match the brand — see the determinism note above.
+export const PDF_PRODUCER = "Six Seconds Resume";
+export const PDF_CREATOR = "Six Seconds Resume";
 
 /**
  * Built as a plain factory rather than a component so the result is typed as

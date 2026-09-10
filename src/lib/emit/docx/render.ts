@@ -444,7 +444,7 @@ export function buildDocxFromBlocks(
 
   return new Document({
     title: metadata.title,
-    creator: metadata.creator || "ATS Resume Builder",
+    creator: metadata.creator || "Six Seconds Resume",
     description: metadata.description,
     styles: buildStyleDefinitions(settings, metrics),
     numbering: buildNumbering(settings),

@@ -48,7 +48,7 @@ export interface OutboxEntry extends MailMessage {
   sentAt: string;
 }
 
-export const DEFAULT_MAIL_FROM = "ATS Resume Builder <no-reply@localhost>";
+export const DEFAULT_MAIL_FROM = "Six Seconds Resume <no-reply@localhost>";
 
 /* -------------------------------------------------------------------------- */
 /* SMTP                                                                        */

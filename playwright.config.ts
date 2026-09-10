@@ -60,7 +60,7 @@ export default defineConfig({
       // starts. Deliberately not the development file outbox: that refuses
       // to run under the production build this command produces.
       EMAIL_SERVER: `smtp://127.0.0.1:${MAIL_PORT}`,
-      EMAIL_FROM: "ATS Resume Builder <no-reply@e2e.test>",
+      EMAIL_FROM: "Six Seconds Resume <no-reply@e2e.test>",
       // Google sign-in, pointed at the local OpenID provider the auth spec
       // starts. Same arrangement as the mail server above: the real OAuth
       // code path runs — discovery, PKCE, a signed id_token, the adapter

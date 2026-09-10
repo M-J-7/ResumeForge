@@ -1,4 +1,8 @@
-# ATS Resume Builder
+# Six Seconds Resume
+
+> A recruiter spends about six seconds on a resume before deciding. Everything
+> here — one column, no decoration, parseable by machine first — exists to
+> survive that.
 
 Build a single-column resume and download it as PDF, DOCX, and plain text. The builder runs
 entirely in the browser — no account needed, no server-side rendering of your document, nothing

@@ -62,7 +62,7 @@ problem, and none has a workaround worth building.
 | **B4** | **P30 — manual QA, 4 checks**                | Word / LibreOffice / Google Docs · a real phone at 390px · a Google consent screen · ten real job postings                                                               | `QA.md` holds each checklist; the automatable parts are already in the two suites                                                                                                                       |
 | **B5** | **P36 · P31-A4 — return on the SEO surface** | A live origin that has been indexed. Not a build blocker — the pages are built and tested; what is blocked is the traffic                                                | All of P36 and `/check`. `sitemap.ts` and `robots.ts` read the origin at runtime, so nothing changes at deploy time                                                                                     |
 | **B7** | **P36 — the Lighthouse ≥ 90 acceptance**     | A deployed origin. Lighthouse against `localhost` measures a machine with no network latency, no TLS handshake and no CDN — a number that would pass and mean nothing    | The structural half is asserted instead: every content route renders with `javaScriptEnabled: false`, and axe is clean on four of them                                                                  |
-| **B6** | **The product name (P37)**                   | A decision, and a domain that is actually available — the two are one question, so B6 and B1 resolve together                                                            | Everything else in P37. `src/lib/product.ts` is the single point and a test now enforces it; see below                                                                                                  |
+| ~~**B6**~~ | ~~**The product name (P37)**~~ **Resolved 2026-09-10** | Nothing. The name is **Six Seconds Resume** and `sixsecondsresume.com` was verified unregistered on the day it was chosen; registering it is now part of B1 | `src/lib/product.ts`, the two PDF constants, `DEFAULT_MAIL_FROM`, the DOCX creator fallback and the two `builder.spec.ts` title assertions all carry it; see below |
 
 ### B1 in detail — what is left, after 2026-09-10
 
@@ -92,34 +92,49 @@ images ship rules that accept 22 and reject the rest regardless of the
 security list, and an instance with only the first half refuses HTTP by
 dropping the connection, which looks exactly like a DNS mistake.
 
-### B6 in detail — the product name
+### B6 in detail — the product name, resolved 2026-09-10
 
-**Everything around the name is done.** `trust-signals.test.ts` asserts that
-no file under `src/app` or `src/components` renders the string, so choosing
-one is the one-line change `src/lib/product.ts` has always promised:
+**The name is `Six Seconds Resume`.** A recruiter spends roughly six seconds on
+a resume before deciding, and every layout decision this codebase already made
+— one column, no decoration, parseable by machine first — exists to survive
+that. The name states the product's argument instead of its category, which
+`"ATS Resume Builder"` never did.
+
+"Resume" is kept in the name on purpose: it is the only search keyword the
+brand carries, and the metadata template in `src/app/layout.tsx` puts it in
+every page title for free.
+
+`trust-signals.test.ts` asserts that no file under `src/app` or `src/components`
+renders the string, which is what kept this to the one-line change
+`src/lib/product.ts` always promised:
 
 ```ts
-export const PRODUCT_NAME = "…";
+export const PRODUCT_NAME = "Six Seconds Resume";
 ```
 
+Chosen against verified registry data rather than taste alone: every bare-word
+candidate was already registered (`yespile`, `faircopy`, `throughline`,
+`colophon`, `verbatim`, `legible`, `firstpass`, `tabstop` …), and
+`sixsecondsresume.com`, `sixsecondscv.com`, `thesixseconds.com` and
+`sixsecondspage.com` were all unregistered on 2026-09-10. **Registering one is
+still owed** and now belongs to B1.
+
 `SITE_NAME` reads from it, the metadata template reads from `SITE_NAME`, and
-the header reads from `PRODUCT_NAME`. Two strings elsewhere would follow the
-same change and are not user-visible surfaces: `PDF_PRODUCER`/`PDF_CREATOR`
-in `src/lib/emit/pdf/ResumePdf.tsx` and `DEFAULT_MAIL_FROM` in
-`src/server/auth/mail.ts`. Two e2e assertions in `builder.spec.ts` pin the
-page titles and would need updating with it — they are the only tests that
-name the product, and they are in an existing file, so that change is
-deliberately left to whoever picks the name.
+the header reads from `PRODUCT_NAME`. **Three** literals elsewhere carried the
+old string and were updated with it — this file previously said two and missed
+one:
 
-**Why it is not decided here.** A name is worth nothing without the domain,
-and domain availability is the constraint that actually decides between
-candidates — which makes this B1's question as much as its own. It is also a
-product-identity decision, not an implementation one.
+| Literal                          | File                            | Why it is a literal                                                                     |
+| -------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
+| `PDF_PRODUCER` / `PDF_CREATOR`   | `src/lib/emit/pdf/ResumePdf.tsx` | Pinned for byte-determinism. They must be _fixed_, not match the brand — importing `PRODUCT_NAME` would make a future rename change exported PDF bytes |
+| `DEFAULT_MAIL_FROM`              | `src/server/auth/mail.ts`        | Fallback when `EMAIL_FROM` is unset                                                      |
+| the DOCX `creator` fallback      | `src/lib/emit/docx/render.ts`    | The one this list used to miss                                                           |
 
-The current value, `"ATS Resume Builder"`, is a working title and is at least
-honest: it says what the thing is. It is not a _good_ name — it is generic,
-unsearchable, and describes the category rather than the product — but it
-ships correctly, and nothing else is waiting on it.
+The two `builder.spec.ts` title assertions were updated in the same commit, as
+were `playwright.config.ts`, `.env.example`, `README.md` and the locked-selector
+row in `IMPLEMENTATION.md` §2.3. The PDF layout snapshots under
+`src/lib/emit/pdf/__snapshots__/` are text, not bytes, and do not contain the
+name — so nothing needed regenerating.
 
 ### Why B1 and B3 are one blocker wearing two hats
 
