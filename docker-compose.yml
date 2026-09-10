@@ -1,6 +1,6 @@
 # A running deployment, in one file.
 #
-#   cp .env.example .env.production   # then fill in the four required values
+#   cp .env.example .env.production   # then fill in the required values
 #   docker compose up -d --build
 #
 # Everything durable is on the `data` volume: the SQLite database, its WAL,
@@ -9,13 +9,49 @@
 #
 # See docs/RUNBOOK.md for what each variable does and what to do when the
 # database is gone.
+#
+# ## One instance, one disk
+#
+# This stack is deliberately not horizontally scalable, and the constraint is
+# structural rather than a limit to raise later. `better-sqlite3` is a single
+# writer against a file on a local volume: two app processes on two hosts
+# corrupt it, a network filesystem breaks its locking, and a rolling deploy
+# runs two writers by definition. One VM, one Compose stack, one volume is
+# what makes the whole architecture — including Litestream below — correct.
 
 services:
+  # The only publicly reachable service. See Caddyfile for why terminating TLS
+  # is a correctness requirement here and not a nicety: Auth.js issues
+  # `__Secure-` cookies against the https origin in AUTH_URL, and a browser
+  # will not send those back over plain HTTP.
+  #
+  # For a local run without a real domain, set SITE_DOMAIN=localhost — Caddy
+  # then issues its own local certificate instead of asking Let's Encrypt.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env.production
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and ACME account keys. Without this volume every redeploy
+      # re-requests from Let's Encrypt and eventually trips the rate limit.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
   app:
     build: .
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # No `ports:` on purpose. The app is reachable only on the compose network,
+    # as `app`, and only Caddy talks to it. Publishing 3000 as well would leave
+    # a plain-HTTP route to the same application sitting beside the encrypted
+    # one — which is exactly the route the `__Secure-` cookies fail on, and the
+    # one a scanner finds first.
     env_file:
       - .env.production
     environment:
@@ -60,9 +96,16 @@ services:
     depends_on:
       - app
 
-  # Off-site, continuous replication (D9, M2-T5). Uncomment once a bucket
-  # exists, fill in litestream.yml, and then — before relying on it — run the
-  # restore rehearsal in docs/RUNBOOK.md. An untested backup is not a backup.
+  # Off-site, continuous replication (D9, M2-T5).
+  #
+  # `litestream.yml` now exists in the repository as a template. Fill in its
+  # four placeholders, put the two credentials in .env.production, uncomment
+  # this block — and then run the restore rehearsal in docs/RUNBOOK.md before
+  # relying on it. An untested backup is not a backup.
+  #
+  # It stays commented until then on purpose: uncommented against an unfilled
+  # template, Litestream restart-loops against a bucket that does not exist,
+  # which is noise on the one deploy where you most need the logs readable.
   #
   # litestream:
   #   image: litestream/litestream:0.3
@@ -79,3 +122,5 @@ services:
 
 volumes:
   data:
+  caddy_data:
+  caddy_config:

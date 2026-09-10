@@ -72,3 +72,25 @@ export const STEPS: readonly StepDefinition[] = [
 ];
 
 export const DEFAULT_STEP_ID = STEPS[0]!.id;
+
+/**
+ * The steps in a given order (P35).
+ *
+ * `order` names step ids; anything it does not name keeps its position from
+ * `STEPS` and follows what it does. Returning `STEPS` itself for a null
+ * order is what makes "10+ years restores the default" a fact about this
+ * function rather than a claim about a caller.
+ *
+ * Reordering the rail is safe precisely because the rail was already free
+ * navigation — people build resumes by jumping to whatever they have
+ * something to say about, so the order is a suggestion, and a suggestion is
+ * the right thing to personalise.
+ */
+export function orderedSteps(order?: readonly string[] | null): readonly StepDefinition[] {
+  if (!order || order.length === 0) return STEPS;
+  const rank = new Map(order.map((id, index) => [id, index]));
+  return [...STEPS].sort(
+    (a, b) =>
+      (rank.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (rank.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+  );
+}

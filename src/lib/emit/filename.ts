@@ -71,6 +71,18 @@ export function resumeFileName(fullName: string, format: ExportFormat): string {
   return `${stem}.${format}`;
 }
 
+/**
+ * `FirstName_LastName_Cover_Letter.pdf` (P28-I2).
+ *
+ * Same convention and the same transliteration as the resume, so a recruiter
+ * who downloads both gets two files that sort next to each other under the
+ * candidate's name — which is the whole point of D14's naming rule.
+ */
+export function coverLetterFileName(fullName: string, format: ExportFormat): string {
+  const stem = resumeFileName(fullName, format).replace(/\.[^.]+$/, "");
+  return `${stem.replace(/Resume$/, "Cover_Letter")}.${format}`;
+}
+
 export interface DestinationAdvice {
   destination: string;
   format: Extract<ExportFormat, "pdf" | "docx">;

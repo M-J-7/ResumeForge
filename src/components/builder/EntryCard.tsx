@@ -36,16 +36,14 @@ export function EntryCard({
   }, [confirming]);
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <section className="border-line bg-surface-0 rounded-lg border p-4 shadow-[var(--shadow-card)]">
       <header className="mb-4 flex items-start gap-2">
         {handle}
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {title || <span className="text-zinc-400 italic">Untitled</span>}
+          <h3 className="text-text truncate text-sm font-semibold">
+            {title || <span className="text-faint italic">Untitled</span>}
           </h3>
-          {subtitle ? (
-            <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{subtitle}</p>
-          ) : null}
+          {subtitle ? <p className="text-muted truncate text-xs">{subtitle}</p> : null}
         </div>
         {confirming ? (
           <div className="flex shrink-0 gap-1">

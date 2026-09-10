@@ -5,7 +5,11 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import { configurePersistence, moveItem, useResumeStore } from "./resume";
+import { GUEST_OWNER, namespacedKey } from "./owner";
 import { STORAGE_KEY, createMemoryBackend, type KeyValueBackend } from "./persistence";
+
+/** The slot a signed-out browser writes its draft to (§10.1). */
+const GUEST_SLOT = namespacedKey(STORAGE_KEY, GUEST_OWNER);
 import { createHistory } from "./history";
 import { createEmptyResume, createExperienceEntry } from "@/lib/resume/factory";
 import { CURRENT_SCHEMA_VERSION, resumeDocumentSchema } from "@/lib/resume/schema";
@@ -214,7 +218,7 @@ describe("persistence — a hard refresh loses nothing", () => {
       contact: { fullName: "Legacy User", email: "", phone: "", location: "" },
       sections: [{ type: "summary", content: "From an older build." }],
     };
-    await backend.set(STORAGE_KEY, JSON.stringify({ document: legacy, savedAt: 1 }));
+    await backend.set(GUEST_SLOT, JSON.stringify({ document: legacy, savedAt: 1 }));
 
     await store().hydrate();
 
@@ -225,7 +229,7 @@ describe("persistence — a hard refresh loses nothing", () => {
 
   it("surfaces a load error rather than crashing on an unmigratable draft", async () => {
     await backend.set(
-      STORAGE_KEY,
+      GUEST_SLOT,
       JSON.stringify({ document: { schemaVersion: 9999 }, savedAt: 1 }),
     );
     await store().hydrate();
@@ -248,11 +252,11 @@ describe("clear all data", () => {
   it("empties storage and resets the document", async () => {
     store().setContact({ ...midCareerResume.contact });
     await store().flush();
-    expect(await backend.get(STORAGE_KEY)).toBeTruthy();
+    expect(await backend.get(GUEST_SLOT)).toBeTruthy();
 
     await store().clearAll();
 
-    expect(await backend.get(STORAGE_KEY)).toBeUndefined();
+    expect(await backend.get(GUEST_SLOT)).toBeUndefined();
     expect(store().document().contact.fullName).toBe("");
     expect(store().canUndo()).toBe(false);
   });

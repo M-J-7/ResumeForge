@@ -75,11 +75,15 @@ export function analyzeFit({
 
 function summarize(pageCount: number, fractionalPages: number, linesOver: number): string {
   const rounded = (Math.round(fractionalPages * 10) / 10).toFixed(1);
-  if (pageCount === 1) return `${rounded} pages`;
+  // "0.0 pages" was the first thing a new document said, and it reads as a
+  // number that failed to load rather than as "this page is barely full".
+  // The figure is how much of the page the content *fills*, so the word that
+  // was missing is the one that says so.
+  if (pageCount === 1) return `${rounded} pages used`;
   if (linesOver > 0) {
     return `${rounded} pages — ${linesOver} ${linesOver === 1 ? "line" : "lines"} over ${pageCount - 1}`;
   }
-  return `${rounded} pages`;
+  return `${rounded} pages used`;
 }
 
 export type SuggestionKind = "margins" | "density" | "fontSize" | "bullet";

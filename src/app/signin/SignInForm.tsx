@@ -15,12 +15,19 @@
 
 import { useActionState, useState } from "react";
 import { Button, Field, Input } from "@/components/ui/control";
+import { GoogleButton } from "@/components/ui/GoogleButton";
 import { isValidEmail } from "@/lib/resume/schema";
 import { requestMagicLinkAction, signInWithGoogleAction } from "./actions";
 import { EMPTY_SIGN_IN_STATE, type SignInState } from "./state";
 
 export interface SignInFormProps {
-  /** False when the deployment has no Google credentials; the button is then hidden. */
+  /**
+   * False when the deployment has no Google credentials; the button is then
+   * hidden rather than rendered dead. A button that redirects to Google and
+   * fails there is worse than no button, so this stays a hard gate — but the
+   * *reason* it is hidden is no longer silent: `signin/page.tsx` says so in
+   * development, where a missing `AUTH_GOOGLE_ID` looks exactly like a bug.
+   */
   googleEnabled: boolean;
   /** An error Auth.js put on the query string before we ever rendered. */
   initialError?: string | undefined;
@@ -51,7 +58,7 @@ export function SignInForm({ googleEnabled, initialError }: SignInFormProps) {
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+          className="border-warn/40 bg-warn-weak text-warn rounded-md border px-3 py-2 text-sm"
         >
           {error}
         </p>
@@ -84,17 +91,25 @@ export function SignInForm({ googleEnabled, initialError }: SignInFormProps) {
         </Button>
       </form>
 
+      {/*
+        Google sits *below* the link form, not above it.
+
+        Google's guidelines require the button to be at least as prominent as
+        the other options on the page, and it is: same card, same width, same
+        height, nothing between it and the fold. What they do not require is
+        that it come first, and the email link is this product's own route —
+        it is the one that works with no third party involved at all, which is
+        the position D6 takes everywhere else.
+      */}
       {googleEnabled ? (
         <>
           <div className="flex items-center gap-3">
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">or</span>
-            <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            <span className="bg-line h-px flex-1" />
+            <span className="text-muted text-xs">or</span>
+            <span className="bg-line h-px flex-1" />
           </div>
           <form action={startGoogle}>
-            <Button type="submit" className="w-full" disabled={googlePending}>
-              {googlePending ? "Redirecting…" : "Continue with Google"}
-            </Button>
+            <GoogleButton pending={googlePending} />
           </form>
         </>
       ) : null}

@@ -4,7 +4,8 @@ import { Button, Field, Input } from "@/components/ui/control";
 import { BulletEditor } from "@/components/builder/BulletEditor";
 import { DateRangeFields } from "@/components/builder/DateRangeFields";
 import { EntryCard, FieldGrid } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById, useSection } from "@/components/builder/useSection";
 import { formatDateRange } from "@/lib/resume/dates";
@@ -12,6 +13,7 @@ import { createExperienceEntry } from "@/lib/resume/factory";
 import { moveItem } from "@/store/resume";
 
 export function ExperienceStep() {
+  const level = useExperienceLevel();
   const { section, update } = useSection("experience");
   if (!section) return null;
 
@@ -19,7 +21,7 @@ export function ExperienceStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      {entries.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.experience!} /> : null}
+      {entries.length === 0 ? <EmptyStatePanel state={emptyStateFor("experience", level)} /> : null}
 
       <SortableList
         ids={entries.map((e) => e.id)}
@@ -113,6 +115,7 @@ export function ExperienceStep() {
                   <BulletEditor
                     entryId={entry.id}
                     bullets={entry.bullets}
+                    jobTitle={entry.title}
                     hint="Start with a verb. Name the result, and the number if you have one."
                     onChange={(bullets, coalesceKey) =>
                       update(

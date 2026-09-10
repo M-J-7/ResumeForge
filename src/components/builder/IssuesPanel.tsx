@@ -20,9 +20,9 @@ import { useResumeStore } from "@/store/resume";
 import { cn } from "@/lib/utils";
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  error: "bg-red-500",
-  warning: "bg-amber-500",
-  info: "bg-sky-500",
+  error: "bg-danger",
+  warning: "bg-warn",
+  info: "bg-accent",
 };
 
 const SEVERITY_LABEL: Record<Severity, string> = {
@@ -59,10 +59,10 @@ export function IssuesPanel({ onNavigate }: { onNavigate?: (stepId: string) => v
         aria-expanded={expanded}
         className={cn(
           "flex items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-sm transition",
-          "focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:outline-none",
+          "focus-visible:ring-accent focus-visible:ring-2 focus-visible:outline-none",
           outstanding > 0
-            ? "bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/50 dark:text-amber-200"
-            : "bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-200",
+            ? "bg-warn-weak text-warn hover:opacity-90"
+            : "bg-ok-weak text-ok hover:opacity-90",
         )}
       >
         <span className="font-medium">
@@ -80,16 +80,13 @@ export function IssuesPanel({ onNavigate }: { onNavigate?: (stepId: string) => v
       {expanded ? (
         <ul className="flex flex-col gap-2">
           {findings.length === 0 ? (
-            <li className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <li className="text-muted px-3 py-2 text-sm">
               Nothing flagged. This does not guarantee any particular outcome — it means the checks
               here are satisfied.
             </li>
           ) : (
             findings.map((finding) => (
-              <li
-                key={finding.key}
-                className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800"
-              >
+              <li key={finding.key} className="border-line rounded-md border p-3">
                 <div className="flex items-start gap-2">
                   <span
                     aria-hidden
@@ -99,12 +96,12 @@ export function IssuesPanel({ onNavigate }: { onNavigate?: (stepId: string) => v
                     )}
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                    <p className="text-text text-sm">
                       <span className="sr-only">{SEVERITY_LABEL[finding.severity]}: </span>
                       {finding.message}
                     </p>
                     {/* The "why" is the part that teaches; never hide it. */}
-                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{finding.why}</p>
+                    <p className="text-muted mt-1 text-xs">{finding.why}</p>
 
                     <div className="mt-2 flex gap-2">
                       {onNavigate ? (
@@ -127,14 +124,14 @@ export function IssuesPanel({ onNavigate }: { onNavigate?: (stepId: string) => v
 
                     {dismissing?.key === finding.key ? (
                       <div className="mt-2 flex flex-col gap-2">
-                        <label className="text-xs text-zinc-600 dark:text-zinc-400">
+                        <label className="text-muted text-xs">
                           Why are you dismissing this?
                           <input
                             autoFocus
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Deliberate — this is a personal statement."
-                            className="mt-1 w-full rounded border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                            className="border-line-strong bg-surface-0 mt-1 w-full rounded border px-2 py-1 text-xs"
                           />
                         </label>
                         <div className="flex gap-2">

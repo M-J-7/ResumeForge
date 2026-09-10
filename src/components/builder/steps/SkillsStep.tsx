@@ -2,7 +2,8 @@
 
 import { Button, Field, Input } from "@/components/ui/control";
 import { EntryCard } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById, useSection } from "@/components/builder/useSection";
 import { createSkillGroup } from "@/lib/resume/factory";
@@ -17,6 +18,7 @@ import { moveItem } from "@/store/resume";
  * trailing comma the user is still typing past — survives a refresh.
  */
 export function SkillsStep() {
+  const level = useExperienceLevel();
   const { section, update } = useSection("skills");
   if (!section) return null;
 
@@ -24,7 +26,7 @@ export function SkillsStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      {groups.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.skills!} /> : null}
+      {groups.length === 0 ? <EmptyStatePanel state={emptyStateFor("skills", level)} /> : null}
 
       <SortableList
         ids={groups.map((g) => g.id)}

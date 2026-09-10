@@ -199,6 +199,51 @@ function blockParagraphs(block: DocumentBlock, rightTabTwips: number): Paragraph
     case "bullet":
       return [bulletParagraph(block.text, block)];
 
+    /* ---- Cover letter (P28-I2) ---------------------------------------- */
+
+    case "letterMeta": {
+      // One paragraph per line rather than one paragraph with line breaks:
+      // Word's own line-break character survives a round trip badly through
+      // some parsers, and an address block is genuinely several paragraphs.
+      const paragraphs: Paragraph[] = [];
+      if (block.date) {
+        paragraphs.push(
+          new Paragraph({
+            style: STYLE_IDS.normal,
+            keepNext: true,
+            children: [new TextRun({ text: block.date })],
+          }),
+        );
+      }
+      for (const [index, line] of block.recipientLines.entries()) {
+        paragraphs.push(
+          new Paragraph({
+            style: STYLE_IDS.normal,
+            // Every recipient line is glued to the next, and the last is
+            // glued to the salutation that follows.
+            keepNext: true,
+            spacing: { after: index === block.recipientLines.length - 1 ? undefined : 0 },
+            children: [new TextRun({ text: line })],
+          }),
+        );
+      }
+      return paragraphs;
+    }
+
+    case "paragraph":
+      // Newlines inside a paragraph are the sign-off block ("Sincerely," and
+      // the writer's name), which is one logical unit kept together.
+      return [
+        new Paragraph({
+          style: STYLE_IDS.normal,
+          ...keep,
+          children: block.text.split("\n").flatMap((line, index) => [
+            ...(index > 0 ? [new TextRun({ break: 1 })] : []),
+            new TextRun({ text: line }),
+          ]),
+        }),
+      ];
+
     default:
       return [];
   }
@@ -211,6 +256,16 @@ function blockParagraphs(block: DocumentBlock, rightTabTwips: number): Paragraph
 function buildStyleDefinitions(settings: Settings, metrics: DocxMetrics) {
   const accent = settings.accent.replace("#", "");
   const baseRun = { font: metrics.fontName, size: metrics.bodyHalfPoints };
+
+  const headerAlignment =
+    settings.headerStyle === "centered" ? AlignmentType.CENTER : AlignmentType.LEFT;
+
+  const headingBorder =
+    settings.headingStyle === "rule"
+      ? { bottom: { style: "single" as const, size: 6, color: accent, space: 1 } }
+      : settings.headingStyle === "accent-bar"
+        ? { left: { style: "single" as const, size: 12, color: accent, space: 4 } }
+        : undefined;
 
   return {
     default: {
@@ -235,14 +290,21 @@ function buildStyleDefinitions(settings: Settings, metrics: DocxMetrics) {
         basedOn: STYLE_IDS.normal,
         quickFormat: true,
         run: { ...baseRun, size: halfPoints(settings.fontSizePt * 1.9), bold: true },
-        paragraph: { spacing: { after: pointsToTwips(settings.fontSizePt * 0.25) } },
+        paragraph: {
+          spacing: { after: pointsToTwips(settings.fontSizePt * 0.25) },
+          // P32-B1. Alignment is a paragraph property, not a structural one:
+          // the name is still one `Title` paragraph in document order, so
+          // `mammoth` and `extractDocxStructure` read it identically either
+          // way. That is why this axis costs the DOCX nothing.
+          alignment: headerAlignment,
+        },
       },
       {
         id: STYLE_IDS.contact,
         name: "Contact Info",
         basedOn: STYLE_IDS.normal,
         run: { ...baseRun, size: halfPoints(settings.fontSizePt * 0.92) },
-        paragraph: { spacing: { after: metrics.gapTwips } },
+        paragraph: { spacing: { after: metrics.gapTwips }, alignment: headerAlignment },
       },
       {
         id: STYLE_IDS.sectionHeading,
@@ -261,9 +323,20 @@ function buildStyleDefinitions(settings: Settings, metrics: DocxMetrics) {
           keepNext: true,
           outlineLevel: 0,
           spacing: { before: metrics.gapTwips, after: Math.round(metrics.gapTwips * 0.6) },
-          border: {
-            bottom: { style: "single" as const, size: 6, color: accent, space: 1 },
-          },
+          /*
+           * `allCaps` above is set for every heading style and is not
+           * negotiable — it is the property the parse argument rests on. The
+           * border is the part a template varies: `rule` underlines the
+           * heading, `accent-bar` sets a bar to its left, `caps` has neither.
+           *
+           * Word's paragraph borders are the right mechanism rather than a
+           * bottom-bordered table or a drawn line, for the same reason the
+           * rest of this emitter avoids tables: a parser reading a table
+           * column-wise scrambles the document, and a drawing is invisible
+           * to one entirely. A border is a property of a paragraph that is
+           * still just a paragraph.
+           */
+          border: headingBorder,
         },
       },
       {
@@ -326,13 +399,33 @@ function buildNumbering(settings: Settings) {
   };
 }
 
-export function buildDocxDocument(resume: ResumeDocument): Document {
-  const metrics = buildMetrics(resume.settings);
-  const page = PAGE_SIZE_TWIPS[resume.settings.pageSize];
-  const marginTwips = inchesToTwips(resume.settings.margins);
+export interface DocxMetadata {
+  title: string;
+  creator?: string;
+  description: string;
+}
+
+/**
+ * The emitter proper: block list plus settings in, `.docx` out.
+ *
+ * Split out from `buildDocxDocument` so the cover letter emitter
+ * (`lib/emit/cover-letter.ts`) reuses this exact function rather than
+ * growing a parallel one. Everything that decides how the file *looks* —
+ * page geometry, the named styles, the numbering definition — is derived
+ * from `settings` and lives here once, which is what keeps a letter and its
+ * resume typographically identical.
+ */
+export function buildDocxFromBlocks(
+  blocks: readonly DocumentBlock[],
+  settings: Settings,
+  metadata: DocxMetadata,
+): Document {
+  const metrics = buildMetrics(settings);
+  const page = PAGE_SIZE_TWIPS[settings.pageSize];
+  const marginTwips = inchesToTwips(settings.margins);
   const rightTabTwips = page.width - marginTwips * 2;
 
-  const children = buildDocument(resume).flatMap((block) => blockParagraphs(block, rightTabTwips));
+  const children = blocks.flatMap((block) => blockParagraphs(block, rightTabTwips));
 
   const section: ISectionOptions = {
     properties: {
@@ -350,12 +443,20 @@ export function buildDocxDocument(resume: ResumeDocument): Document {
   };
 
   return new Document({
-    title: resume.contact.fullName || "Resume",
-    creator: resume.contact.fullName || "ATS Resume Builder",
-    description: "Resume",
-    styles: buildStyleDefinitions(resume.settings, metrics),
-    numbering: buildNumbering(resume.settings),
+    title: metadata.title,
+    creator: metadata.creator || "ATS Resume Builder",
+    description: metadata.description,
+    styles: buildStyleDefinitions(settings, metrics),
+    numbering: buildNumbering(settings),
     sections: [section],
+  });
+}
+
+export function buildDocxDocument(resume: ResumeDocument): Document {
+  return buildDocxFromBlocks(buildDocument(resume), resume.settings, {
+    title: resume.contact.fullName || "Resume",
+    creator: resume.contact.fullName || undefined,
+    description: "Resume",
   });
 }
 

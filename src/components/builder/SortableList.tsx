@@ -28,6 +28,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { DragIcon } from "@/components/ui/icons";
 
 export function SortableList({
   ids,
@@ -88,22 +89,14 @@ export function SortableItem({
       type="button"
       aria-label={label}
       className={cn(
-        "cursor-grab touch-none rounded p-1 text-zinc-400 transition",
-        "hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200",
-        "focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:outline-none",
+        "text-faint hover:bg-surface-2 hover:text-text cursor-grab touch-none rounded p-1 transition",
+        "focus-visible:ring-accent focus-visible:ring-2 focus-visible:outline-none",
         isDragging && "cursor-grabbing",
       )}
       {...attributes}
       {...listeners}
     >
-      <svg aria-hidden viewBox="0 0 20 20" className="h-4 w-4 fill-current">
-        <circle cx="7" cy="5" r="1.4" />
-        <circle cx="13" cy="5" r="1.4" />
-        <circle cx="7" cy="10" r="1.4" />
-        <circle cx="13" cy="10" r="1.4" />
-        <circle cx="7" cy="15" r="1.4" />
-        <circle cx="13" cy="15" r="1.4" />
-      </svg>
+      <DragIcon className="h-4 w-4" />
     </button>
   );
 
@@ -111,7 +104,12 @@ export function SortableItem({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn(isDragging && "relative z-10 opacity-90 shadow-lg")}
+      className={cn(
+        // A real lift while dragging: a stronger shadow and a slight scale,
+        // rather than only the pre-existing opacity dip — makes it legible
+        // which row is airborne when several are close together.
+        isDragging && "relative z-10 scale-[1.02] opacity-95 shadow-[var(--shadow-page)]",
+      )}
     >
       {children(handle)}
     </div>

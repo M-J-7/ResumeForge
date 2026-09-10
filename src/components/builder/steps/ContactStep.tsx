@@ -86,8 +86,8 @@ export function ContactStep() {
 
       <div className="flex flex-col gap-3">
         <div>
-          <h3 className="text-sm font-medium text-zinc-800 dark:text-zinc-200">Links</h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <h3 className="text-text text-sm font-medium">Links</h3>
+          <p className="text-faint text-xs">
             LinkedIn, GitHub, a portfolio. Link only what you would be happy for a recruiter to open
             first.
           </p>
@@ -108,7 +108,7 @@ export function ContactStep() {
               return (
                 <SortableItem key={link.id} id={link.id} label={`Reorder ${link.label || "link"}`}>
                   {(handle) => (
-                    <div className="flex items-start gap-2 rounded-md border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950">
+                    <div className="border-line flex items-start gap-2 rounded-md border bg-white p-2">
                       {handle}
                       <Input
                         aria-label={`Link ${index + 1} label`}
@@ -147,7 +147,7 @@ export function ContactStep() {
                           }
                         />
                         {urlError ? (
-                          <p role="alert" className="mt-1 text-xs text-red-600 dark:text-red-400">
+                          <p role="alert" className="mt-1 text-xs text-danger">
                             {urlError}
                           </p>
                         ) : null}

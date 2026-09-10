@@ -13,6 +13,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+// Imported for its side effect. Without it pdfjs throws
+// `No "GlobalWorkerOptions.workerSrc" specified` on any route that does not
+// also read text back out of the PDF — which the cover letter editor does not.
+import "@/lib/pdf/worker";
 import { cn } from "@/lib/utils";
 
 interface RenderedPage {
@@ -70,10 +74,17 @@ export function PdfCanvas({
   bytes,
   scale,
   className,
+  label = "Resume",
 }: {
   bytes: Uint8Array | null;
   scale: number;
   className?: string;
+  /**
+   * What each page announces itself as — "Resume page 2", "Cover letter
+   * page 1". `e2e/builder.spec.ts` matches the resume wording exactly, which
+   * is why the default stays "Resume" rather than becoming "Document".
+   */
+  label?: string;
 }) {
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,18 +115,40 @@ export function PdfCanvas({
     container.replaceChildren(
       ...pages.map((page) => {
         const wrapper = document.createElement("div");
-        wrapper.className = "relative bg-white shadow-lg ring-1 ring-zinc-300 dark:ring-zinc-700";
+        // Tokens rather than literal Tailwind colours because this string
+        // is assigned in JavaScript, not JSX — the redesign's one landmine
+        // documented in the plan. `--paper` is the theme-invariant white a
+        // rendered page always is; `--shadow-page` and `--paper-edge` are
+        // the same page-chrome tokens the landing page's `PaperSample` uses,
+        // so a resume looks the same object whether it's an illustration or
+        // the real, live-rendered thing.
+        wrapper.className = "relative bg-paper shadow-[var(--shadow-page)] ring-1 ring-[var(--paper-edge)]";
         wrapper.style.width = `${page.width}px`;
         wrapper.style.height = `${page.height}px`;
         page.canvas.style.width = `${page.width}px`;
         page.canvas.style.height = `${page.height}px`;
         page.canvas.setAttribute("role", "img");
-        page.canvas.setAttribute("aria-label", `Resume page ${page.pageNumber}`);
+        page.canvas.setAttribute("aria-label", `${label} page ${page.pageNumber}`);
         wrapper.appendChild(page.canvas);
+
+        // A small "Page N" marker, so pagination reads at a glance instead
+        // of being inferred from the gap between pages. Decorative and
+        // outside the canvas's own accessible name: a screen reader user
+        // already gets "Resume page 2" from the image role above, and a
+        // second announcement of the same fact would be noise.
+        if (pages.length > 1) {
+          const marker = document.createElement("span");
+          marker.setAttribute("aria-hidden", "true");
+          marker.className =
+            "text-muted bg-surface-0/90 border-line pointer-events-none absolute top-2 right-2 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums";
+          marker.textContent = `${page.pageNumber} / ${pages.length}`;
+          wrapper.appendChild(marker);
+        }
+
         return wrapper;
       }),
     );
-  }, [pages]);
+  }, [pages, label]);
 
   return (
     <div

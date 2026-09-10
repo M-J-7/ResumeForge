@@ -18,7 +18,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       # Fonts are vendored in the repo but copied into public/ by a script;
@@ -37,7 +37,7 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
@@ -66,3 +66,31 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # The deploy target is an Oracle Ampere A1, which is arm64, and the two
+  # things this image builds from source — better-sqlite3's native binding and
+  # the Next standalone output — are exactly the kind that build on one
+  # architecture and not the other. Finding that out on the instance means
+  # finding it out after provisioning, DNS and TLS, which is the worst place.
+  #
+  # Kept off pull requests deliberately. Under QEMU this takes about twenty
+  # minutes, and paying that on every PR to verify a target that only changes
+  # when the Dockerfile does would make the fast checks above useless. Master
+  # is where a deploy is cut from, so master is where it has to hold.
+  docker-arm64:
+    name: Docker image builds for arm64 (the deploy target)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64

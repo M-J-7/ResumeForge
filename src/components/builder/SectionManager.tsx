@@ -12,6 +12,7 @@ import { SortableItem, SortableList } from "./SortableList";
 import { STANDARD_SECTION_LABELS } from "@/lib/layout/document";
 import { useResumeStore } from "@/store/resume";
 import { Toggle } from "@/components/ui/control";
+import { cn } from "@/lib/utils";
 
 export function SectionManager() {
   const sections = useResumeStore((s) => s.history.present.sections);
@@ -21,10 +22,10 @@ export function SectionManager() {
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <h2 className="text-xs font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
+        <h2 className="text-faint text-xs font-semibold tracking-wide uppercase">
           Order &amp; visibility
         </h2>
-        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-muted mt-1 text-xs leading-relaxed">
           Hidden sections keep their content — they just stop appearing in the document.
         </p>
       </div>
@@ -40,17 +41,28 @@ export function SectionManager() {
               <li key={section.id}>
                 <SortableItem id={section.id} label={`Reorder ${label}`}>
                   {(handle) => (
-                    <div className="flex items-center gap-2 rounded-md px-1 py-1 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                    // A row with a real hover, so the drag handle reads as an
+                    // affordance rather than as an icon that happens to be
+                    // there. A border rather than a shadow: chrome gets
+                    // hairlines, paper gets the shadow.
+                    <div
+                      className={cn(
+                        "border-line/0 hover:border-line hover:bg-surface-0 flex items-center gap-2 rounded-md border px-1.5 py-1.5",
+                        "transition-colors duration-[var(--dur-fast)] ease-[var(--ease)]",
+                      )}
+                    >
                       {handle}
-                      <span className="flex-1 truncate text-sm text-zinc-700 dark:text-zinc-300">
-                        {label}
-                      </span>
+                      <span className="text-text flex-1 truncate text-sm">{label}</span>
                       <Toggle
                         checked={section.visible}
-                        label=""
+                        // The name goes on the control, not beside it. A
+                        // sibling span is not associated with the input, so
+                        // this used to announce as an unnamed checkbox — six
+                        // of them in a row, all identical.
+                        label={`Show ${label}`}
+                        labelHidden
                         onChange={(visible) => setSectionVisible(section.id, visible)}
                       />
-                      <span className="sr-only">Show {label}</span>
                     </div>
                   )}
                 </SortableItem>

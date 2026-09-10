@@ -33,7 +33,7 @@ export function SyncStatus() {
       // someone is typing, and an assertive region would interrupt them.
       aria-live="polite"
       data-sync-status={status}
-      className="text-xs text-zinc-500 dark:text-zinc-400"
+      className="text-xs text-faint"
     >
       {MESSAGES[status]}
     </span>

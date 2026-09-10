@@ -4,14 +4,17 @@ import { Button, Field, Input } from "@/components/ui/control";
 import { BulletEditor } from "@/components/builder/BulletEditor";
 import { OptionalDateRangeFields } from "@/components/builder/DateRangeFields";
 import { EntryCard, FieldGrid } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById } from "@/components/builder/useSection";
 import { createCustomEntry, createId } from "@/lib/resume/factory";
+import { SECTION_PRESETS, buildPresetSection } from "@/lib/resume/section-presets";
 import { moveItem, useResumeStore } from "@/store/resume";
 import type { CustomSection } from "@/lib/resume/schema";
 
 export function CustomStep() {
+  const level = useExperienceLevel();
   // Select the stable array and filter during render. Filtering *inside* the
   // selector returns a new array on every call, which makes Zustand's
   // snapshot compare unequal every time and re-renders without end.
@@ -26,12 +29,12 @@ export function CustomStep() {
 
   return (
     <div className="flex flex-col gap-6">
-      {sections.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.custom!} /> : null}
+      {sections.length === 0 ? <EmptyStatePanel state={emptyStateFor("custom", level)} /> : null}
 
       {sections.map((section) => (
         <div
           key={section.id}
-          className="flex flex-col gap-4 rounded-lg border border-zinc-200 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900/30"
+          className="border-line bg-surface-1/50 flex flex-col gap-4 rounded-lg border p-4"
         >
           <div className="flex items-end gap-2">
             <Field
@@ -170,6 +173,40 @@ export function CustomStep() {
           </Button>
         </div>
       ))}
+
+      {/*
+        Presets (P33-C4). The machinery was already here — a custom section is
+        a first-class part of the schema and `addCustomSection` has always
+        existed — so what was missing was only the list. Without it the user
+        had to know "Publications" was a section they could have, and then
+        type the word.
+
+        Presets already on the document are hidden rather than disabled: a
+        row of dead buttons is worse than a shorter row.
+      */}
+      <section className="flex flex-col gap-2">
+        <h3 className="text-muted text-xs font-semibold tracking-wide uppercase">
+          Common sections
+        </h3>
+        <ul className="flex flex-col gap-2">
+          {SECTION_PRESETS.filter(
+            (preset) =>
+              !sections.some(
+                (section) => section.label.trim().toLowerCase() === preset.label.toLowerCase(),
+              ),
+          ).map((preset) => (
+            <li key={preset.id} className="flex items-start gap-3">
+              <Button
+                className="shrink-0"
+                onClick={() => addCustomSection(buildPresetSection(preset))}
+              >
+                {preset.label}
+              </Button>
+              <p className="text-muted pt-2 text-xs">{preset.hint}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <Button
         variant="primary"

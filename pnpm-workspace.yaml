@@ -15,3 +15,11 @@ allowBuilds:
   sharp: false
   unrs-resolver: false
   workerd: false
+  # Pulled in by `@huggingface/transformers` for its Node backend. The
+  # enhancement feature is browser-only by construction — `enhance.browser.ts`
+  # is `client-only` and runs on WASM or WebGPU — so this binding is never
+  # loaded by any shipping code path, and its install script exists to
+  # download a native binary we would not call. `protobufjs` comes with it and
+  # only builds a CLI.
+  onnxruntime-node: false
+  protobufjs: false

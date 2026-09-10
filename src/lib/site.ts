@@ -40,6 +40,22 @@ export function isPublicDeployment(): boolean {
   return siteOrigin() !== DEVELOPMENT_ORIGIN;
 }
 
+/**
+ * The public source repository.
+ *
+ * Written once here so the host is not spelled out in a marketing array
+ * (§10.4). The trust-signals band links repository paths through
+ * `repoFileUrl`, and a row that says "this is checkable" has to be a link
+ * somebody can actually open — a bare path in a monospace font is addressed
+ * to a developer who already has the checkout.
+ */
+export const REPO_URL = "https://github.com/M-J-7/RESUME_BUILDER";
+
+/** A repository-relative path as a URL on the default branch. */
+export function repoFileUrl(pathname: string): string {
+  return `${REPO_URL}/blob/master/${pathname.replace(/^\/+/, "")}`;
+}
+
 export const SITE_NAME = PRODUCT_NAME;
 
 export const SITE_DESCRIPTION =

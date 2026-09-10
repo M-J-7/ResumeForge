@@ -10,6 +10,7 @@
  * navigation happens after.
  */
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/server/auth";
@@ -92,5 +93,20 @@ export async function signInWithGoogleAction(): Promise<SignInState> {
  * than merely apparent.
  */
 export async function signOutAction(): Promise<void> {
+  /*
+   * Invalidate the *layout*, not just the page (§10.1).
+   *
+   * `AppHeader` lives in the root layout and is what publishes the storage
+   * owner to the browser (`<StorageOwner>`). The App Router does not
+   * re-render a shared layout on a client navigation between two routes it
+   * already covers, so without this the redirect to `/` would land with the
+   * header — and therefore the owner — still saying the person who just
+   * signed out. Their document would stay in memory and the next sign-in on
+   * this device would inherit it.
+   *
+   * This is also what makes the header itself switch from "Sign out" back to
+   * "Sign in", which used to depend on the same accident of cache timing.
+   */
+  revalidatePath("/", "layout");
   await signOut({ redirectTo: "/" });
 }

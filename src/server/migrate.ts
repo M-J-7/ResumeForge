@@ -170,9 +170,25 @@ export class MigrationChecksumError extends Error {
  * makes retrying a failed deploy safe rather than a second guess about which
  * statements got through.
  */
+export interface ApplyOptions {
+  /**
+   * Runs once, after it is known that migrations will be applied and before
+   * the first one is. Not called when there is nothing pending, and not
+   * called on a database with no migration history — a first boot has an
+   * empty schema, so there is nothing a snapshot could protect.
+   *
+   * Passed the names about to be applied. Throwing aborts before any DDL
+   * runs, which is the point: a caller that cannot take its safety snapshot
+   * gets to decide whether to proceed, and it decides while the schema is
+   * still untouched.
+   */
+  onBeforeApply?: (pending: string[]) => Promise<void>;
+}
+
 export async function applyPendingMigrations(
   client: PrismaClient,
   migrations: Migration[] = readMigrations(),
+  { onBeforeApply }: ApplyOptions = {},
 ): Promise<MigrationOutcome> {
   await client.$executeRawUnsafe(MIGRATIONS_TABLE_DDL);
 
@@ -188,6 +204,23 @@ export async function applyPendingMigrations(
       .map((row) => row.migration_name)
       .filter((name) => !migrations.some((migration) => migration.name === name)),
   };
+
+  // Worked out in a pass of its own so `onBeforeApply` can run while the
+  // schema is still untouched. Interleaving it with the apply loop would call
+  // the hook after the first migration had already landed, which is precisely
+  // the state a pre-migration snapshot is supposed to predate.
+  const isFinished = (row: AppliedRow | undefined): boolean =>
+    row !== undefined && row.finished_at !== null && row.rolled_back_at === null;
+  const pending = migrations
+    .filter((migration) => !isFinished(applied.get(migration.name)))
+    .map((migration) => migration.name);
+
+  // `rows.length > 0` distinguishes an upgrade from a first boot. On an empty
+  // volume every migration is pending and there is no data to lose, so a
+  // snapshot there would only be a way for a fresh deploy to fail.
+  if (pending.length > 0 && rows.length > 0 && onBeforeApply) {
+    await onBeforeApply(pending);
+  }
 
   for (const migration of migrations) {
     const row = applied.get(migration.name);

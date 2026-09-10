@@ -17,11 +17,16 @@ import { getSessionUser } from "@/server/auth/session";
 import { confirmsDeletion, deleteAccount } from "@/server/accounts";
 import {
   claimDraft,
+  createResume,
   deleteResume,
   duplicateResume,
+  loadResume,
   renameResume,
   type ResumeSummary,
 } from "@/server/resumes";
+import { createEmptyResume } from "@/lib/resume/factory";
+import { safeMigrate } from "@/lib/resume/migrate";
+import type { ResumeDocument } from "@/lib/resume/schema";
 
 export type ActionResult<T = null> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -60,6 +65,60 @@ export async function claimDraftAction(
 
   revalidatePath("/dashboard");
   return { ok: true, value: outcome.resume };
+}
+
+/**
+ * Starts a new resume on the account — blank, or seeded from a document
+ * already open in the builder (P24).
+ *
+ * `createResume`, `renameResume` and `duplicateResume` have existed since
+ * M2-T4 with correct ownership scoping; nothing before this called the first
+ * one. A signed-in visitor could open the builder and edit the one local
+ * guest draft, or open an existing account resume, but had no way to start a
+ * second one — from either a blank page or a copy of what they were already
+ * editing.
+ *
+ * Two callers, one action:
+ *
+ *   - The dashboard's "New resume" dialog omits `serializedDocument`, and
+ *     gets `createEmptyResume()` — the blank-page case.
+ *   - The builder's "Save as new resume" passes the currently open document,
+ *     serialized the same way `saveResumeAction` receives it. This is what
+ *     makes keeping a per-application copy natural: tailor a resume, save it
+ *     as a new one, keep tailoring from there without touching the original.
+ *
+ * An empty or omitted title falls through to `deriveResumeTitle`.
+ */
+export async function createResumeAction(
+  title?: string,
+  serializedDocument?: string,
+): Promise<ActionResult<ResumeSummary>> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: NOT_SIGNED_IN };
+
+  let document: ResumeDocument;
+  if (serializedDocument) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(serializedDocument);
+    } catch {
+      return { ok: false, error: "That document could not be read." };
+    }
+    const migrated = safeMigrate(parsed);
+    if (!migrated.ok) return { ok: false, error: migrated.error.message };
+    document = migrated.document;
+  } else {
+    document = createEmptyResume();
+  }
+
+  const trimmed = title?.trim();
+  const resume = await createResume(user.id, {
+    document,
+    title: trimmed ? trimmed : undefined,
+  });
+
+  revalidatePath("/dashboard");
+  return { ok: true, value: resume };
 }
 
 export async function renameResumeAction(
@@ -124,4 +183,26 @@ export async function deleteAccountAction(confirmation: string): Promise<ActionR
   await deleteAccount(user.id);
   await signOut({ redirectTo: "/" });
   return { ok: true, value: null };
+}
+
+/**
+ * Supplies a resume's full content to a client that already knows the id —
+ * the dashboard thumbnail, specifically.
+ *
+ * `listResumes` deliberately excludes `content` so the dashboard's initial
+ * load stays cheap regardless of how many resumes exist or how large they
+ * are. This is the one path that fetches a single resume's content on
+ * demand, still scoped through `loadResume`'s ownership check, so the cost
+ * is paid only for the card actually being rendered.
+ */
+export async function getResumeContentAction(
+  id: string,
+): Promise<ActionResult<ResumeDocument>> {
+  const user = await getSessionUser();
+  if (!user) return { ok: false, error: NOT_SIGNED_IN };
+
+  const loaded = await loadResume(user.id, id);
+  if (!loaded) return { ok: false, error: NOT_FOUND };
+
+  return { ok: true, value: loaded.document };
 }

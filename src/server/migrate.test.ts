@@ -12,11 +12,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { applyPendingMigrations, readMigrations, splitStatements } from "./migrate";
 import { applyPragmas, createPrismaClient } from "./db";
+import { backupFileName, createBackup, verifyBackup } from "./backup";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 let directory: string;
@@ -229,5 +230,81 @@ describe("a migration directory that is not this project's", () => {
     // SQLite integers come back as BigInt through the driver adapter.
     expect(Number(rows[0]?.applied_steps_count)).toBe(1);
     expect(rows[0]?.checksum).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("onBeforeApply — the pre-migration snapshot hook", () => {
+  it("does not fire on a first boot, where there is nothing to protect", async () => {
+    const calls: string[][] = [];
+    const outcome = await applyPendingMigrations(client, readMigrations(), {
+      onBeforeApply: async (pending) => void calls.push(pending),
+    });
+
+    // Every migration was pending, but the database had no history: an empty
+    // volume has no data a snapshot could save, and failing a fresh deploy
+    // over one would be the only thing this could achieve.
+    expect(outcome.applied.length).toBeGreaterThan(0);
+    expect(calls).toEqual([]);
+  });
+
+  it("fires once on an upgrade, naming what is about to be applied", async () => {
+    const all = readMigrations();
+    await applyPendingMigrations(client, all.slice(0, 1));
+
+    const calls: string[][] = [];
+    await applyPendingMigrations(client, all, {
+      onBeforeApply: async (pending) => void calls.push(pending),
+    });
+
+    expect(calls).toEqual([all.slice(1).map((m) => m.name)]);
+  });
+
+  it("does not fire when there is nothing pending", async () => {
+    const all = readMigrations();
+    await applyPendingMigrations(client, all);
+
+    const calls: string[][] = [];
+    await applyPendingMigrations(client, all, {
+      onBeforeApply: async (pending) => void calls.push(pending),
+    });
+
+    expect(calls).toEqual([]);
+  });
+
+  it("aborts before any DDL runs when the hook throws", async () => {
+    const all = readMigrations();
+    await applyPendingMigrations(client, all.slice(0, 1));
+
+    await expect(
+      applyPendingMigrations(client, all, {
+        onBeforeApply: async () => {
+          throw new Error("no backup directory");
+        },
+      }),
+    ).rejects.toThrow("no backup directory");
+
+    // The whole value of failing here: the schema is exactly where it was, so
+    // the operator fixes the backup and retries rather than restoring.
+    const outcome = await applyPendingMigrations(client, all);
+    expect(outcome.alreadyApplied).toEqual([all[0]!.name]);
+    expect(outcome.applied).toEqual(all.slice(1).map((m) => m.name));
+  });
+});
+
+describe("snapshot before migrating, end to end", () => {
+  it("writes a real snapshot that opens as a database", async () => {
+    const all = readMigrations();
+    await applyPendingMigrations(client, all.slice(0, 1));
+
+    const backups = path.join(directory, "backups");
+    await applyPendingMigrations(client, all, {
+      onBeforeApply: async () => {
+        await createBackup(file, path.join(backups, backupFileName()));
+      },
+    });
+
+    const written = readdirSync(backups);
+    expect(written).toHaveLength(1);
+    expect(verifyBackup(path.join(backups, written[0]!)).ok).toBe(true);
   });
 });

@@ -86,13 +86,13 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
         <Button variant="ghost" onClick={exportJson}>
           Download JSON Resume
         </Button>
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="text-muted text-xs">
           Your data in an open format. Not for sending to an employer — for keeping, or for taking
           somewhere else.
         </span>
       </div>
 
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-muted text-xs">
         Saved as <code className="font-mono">{nameFor("pdf")}</code> — a filename convention for the
         recruiter&rsquo;s downloads folder, not something an ATS searches on.
       </p>
@@ -102,15 +102,15 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
           type="button"
           onClick={() => setShowAdvice((v) => !v)}
           aria-expanded={showAdvice}
-          className="text-xs font-medium text-sky-700 underline underline-offset-2 hover:text-sky-900 dark:text-sky-400"
+          className="text-accent hover:text-accent-hover text-xs font-medium underline underline-offset-2"
         >
           Which format should I use?
         </button>
 
         {showAdvice ? (
-          <div className="mt-2 overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
+          <div className="border-line mt-2 overflow-x-auto rounded-md border">
             <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 dark:bg-zinc-900">
+              <thead className="bg-surface-2">
                 <tr>
                   <th scope="col" className="px-3 py-2 font-semibold">
                     Applying through
@@ -125,13 +125,10 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
               </thead>
               <tbody>
                 {DESTINATION_ADVICE.map((advice) => (
-                  <tr
-                    key={advice.destination}
-                    className="border-t border-zinc-200 dark:border-zinc-800"
-                  >
+                  <tr key={advice.destination} className="border-line border-t">
                     <td className="px-3 py-2">{advice.destination}</td>
                     <td className="px-3 py-2 font-semibold uppercase">{advice.format}</td>
-                    <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">{advice.reason}</td>
+                    <td className="text-muted px-3 py-2">{advice.reason}</td>
                   </tr>
                 ))}
               </tbody>

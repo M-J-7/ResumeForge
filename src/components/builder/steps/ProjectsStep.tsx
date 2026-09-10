@@ -4,7 +4,8 @@ import { Button, Field, Input } from "@/components/ui/control";
 import { BulletEditor } from "@/components/builder/BulletEditor";
 import { OptionalDateRangeFields } from "@/components/builder/DateRangeFields";
 import { EntryCard, FieldGrid } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, EvidenceSources, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById, useSection } from "@/components/builder/useSection";
 import { createProjectEntry } from "@/lib/resume/factory";
@@ -12,6 +13,7 @@ import { isValidUrl } from "@/lib/resume/schema";
 import { moveItem } from "@/store/resume";
 
 export function ProjectsStep() {
+  const level = useExperienceLevel();
   const { section, update } = useSection("projects");
   if (!section) return null;
 
@@ -19,7 +21,9 @@ export function ProjectsStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      {entries.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.projects!} /> : null}
+      {entries.length === 0 ? <EmptyStatePanel state={emptyStateFor("projects", level)} /> : null}
+      {/* P35: only for the band that needs it, and only while it is empty. */}
+      {level === "none" && entries.length === 0 ? <EvidenceSources /> : null}
 
       <SortableList
         ids={entries.map((e) => e.id)}
@@ -123,6 +127,7 @@ export function ProjectsStep() {
                     <BulletEditor
                       entryId={entry.id}
                       bullets={entry.bullets}
+                      jobTitle={entry.role}
                       hint="What you built, who used it, and what it changed."
                       onChange={(bullets, coalesceKey) =>
                         update(

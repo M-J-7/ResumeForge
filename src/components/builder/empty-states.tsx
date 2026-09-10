@@ -18,6 +18,7 @@
  */
 
 import type { ReactNode } from "react";
+import type { ExperienceLevel } from "@/lib/resume/experience-level";
 
 export interface EmptyState {
   headline: string;
@@ -153,21 +154,166 @@ export const EMPTY_STATES: Record<string, EmptyState> = {
   },
 };
 
+/* -------------------------------------------------------------------------- */
+/* Per-band overrides (P35)                                                    */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Copy that replaces a default for one experience band.
+ *
+ * **Additive, never edited.** Several of the strings above are asserted
+ * verbatim by the two suites — `/hackathon entries/i`,
+ * `/campus placement portal/i`, `/how you show capability without a job
+ * title/i` — and they are asserted because they are the copy that carries
+ * the fresher case. Overriding by band means the band that needs them keeps
+ * them, and the band that does not stops being told about hackathons after
+ * twelve years of work.
+ *
+ * Only the sections where the advice genuinely differs are overridden. A
+ * band with nothing to say about Skills inherits the default, which is
+ * better than a paraphrase written to fill the table.
+ */
+const LEVEL_OVERRIDES: Partial<Record<ExperienceLevel, Record<string, EmptyState>>> = {
+  none: {
+    experience: {
+      headline: "No work history yet is a normal place to start",
+      body: (
+        <>
+          Leave this empty for now and put your evidence under Projects — that section is above this
+          one for exactly that reason. Come back here the moment you have an internship, a part-time
+          job, or paid freelance work, whatever the field.
+        </>
+      ),
+      counts: [
+        "Internships, including unpaid ones",
+        "Part-time and vacation work of any kind",
+        "Paid freelance or tutoring work",
+        "A role you held in a family business",
+        "A sustained volunteer position with real responsibility",
+      ],
+    },
+  },
+
+  "under-2": {
+    experience: {
+      headline: "Add the role you have now, or the one you just left",
+      body: (
+        <>
+          One or two roles is the normal shape at this stage, and a short history is not a weak one.
+          Say what you changed rather than what you were assigned — {QUANTIFY_HINT}
+        </>
+      ),
+      example: {
+        title: "Junior Backend Engineer",
+        meta: "Fabrikam GmbH · Aug 2024 – Present",
+        bullets: [
+          "Cut the nightly report job from 50 minutes to 9 by batching the three slowest queries.",
+          "Wrote the onboarding runbook two later joiners used to ship in their first week.",
+        ],
+      },
+    },
+  },
+
+  "10-plus": {
+    experience: {
+      headline: "The problem here is what to leave out",
+      body: (
+        <>
+          Ten years of roles will not fit, and a reader stops at the top third anyway. Give the last
+          three roles the detail and compress the rest to a line each — the early ones prove
+          continuity, not capability. {QUANTIFY_HINT}
+        </>
+      ),
+      example: {
+        title: "Director of Engineering",
+        meta: "Contoso Payments · Mar 2019 – Present",
+        bullets: [
+          "Grew the platform group from 6 to 34 across three countries with 91% two-year retention.",
+          "Took settlement latency from 400ms to 90ms across 12 markets, unblocking two launches.",
+        ],
+      },
+    },
+    projects: {
+      headline: "Optional at this stage",
+      body: (
+        <>
+          With a long employment history, projects earn their space only when they show something
+          the roles above do not — an open-source library people depend on, a patent, a talk
+          circuit. Otherwise the room is better spent on the last three roles.
+        </>
+      ),
+    },
+  },
+};
+
+/**
+ * The empty state for a section, adjusted for the band.
+ *
+ * Falls through to the default whenever no override exists, which is most of
+ * the time and is the point: personalisation here is a small number of
+ * deliberate substitutions, not a parallel set of copy to maintain.
+ */
+export function emptyStateFor(section: string, level: ExperienceLevel | null): EmptyState {
+  const override = level ? LEVEL_OVERRIDES[level]?.[section] : undefined;
+  return override ?? EMPTY_STATES[section]!;
+}
+
+/**
+ * Where a candidate with no job history should look for evidence.
+ *
+ * Shown once, above the Projects step, for the "no experience" band only.
+ * It exists because the commonest thing a fresher says is "I have nothing to
+ * put on a resume", and that is almost never true — it is a cataloguing
+ * problem, not an evidence problem. Naming the categories is the whole fix.
+ *
+ * A genuine differentiator for the Indian market specifically, which no
+ * global competitor builds for: campus placement portals, competitive
+ * programming, and TA work are the three that most often go unlisted.
+ */
+export const EVIDENCE_SOURCES: readonly { title: string; body: string }[] = [
+  {
+    title: "Coursework and the capstone",
+    body: "The final-year project is a real project. Describe what it did and who it was for, not which subject it was submitted under.",
+  },
+  {
+    title: "Hackathons",
+    body: "Including the ones that did not place. What you built in 36 hours is evidence of what you can build.",
+  },
+  {
+    title: "Club and society work",
+    body: "Organising an event for four hundred people is operations experience. Say how many people, and what you were responsible for.",
+  },
+  {
+    title: "Teaching assistant and tutoring work",
+    body: "Paid or not, it is a role with a scope and an outcome. How many students, and over how long?",
+  },
+  {
+    title: "Open source",
+    body: "A merged pull request to something other people use counts, however small. Link it.",
+  },
+  {
+    title: "Competitive programming",
+    body: "A rating or a rank is a number, and numbers are what most fresher resumes lack.",
+  },
+  {
+    title: "Anything you built that someone else used",
+    body: "A script your lab still runs, a bot your hostel uses, a spreadsheet that replaced a process. Use counts.",
+  },
+];
+
 export function EmptyStatePanel({ state }: { state: EmptyState }) {
   return (
-    <div className="rounded-lg border border-dashed border-zinc-300 bg-zinc-50/60 p-5 dark:border-zinc-700 dark:bg-zinc-900/40">
-      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{state.headline}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{state.body}</p>
+    <div className="border-line-strong bg-surface-1/60 rounded-lg border border-dashed p-5">
+      <h3 className="text-text text-sm font-semibold">{state.headline}</h3>
+      <p className="text-muted mt-2 text-sm leading-relaxed">{state.body}</p>
 
       {state.counts ? (
         <div className="mt-4">
-          <p className="text-xs font-semibold tracking-wide text-zinc-700 uppercase dark:text-zinc-300">
-            What counts
-          </p>
-          <ul className="mt-2 grid gap-1 text-sm text-zinc-600 sm:grid-cols-2 dark:text-zinc-400">
+          <p className="text-muted text-xs font-semibold tracking-wide uppercase">What counts</p>
+          <ul className="text-muted mt-2 grid gap-1 text-sm sm:grid-cols-2">
             {state.counts.map((item) => (
               <li key={item} className="flex gap-2">
-                <span aria-hidden className="text-zinc-400">
+                <span aria-hidden className="text-faint">
                   •
                 </span>
                 {item}
@@ -178,21 +324,15 @@ export function EmptyStatePanel({ state }: { state: EmptyState }) {
       ) : null}
 
       {state.example ? (
-        <div className="mt-4 rounded-md border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-xs font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
-            Example
-          </p>
-          <p className="mt-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            {state.example.title}
-          </p>
-          {state.example.meta ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">{state.example.meta}</p>
-          ) : null}
+        <div className="border-line mt-4 rounded-md border bg-white p-4">
+          <p className="text-faint text-xs font-semibold tracking-wide uppercase">Example</p>
+          <p className="text-text mt-2 text-sm font-semibold">{state.example.title}</p>
+          {state.example.meta ? <p className="text-muted text-sm">{state.example.meta}</p> : null}
           {state.example.bullets.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {state.example.bullets.map((bullet) => (
-                <li key={bullet} className="flex gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                  <span aria-hidden className="text-zinc-400">
+                <li key={bullet} className="text-muted flex gap-2 text-sm">
+                  <span aria-hidden className="text-faint">
                     •
                   </span>
                   <span>{bullet}</span>
@@ -203,5 +343,40 @@ export function EmptyStatePanel({ state }: { state: EmptyState }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * The evidence-sourcing panel (P35).
+ *
+ * Shown above the Projects step for the "no experience" band only. The
+ * commonest thing a fresher says is "I have nothing to put on a resume", and
+ * it is almost never true — it is a cataloguing problem, not an evidence
+ * problem, and naming the categories is the whole fix.
+ *
+ * Nothing here is written into the document. It is a list of places to look,
+ * which is what makes it advice rather than content generation (D8).
+ */
+export function EvidenceSources() {
+  return (
+    <section
+      aria-label="Where to find evidence"
+      className="border-line bg-surface-1 rounded-lg border p-5"
+    >
+      <h3 className="text-text text-sm font-semibold">You have more to put here than you think</h3>
+      <p className="text-muted mt-2 text-sm leading-relaxed">
+        Nearly every fresher who says they have nothing to write has done several of these and has
+        not counted them as work. Each one is a project entry: what you made, who it was for, and
+        what happened.
+      </p>
+      <ul className="mt-4 flex flex-col gap-3">
+        {EVIDENCE_SOURCES.map((source) => (
+          <li key={source.title}>
+            <p className="text-text text-sm font-medium">{source.title}</p>
+            <p className="text-muted text-sm">{source.body}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -1,0 +1,38 @@
+# TLS termination and the only publicly reachable port.
+#
+# The app container does not publish a port of its own (see docker-compose.yml);
+# it is reachable only on the compose network, as `app`. Everything from the
+# outside arrives here.
+#
+# ## Why this file exists at all
+#
+# `AUTH_URL` is an https: origin in production, so Auth.js issues session
+# cookies with the `__Secure-` prefix. A browser will not send those over plain
+# HTTP. Serving the app directly on :3000 therefore produces a sign-in that
+# completes, redirects, and lands you signed out — a TLS problem wearing a
+# session bug's clothes. There is no configuration of the app that fixes it;
+# the origin has to actually be https.
+#
+# ## What is deliberately not here
+#
+# No security headers. `next.config.ts` owns the CSP, HSTS, frame options and
+# the rest, and `e2e/builder.spec.ts` asserts the exact directive list against
+# the app. Setting any of them here too would mean two sources of truth for a
+# value the test suite pins to one of them.
+#
+# ## Certificates
+#
+# Caddy obtains and renews Let's Encrypt certificates automatically, given
+# only the hostname and reachable ports 80 and 443. They live in the
+# `caddy_data` volume — without it every redeploy re-requests from Let's
+# Encrypt and eventually hits the rate limit for the domain.
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# X-Forwarded-For, -Proto and -Host are set by Caddy here. The first is
+	# what `clientIp()` in src/server/request.ts reads for rate limiting; the
+	# second is how Next knows the request was https despite arriving on
+	# plain HTTP inside the compose network.
+	reverse_proxy app:3000
+}

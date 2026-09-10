@@ -46,9 +46,11 @@ model User {
 
   createdAt DateTime @default(now())
 
-  resumes  Resume[]
-  accounts Account[]
-  sessions Session[]
+  resumes      Resume[]
+  accounts     Account[]
+  sessions     Session[]
+  jobTargets   JobTarget[]
+  coverLetters CoverLetter[]
 }
 
 model Resume {
@@ -72,9 +74,10 @@ model Resume {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  versions    ResumeVersion[]
-  scoreChecks ScoreCheck[]
-  parseChecks ParseCheck[]
+  versions     ResumeVersion[]
+  scoreChecks  ScoreCheck[]
+  parseChecks  ParseCheck[]
+  coverLetters CoverLetter[]
 
   @@index([userId, updatedAt])
 }
@@ -123,6 +126,72 @@ model ParseCheck {
   createdAt     DateTime @default(now())
 
   @@index([resumeId, createdAt])
+}
+
+/// A job description the user pasted and chose to keep (P27).
+///
+/// The pasted text is stored verbatim rather than only its parse: the parser
+/// will improve, and re-analysing an old posting against a better parser is
+/// only possible if the source survived. It is also what the cover-letter
+/// composer reads.
+///
+/// Guests never reach this table — a guest's job targets live in IndexedDB
+/// and nowhere else (D6).
+model JobTarget {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The user's own save name. Never derived silently — see P29 J4.
+  title       String
+  company     String?
+  roleTitle   String?
+  /// The posting, exactly as pasted.
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coverLetters CoverLetter[]
+
+  @@index([userId, updatedAt])
+}
+
+/// A saved cover letter (P29).
+///
+/// `resumeId` and `jobTargetId` are `SetNull`, which is deliberate and
+/// different from every other relation in this schema. Deleting a resume must
+/// not silently destroy the letters written from it — the letter's `content`
+/// is already a complete, self-contained copy of its own text, so the link is
+/// provenance rather than a dependency.
+///
+/// `userId` stays `Cascade`, so M2-T6's "delete removes every row" guarantee
+/// is intact. `accounts.test.ts` asserts this table empties with the user.
+model CoverLetter {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  jobTargetId String?
+  jobTarget   JobTarget? @relation(fields: [jobTargetId], references: [id], onDelete: SetNull)
+
+  /// The user's chosen save name.
+  title String
+  /// A serialized CoverLetterDocument.
+  content String
+
+  /// D10 — never remove. Letters outlive the code that wrote them.
+  schemaVersion Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+  @@index([resumeId])
+  @@index([jobTargetId])
 }
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,8 @@ import { Button, Field, Input } from "@/components/ui/control";
 import { BulletEditor } from "@/components/builder/BulletEditor";
 import { DateRangeFields } from "@/components/builder/DateRangeFields";
 import { EntryCard, FieldGrid } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById, useSection } from "@/components/builder/useSection";
 import { formatDateRange } from "@/lib/resume/dates";
@@ -12,6 +13,7 @@ import { createEducationEntry } from "@/lib/resume/factory";
 import { moveItem } from "@/store/resume";
 
 export function EducationStep() {
+  const level = useExperienceLevel();
   const { section, update } = useSection("education");
   if (!section) return null;
 
@@ -19,7 +21,7 @@ export function EducationStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      {entries.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.education!} /> : null}
+      {entries.length === 0 ? <EmptyStatePanel state={emptyStateFor("education", level)} /> : null}
 
       <SortableList
         ids={entries.map((e) => e.id)}

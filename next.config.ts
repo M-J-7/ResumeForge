@@ -1,6 +1,39 @@
 import type { NextConfig } from "next";
 
 /**
+ * The only cross-origin form target this app has: Google's consent screen.
+ *
+ * "Continue with Google" is a form that posts to a Server Action, and the
+ * action answers with a redirect to the authorization endpoint. With
+ * JavaScript the router turns that into a script navigation, which
+ * `form-action` does not govern — but without it the browser follows the
+ * redirect as part of the submission, and Chrome checks the whole redirect
+ * chain against this directive. `form-action 'self'` alone therefore breaks
+ * Google sign-in for anyone whose JavaScript has not loaded, while leaving
+ * every automated check green.
+ *
+ * Naming one origin is a much smaller allowance than it looks: it permits
+ * form submissions *to* Google's sign-in host and nothing else.
+ *
+ * `AUTH_GOOGLE_ISSUER` is read at build time, which is fine only because
+ * this is the one place it cannot be read later — `headers()` is evaluated
+ * once — and because the default covers every real deployment. The override
+ * exists for the end-to-end suite's local issuer (see
+ * `src/server/auth/config.ts`), which builds with it set.
+ */
+function googleSignInOrigins(): string[] {
+  const origins = ["https://accounts.google.com"];
+  const configured = process.env.AUTH_GOOGLE_ISSUER?.trim();
+  if (!configured) return origins;
+  try {
+    const { origin } = new URL(configured);
+    return origins.includes(origin) ? origins : [...origins, origin];
+  } catch {
+    return origins;
+  }
+}
+
+/**
  * Content Security Policy.
  *
  * Every directive here is shaped by something this app actually does, and
@@ -39,10 +72,31 @@ import type { NextConfig } from "next";
  * Safari 16.4+. On anything older the builder still works and the preview
  * does not — recorded in `docs/QA.md` rather than solved by widening the
  * policy to `'unsafe-eval'`, which would give up the protection entirely.
+ *
+ * ## The one exception, and why it is not a weakening (§10.3)
+ *
+ * In **development only**, `'unsafe-eval'` is added. React's development
+ * build uses string `eval` to attach source-mapped call stacks to component
+ * errors; the production build never does, and says so itself in the message
+ * it prints when the policy blocks it. Without this every page in `next dev`
+ * carries a red error badge for a problem that does not exist in the shipped
+ * app — which trains whoever is working on it to ignore the badge, and that
+ * is the actual cost.
+ *
+ * The production policy is unchanged byte for byte, and that is asserted
+ * rather than asserted-by-comment: `e2e/builder.spec.ts` checks the served
+ * CSP does not match `/(^|\s)'unsafe-eval'/`, and the e2e suite runs against
+ * `pnpm build && pnpm start`. If this ever leaked into a production build the
+ * suite would fail on it by name.
  */
+const DEVELOPMENT_ONLY_SCRIPT_SOURCES =
+  process.env.NODE_ENV === "production" ? [] : ["'unsafe-eval'"];
+
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+  ["script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'", ...DEVELOPMENT_ONLY_SCRIPT_SOURCES].join(
+    " ",
+  ),
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
@@ -50,7 +104,7 @@ const CONTENT_SECURITY_POLICY = [
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  `form-action 'self' ${googleSignInOrigins().join(" ")}`,
   "frame-ancestors 'none'",
   "upgrade-insecure-requests",
 ].join("; ");

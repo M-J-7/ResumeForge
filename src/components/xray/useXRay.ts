@@ -14,7 +14,7 @@ import {
   extractPdfStreamOrder,
   strategyDisagreements,
   type ExtractedDocument,
-} from "@/lib/xray/extract";
+} from "@/lib/xray/extract-browser";
 import { recoverFields, scoreRecovery, type Scorecard } from "@/lib/xray/scorecard";
 import { useResumeStore } from "@/store/resume";
 

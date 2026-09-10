@@ -248,5 +248,29 @@ export function renderBlock(
           <Text style={styles.bulletText}>{block.text}</Text>
         </View>
       );
+
+    case "letterMeta":
+      return (
+        <View key={key} style={styles.letterMeta} minPresenceAhead={hints.minPresenceAhead}>
+          {block.date ? <Text style={styles.letterDate}>{block.date}</Text> : null}
+          {block.recipientLines.map((line, i) => (
+            <Text key={`${line}-${i}`} style={styles.letterRecipientLine}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      );
+
+    case "paragraph":
+      return (
+        <Text
+          key={key}
+          style={styles.letterParagraph}
+          wrap={hints.wrap}
+          minPresenceAhead={hints.minPresenceAhead}
+        >
+          {block.text}
+        </Text>
+      );
   }
 }

@@ -13,7 +13,15 @@
  */
 
 import { create } from "zustand";
-import { createDraftStore, idbBackend, type DraftStore, type KeyValueBackend } from "./persistence";
+import {
+  createDraftStore,
+  idbBackend,
+  STORAGE_KEY,
+  type DraftStore,
+  type DraftStoreOptions,
+  type KeyValueBackend,
+} from "./persistence";
+import { namespacedKey, subscribeToOwner } from "./owner";
 import {
   canRedo,
   canUndo,
@@ -33,6 +41,7 @@ import type {
   CustomSection,
   ResumeDocument,
   Section,
+  SectionType,
   Settings,
 } from "@/lib/resume/schema";
 
@@ -96,6 +105,19 @@ export interface ResumeState {
   ) => void;
   setSectionVisible: (sectionId: string, visible: boolean) => void;
   reorderSections: (from: number, to: number) => void;
+  /**
+   * Applies a template preset in **one** history entry (P32-B3).
+   *
+   * Deliberately not `setSettings` followed by a run of `reorderSections`.
+   * Each of those is its own `applyChange`, so applying a template would
+   * cost the user five or six presses of Ctrl+Z to undo one click — which is
+   * not undo, it is a puzzle. One change, one undo step.
+   *
+   * Sections the template does not name keep their relative order and follow
+   * the ones it does: custom sections are the user's own and a preset has no
+   * business reordering, hiding or dropping them.
+   */
+  applyTemplate: (settings: Settings, sectionOrder: readonly SectionType[]) => void;
   addCustomSection: (section: CustomSection) => void;
   removeSection: (sectionId: string) => void;
   replaceDocument: (document: ResumeDocument) => void;
@@ -137,18 +159,75 @@ function mapSection(
   return changed ? { ...doc, sections } : doc;
 }
 
-let draftStore: DraftStore = createDraftStore(idbBackend);
+/**
+ * The persistence seam, and the identity it is currently bound to.
+ *
+ * Both are held rather than just the store, because the store's key is
+ * decided at construction and the owner can change *after* this module is
+ * imported — a person signs in, and the slot the builder should be writing
+ * to changes underneath a module that has no component to re-render. The
+ * subscription below rebuilds the store on that event so no write can land
+ * in the previous owner's slot (§10.1).
+ */
+let backendInUse: KeyValueBackend = idbBackend;
+let persistenceOptions: DraftStoreOptions | undefined;
+let draftStore: DraftStore = createDraftStore(backendInUse);
 
 /**
  * Swaps the persistence backend. Exists for tests, which run in Node where
  * IndexedDB does not exist, and for any future server-side rendering path.
  */
-export function configurePersistence(
-  backend: KeyValueBackend,
-  options?: { debounceMs?: number },
-): void {
+export function configurePersistence(backend: KeyValueBackend, options?: DraftStoreOptions): void {
+  backendInUse = backend;
+  persistenceOptions = options;
   draftStore = createDraftStore(backend, options);
 }
+
+/**
+ * Rebinds to the new owner's slot when identity changes.
+ *
+ * A queued autosave is flushed to the *old* slot first, deliberately: it is
+ * the previous owner's own work, and dropping it mid-debounce would lose an
+ * edit they made seconds before signing out. `purgeForeignStorage` deletes
+ * it afterwards if it belongs to neither the new owner nor `guest`.
+ *
+ * An explicit `key` in `persistenceOptions` wins — that is a test pinning a
+ * slot on purpose, and re-deriving it here would silently ignore them.
+ */
+subscribeToOwner(() => {
+  const previous = draftStore;
+  draftStore = createDraftStore(backendInUse, {
+    ...persistenceOptions,
+    key: persistenceOptions?.key ?? namespacedKey(STORAGE_KEY),
+  });
+  void previous.flush().catch(() => undefined);
+
+  /*
+   * Rebinding the key is not enough on its own.
+   *
+   * `signOutAction` redirects through a Server Action, which is a *soft*
+   * navigation: this module is never re-evaluated, so the document, the
+   * history stack and the `remoteId` all survive in memory. The next
+   * person's first paint would show the previous person's resume even
+   * though every subsequent read went to the right slot.
+   *
+   * `detachRemote` is called for its own job — dropping the sync target so
+   * a stray queued push cannot go out stamped with a foreign resume id.
+   * That method was written for exactly this moment and had no callers.
+   */
+  const store = useResumeStore.getState();
+  store.detachRemote();
+  useResumeStore.setState({
+    history: createHistory(createEmptyResume()),
+    // The next mount hydrates from the new owner's slot. Left true, a
+    // builder still on screen would keep rendering the emptied document as
+    // if it were loaded.
+    hydrated: false,
+    loadError: null,
+    externalRevision: store.externalRevision + 1,
+    measuredPageCount: null,
+  });
+});
 
 /**
  * The queue that pushes to the account (M2-T4), or null when there is no
@@ -353,6 +432,19 @@ export const useResumeStore = create<ResumeState>((set, get) => {
     reorderSections(from, to) {
       const doc = get().history.present;
       applyChange({ ...doc, sections: moveItem(doc.sections, from, to) });
+    },
+
+    applyTemplate(settings, sectionOrder) {
+      const doc = get().history.present;
+      const rank = new Map(sectionOrder.map((type, index) => [type, index]));
+      // Anything unranked — every custom section — sorts after everything
+      // ranked, and `sort` is stable, so those keep the order the user chose.
+      const ordered = [...doc.sections].sort(
+        (a, b) =>
+          (rank.get(a.type) ?? Number.MAX_SAFE_INTEGER) -
+          (rank.get(b.type) ?? Number.MAX_SAFE_INTEGER),
+      );
+      applyChange({ ...doc, settings, sections: ordered });
     },
 
     addCustomSection(section) {

@@ -34,16 +34,14 @@ export default function Error({
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Something went wrong
-      </h1>
+      <h1 className="text-text text-2xl font-semibold">Something went wrong</h1>
 
-      <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+      <p className="rounded-md border border-ok/40 bg-ok-weak px-3 py-2 text-sm text-text">
         <strong className="font-medium">Your resume is safe.</strong> It is stored in this browser
         and was saved as you typed. Nothing here has deleted or altered it.
       </p>
 
-      <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+      <p className="text-muted text-sm leading-relaxed">
         Try again — most of these are momentary. If it keeps happening, the builder itself usually
         still works.
       </p>
@@ -52,20 +50,20 @@ export default function Error({
         <button
           type="button"
           onClick={reset}
-          className="rounded-md bg-sky-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-800 focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-sky-600 dark:hover:bg-sky-500"
+          className="bg-accent text-on-accent hover:bg-accent-hover focus-visible:ring-accent rounded-md px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           Try again
         </button>
         <Link
           href="/builder"
-          className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:outline-none dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          className="border-line-strong text-text hover:bg-surface-2 focus-visible:ring-accent rounded-md border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           Back to the builder
         </Link>
       </div>
 
       {error.digest ? (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-faint text-xs">
           Reference <code className="font-mono">{error.digest}</code> — quote this if you report it.
         </p>
       ) : null}

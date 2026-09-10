@@ -15,6 +15,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STEPS } from "./steps-config";
+import { SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export interface Command {
@@ -102,43 +103,46 @@ export function CommandPalette({
         if (e.target === dialogRef.current) onClose();
       }}
       className={cn(
-        "m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border border-zinc-200 bg-white p-0 shadow-2xl",
-        "backdrop:bg-zinc-900/40 dark:border-zinc-800 dark:bg-zinc-900",
+        "border-line bg-surface-0 m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border p-0 shadow-2xl",
+        "backdrop:bg-[var(--scrim)] backdrop:backdrop-blur-[2px]",
       )}
       aria-label="Command palette"
     >
       <div className="flex flex-col">
-        <input
-          autoFocus
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            // Reset alongside the query rather than in an effect: the
-            // highlight is derived from this same interaction, so doing it
-            // here avoids a second render pass.
-            setHighlighted(0);
-          }}
-          placeholder="Jump to a section…"
-          aria-label="Search commands"
-          aria-controls="command-results"
-          className="border-b border-zinc-200 bg-transparent px-4 py-3 text-sm text-zinc-900 outline-none dark:border-zinc-800 dark:text-zinc-100"
-          onKeyDown={(e) => {
-            if (e.key === "ArrowDown") {
-              e.preventDefault();
-              setHighlighted((i) => Math.min(i + 1, results.length - 1));
-            } else if (e.key === "ArrowUp") {
-              e.preventDefault();
-              setHighlighted((i) => Math.max(i - 1, 0));
-            } else if (e.key === "Enter") {
-              e.preventDefault();
-              // Clamp: the list can shrink between keystrokes.
-              select(results[Math.min(highlighted, results.length - 1)]);
-            }
-          }}
-        />
+        <div className="border-line flex items-center gap-2 border-b px-4">
+          <SearchIcon className="text-faint h-4 w-4 shrink-0" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              // Reset alongside the query rather than in an effect: the
+              // highlight is derived from this same interaction, so doing it
+              // here avoids a second render pass.
+              setHighlighted(0);
+            }}
+            placeholder="Jump to a section…"
+            aria-label="Search commands"
+            aria-controls="command-results"
+            className="text-text w-full bg-transparent py-3 text-sm outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setHighlighted((i) => Math.min(i + 1, results.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setHighlighted((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter") {
+                e.preventDefault();
+                // Clamp: the list can shrink between keystrokes.
+                select(results[Math.min(highlighted, results.length - 1)]);
+              }
+            }}
+          />
+        </div>
         <ul id="command-results" className="max-h-72 overflow-y-auto p-1">
           {results.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-zinc-500">No matching command.</li>
+            <li className="text-muted px-3 py-6 text-center text-sm">No matching command.</li>
           ) : (
             results.map((command, index) => (
               <li key={command.id}>
@@ -148,16 +152,12 @@ export function CommandPalette({
                   onClick={() => select(command)}
                   className={cn(
                     "flex w-full flex-col gap-0.5 rounded-md px-3 py-2 text-left",
-                    index === highlighted
-                      ? "bg-sky-50 dark:bg-sky-950"
-                      : "hover:bg-zinc-50 dark:hover:bg-zinc-800",
+                    index === highlighted ? "bg-accent-weak" : "hover:bg-surface-2",
                   )}
                 >
-                  <span className="text-sm text-zinc-900 dark:text-zinc-100">{command.label}</span>
+                  <span className="text-text text-sm">{command.label}</span>
                   {command.hint ? (
-                    <span className="line-clamp-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      {command.hint}
-                    </span>
+                    <span className="text-muted line-clamp-1 text-xs">{command.hint}</span>
                   ) : null}
                 </button>
               </li>

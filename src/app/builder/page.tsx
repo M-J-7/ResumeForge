@@ -6,13 +6,20 @@
  * changes: the builder opens the local draft and never touches the server.
  * That is the point of D6, and it survives accounts existing.
  *
- * An id that does not belong to the signed-in user simply loads no resume,
- * rather than erroring. There is nothing useful to tell someone about a
- * resume they cannot see, and a distinct "not yours" response would confirm
- * that the id exists.
+ * An id that does not belong to the signed-in user gets the 404, exactly as
+ * an id that does not exist does. There is nothing useful to tell someone
+ * about a resume they cannot see, and one response for both cases is what
+ * stops the page confirming that the id exists.
+ *
+ * It used to fall through to `<BuilderShell signedIn />` instead — which,
+ * before local storage was namespaced per user (§10.1), silently rendered
+ * whatever draft happened to be in this browser. Somebody following a link
+ * to a colleague's resume was shown a resume; it simply was not the one in
+ * the URL, and nothing on the page said so.
  */
 
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { BuilderShell } from "@/components/builder/BuilderShell";
 import { getSessionUser } from "@/server/auth/session";
 import { loadResume } from "@/server/resumes";
@@ -30,16 +37,19 @@ export default async function BuilderPage({ searchParams }: PageProps<"/builder"
   const raw = params.resume;
   const requestedId = (Array.isArray(raw) ? raw[0] : raw)?.trim();
 
-  if (!requestedId) return <BuilderShell />;
-
+  // Read once regardless of whether a specific resume was requested: P24's
+  // "Save as new resume" is available to any signed-in visitor, including
+  // one editing the local guest draft with no `?resume=` in the URL at all.
   const user = await getSessionUser();
-  if (!user) return <BuilderShell />;
+
+  if (!requestedId || !user) return <BuilderShell signedIn={!!user} />;
 
   const loaded = await loadResume(user.id, requestedId);
-  if (!loaded) return <BuilderShell />;
+  if (!loaded) notFound();
 
   return (
     <BuilderShell
+      signedIn
       remote={{
         id: loaded.summary.id,
         title: loaded.summary.title,

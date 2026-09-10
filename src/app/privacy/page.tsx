@@ -39,14 +39,14 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto flex max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
       <div>
-        <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50">Privacy</h1>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          Last updated 31 August 2026.
-        </p>
+        <h1 className="font-display text-text text-[clamp(1.9rem,4vw,2.75rem)] leading-[1.08] font-semibold tracking-tight">
+          Privacy
+        </h1>
+        <p className="text-faint mt-2 text-sm">Last updated 8 September 2026.</p>
       </div>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">
           Without an account, your resume stays in your browser
         </h2>
         <p>
@@ -61,10 +61,8 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          If you create an account
-        </h2>
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">If you create an account</h2>
         <p>
           An account exists for one reason: so your resumes follow you between devices. Creating one
           is optional, and nothing you build is sent to us until you explicitly save it.
@@ -83,10 +81,8 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Your files are generated on your device
-        </h2>
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">Your files are generated on your device</h2>
         <p>
           The PDF, DOCX, and text files are built in your browser and handed straight to your
           downloads. They are never uploaded, never generated on a server, and never stored by us —
@@ -94,19 +90,25 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          No AI, no third-party analytics
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">
+          Optional local AI, no third-party analytics
         </h2>
         <p>
-          Your resume is never sent to a language model or any other third-party service, and is
-          never used to train anything. There are no third-party analytics or advertising scripts on
-          the builder.
+          If you choose Enhance in the cover-letter editor, a small model is downloaded once and
+          runs in your browser. The selected paragraph and resume evidence stay on your device: they
+          are not sent to us, to a language-model API, or to the model host, and they are never used
+          for training. The model host receives an ordinary request for its public model files, like
+          any other file download.
+        </p>
+        <p>
+          Enhance is optional, proposes wording for you to review, and is free. There are no
+          third-party analytics or advertising scripts on the builder.
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Server logs</h2>
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">Server logs</h2>
         <p>
           Serving the site produces ordinary web-server logs — IP address, timestamp, and which page
           was requested. These record that a page was fetched. They never contain resume content:
@@ -115,8 +117,8 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Your rights</h2>
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">Your rights</h2>
         <p>
           Without an account we hold no personal data about you at all, so there is nothing for us
           to export, correct, or erase — your data is on your device, and the builder can delete it.
@@ -145,10 +147,8 @@ export default function PrivacyPage() {
         </p>
       </section>
 
-      <section className="flex flex-col gap-3 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
-        <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-          Fields we deliberately do not have
-        </h2>
+      <section className="text-muted flex flex-col gap-3 text-sm leading-relaxed">
+        <h2 className="text-text text-lg font-semibold">Fields we deliberately do not have</h2>
         <p>
           There is no field for a photograph, date of birth, marital status, gender, or nationality.
           These invite discrimination in most hiring markets and are unnecessary in nearly all of

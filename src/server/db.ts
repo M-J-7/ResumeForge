@@ -29,8 +29,10 @@
  */
 
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import path from "node:path";
 import { PrismaClient } from "@/generated/prisma/client";
 import { applyPendingMigrations } from "./migrate";
+import { backupFileName, createBackup, databaseFilePath } from "./backup";
 import { logWarning } from "./logging";
 
 /** What `assertPragmas` requires. `synchronous: 1` is NORMAL. */
@@ -130,10 +132,52 @@ const globalForPrisma = globalThis as unknown as {
  * `SKIP_AUTO_MIGRATE=1` turns it off, for an operator who would rather run
  * migrations as a deliberate step (see `docs/RUNBOOK.md`).
  */
+/**
+ * Snapshots the database immediately before migrations are applied to it.
+ *
+ * A migration is the one routine operation here with no undo. `docs/RUNBOOK.md`
+ * says to snapshot by hand first, which is a step that gets forgotten exactly
+ * once — and because migrations are applied automatically on first request,
+ * "before the migration" is a moment no human is present for. Taking it here
+ * is the only way it actually happens.
+ *
+ * The hourly `backup` service is not a substitute: it can be up to an hour
+ * stale, and the hour before a deploy is when the database changes most.
+ *
+ * ## Why this fails the boot rather than warning
+ *
+ * When `BACKUP_DIR` is set, someone configured backups, and this is the
+ * moment they exist for. Proceeding without one trades a loud, recoverable
+ * startup failure — the schema is still untouched, because
+ * `onBeforeApply` runs before any DDL — for a silent, unrecoverable one.
+ * `SKIP_AUTO_MIGRATE=1` is the documented way out for an operator who wants
+ * to handle it themselves.
+ *
+ * With `BACKUP_DIR` unset it warns instead. That is development, where the
+ * database is `dev.db` and there is nothing to protect.
+ */
+async function snapshotBeforeMigrating(pending: string[]): Promise<void> {
+  const directory = process.env.BACKUP_DIR;
+  if (!directory) {
+    logWarning(
+      "db",
+      `applying ${pending.length} migration(s) without a snapshot: BACKUP_DIR is not set`,
+    );
+    return;
+  }
+
+  const source = databaseFilePath(databaseUrl());
+  const destination = path.join(directory, `pre-migration-${backupFileName()}`);
+  const result = await createBackup(source, destination);
+  console.info(`[db] snapshot before migrating: ${result.path} (${result.bytes} bytes)`);
+}
+
 async function migrateIfNeeded(client: PrismaClient): Promise<void> {
   if (process.env.SKIP_AUTO_MIGRATE === "1") return;
 
-  const outcome = await applyPendingMigrations(client);
+  const outcome = await applyPendingMigrations(client, undefined, {
+    onBeforeApply: snapshotBeforeMigrating,
+  });
   if (outcome.applied.length > 0) {
     console.info(
       `[db] applied ${outcome.applied.length} migration(s): ${outcome.applied.join(", ")}`,

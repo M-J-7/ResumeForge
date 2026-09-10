@@ -17,8 +17,10 @@ import type { Adapter } from "next-auth/adapters";
 import {
   buildAuthConfig,
   EMAIL_PROVIDER_ID,
+  GOOGLE_ISSUER,
   GOOGLE_PROVIDER_ID,
   googleCredentials,
+  googleIssuer,
   MAGIC_LINK_MAX_AGE_SECONDS,
 } from "./config";
 import { describeAuthError, errorFromRedirectUrl, FALLBACK_AUTH_ERROR } from "./errors";
@@ -30,7 +32,11 @@ const adapter = {} as Adapter;
 
 function build(google: { clientId: string; clientSecret: string } | null = null) {
   const transport = memoryTransport();
-  const config = buildAuthConfig({ adapter, mailTransport: () => transport, google });
+  const config = buildAuthConfig({
+    adapter,
+    mailTransport: () => transport,
+    google: google && { ...google, issuer: GOOGLE_ISSUER },
+  });
   return { config, transport };
 }
 
@@ -83,6 +89,63 @@ describe("providers", () => {
     const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
     expect(google).toBeDefined();
     expect(google?.allowDangerousEmailAccountLinking).toBe(false);
+  });
+
+  it("sends every check on the authorization request, not just PKCE", () => {
+    // Auth.js defaults an OAuth provider to `["pkce"]`, which silently drops
+    // `state` and `nonce` from the request. Asserted because the default is
+    // what applies if this line is ever removed.
+    const { config } = build({ clientId: "id", clientSecret: "secret" });
+    const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
+    expect(google?.checks).toEqual(["pkce", "state", "nonce"]);
+  });
+
+  it("asks Google for the account chooser on every sign-in", () => {
+    // Without `prompt`, Google silently reuses whichever account the browser
+    // is already signed into. Since account linking is off, the account a
+    // user lands on is the one their resumes belong to permanently — so
+    // "which account?" has to be a question, not an assumption.
+    const { config } = build({ clientId: "id", clientSecret: "secret" });
+    const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
+    const authorization = google?.authorization as { params?: Record<string, unknown> } | undefined;
+
+    expect(authorization?.params?.prompt).toBe("select_account");
+  });
+
+  it("does not request a refresh token it would only throw away", () => {
+    // Per the 2026-08-31 amendment to D7 the adapter stores no tokens, and
+    // nothing calls a Google API after sign-in. `access_type: "offline"`
+    // would obtain a long-lived credential with no use and real liability.
+    const { config } = build({ clientId: "id", clientSecret: "secret" });
+    const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
+    const authorization = google?.authorization as { params?: Record<string, unknown> } | undefined;
+
+    expect(authorization?.params?.access_type).toBeUndefined();
+  });
+
+  it("discovers Google's endpoints from Google's issuer", () => {
+    // Everything else about the provider — the authorization endpoint, the
+    // token endpoint, the keys the id_token is checked against — follows
+    // from this one value.
+    const { config } = build({ clientId: "id", clientSecret: "secret" });
+    const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
+    expect(google?.issuer).toBe(GOOGLE_ISSUER);
+  });
+
+  it("drops Google's avatar URL rather than storing it", () => {
+    const { config } = build({ clientId: "id", clientSecret: "secret" });
+    const google = resolveProviders(config).find((provider) => provider.id === GOOGLE_PROVIDER_ID);
+    const profile = google?.profile as (input: Record<string, unknown>) => Record<string, unknown>;
+
+    const mapped = profile({
+      sub: "1234567890",
+      name: "Ada Lovelace",
+      email: "ada@example.com",
+      picture: "https://lh3.googleusercontent.com/a/avatar",
+    });
+
+    expect(mapped).toEqual({ id: "1234567890", name: "Ada Lovelace", email: "ada@example.com" });
+    expect(JSON.stringify(mapped)).not.toContain("googleusercontent");
   });
 });
 
@@ -163,7 +226,48 @@ describe("googleCredentials", () => {
     expect(googleCredentials({ AUTH_GOOGLE_ID: " id ", AUTH_GOOGLE_SECRET: " secret " })).toEqual({
       clientId: "id",
       clientSecret: "secret",
+      issuer: GOOGLE_ISSUER,
     });
+  });
+
+  it("uses Google's issuer unless one is configured", () => {
+    expect(
+      googleCredentials({
+        AUTH_GOOGLE_ID: "id",
+        AUTH_GOOGLE_SECRET: "secret",
+        AUTH_GOOGLE_ISSUER: "http://127.0.0.1:2527",
+      })?.issuer,
+    ).toBe("http://127.0.0.1:2527");
+  });
+});
+
+describe("googleIssuer", () => {
+  it("defaults to Google", () => {
+    expect(googleIssuer(undefined)).toBe(GOOGLE_ISSUER);
+    expect(googleIssuer("   ")).toBe(GOOGLE_ISSUER);
+  });
+
+  it("accepts an https issuer", () => {
+    expect(googleIssuer("https://login.example.com")).toBe("https://login.example.com");
+  });
+
+  it("accepts plain HTTP on loopback, which is what the E2E provider is", () => {
+    expect(googleIssuer("http://127.0.0.1:2527")).toBe("http://127.0.0.1:2527");
+    expect(googleIssuer("http://localhost:2527")).toBe("http://localhost:2527");
+  });
+
+  it("refuses plain HTTP anywhere else, and keeps working against Google", () => {
+    // An `http:` issuer off the machine puts the authorization code and the
+    // id_token in clear text, and a value that arrives by mistake would send
+    // every sign-in to whoever answers there. Falling back to Google is what
+    // keeps the deployment signing people in rather than trusting a fake.
+    expect(googleIssuer("http://accounts.google.com.evil.test")).toBe(GOOGLE_ISSUER);
+    expect(googleIssuer("http://192.168.1.10:2527")).toBe(GOOGLE_ISSUER);
+  });
+
+  it("refuses anything that is not a URL", () => {
+    expect(googleIssuer("accounts.google.com")).toBe(GOOGLE_ISSUER);
+    expect(googleIssuer("javascript:alert(1)")).toBe(GOOGLE_ISSUER);
   });
 });
 
@@ -179,6 +283,30 @@ describe("error messages", () => {
 
   it("tells the user a used link is expected behaviour, not a broken account", () => {
     expect(describeAuthError("Verification")).toMatch(/once|expired/i);
+  });
+
+  it("reads a cancelled Google consent as cancelled, not as a fault", () => {
+    // `OAuthCallbackError` is what Auth.js v5 puts on the query string when
+    // the consent screen is dismissed — v4's spelling was `OAuthCallback`,
+    // and the generic fallback would tell someone who pressed Cancel that
+    // something had gone wrong.
+    const message = describeAuthError("OAuthCallbackError");
+    expect(message).toBe(describeAuthError("OAuthCallback"));
+    expect(message).toMatch(/closed or declined/i);
+    expect(message).not.toBe(FALLBACK_AUTH_ERROR);
+  });
+
+  it("names Google when the provider could not be reached at all", () => {
+    // Thrown out of `signIn()` before any redirect happens: discovery
+    // refused, no network, credentials Google rejects outright.
+    expect(describeAuthError("OAuthSignInError")).toMatch(/Google could not be reached/i);
+    expect(describeAuthError("OAuthSignInError")).toBe(describeAuthError("OAuthSignin"));
+  });
+
+  it("explains a stale sign-in page rather than showing MissingCSRF", () => {
+    const message = describeAuthError("MissingCSRF");
+    expect(message).toMatch(/reload/i);
+    expect(message).not.toBe(FALLBACK_AUTH_ERROR);
   });
 
   it("falls back rather than showing a raw code", () => {

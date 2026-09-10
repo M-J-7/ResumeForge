@@ -100,12 +100,21 @@ export function documentWordCount(doc: ResumeDocument): number {
 /* Word lists                                                                  */
 /* -------------------------------------------------------------------------- */
 
+/*
+ * Exported for the Bullet Coach (P34), which asks about the same four
+ * qualities these rules check for and must not develop a second opinion
+ * about them. A coach that called a verb weak while the checklist beside it
+ * called the same verb fine would undermine both — so there is one
+ * definition of "weak verb", "duty phrasing" and "a quantity", and it is
+ * here, where the rules that ship them live.
+ */
+
 /**
  * Openings that describe a job description rather than a person's record.
  * "Responsible for X" says the task existed; it does not say you did it well,
  * or at all.
  */
-const DUTY_PHRASES = [
+export const DUTY_PHRASES = [
   "responsible for",
   "duties included",
   "duties involved",
@@ -117,13 +126,13 @@ const DUTY_PHRASES = [
   "in charge of",
 ];
 
-const FIRST_PERSON = /\b(I|I'm|I've|I'd|me|my|mine|myself|we|our|ours|us)\b/i;
+export const FIRST_PERSON = /\b(I|I'm|I've|I'd|me|my|mine|myself|we|our|ours|us)\b/i;
 
 /**
  * Openings that describe presence rather than contribution. A bullet that
  * starts here is usually one edit away from a much stronger one.
  */
-const WEAK_VERBS = new Set([
+export const WEAK_VERBS = new Set([
   "worked",
   "helped",
   "assisted",
@@ -146,10 +155,10 @@ const WEAK_VERBS = new Set([
 ]);
 
 /** Words that are verbs only in a form that does not lead a bullet well. */
-const NON_VERB_OPENERS = /^(a|an|the|this|that|these|those|it|there|as|for|to|in|on|at|with|and)$/i;
+export const NON_VERB_OPENERS = /^(a|an|the|this|that|these|those|it|there|as|for|to|in|on|at|with|and)$/i;
 
 /** Any digit, percentage, currency, or magnitude word counts as a quantity. */
-const QUANTITY = /\d|\b(doubled|tripled|halved|quadrupled)\b/i;
+export const QUANTITY = /\d|\b(doubled|tripled|halved|quadrupled)\b/i;
 
 /* -------------------------------------------------------------------------- */
 /* Rules                                                                       */

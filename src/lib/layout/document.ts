@@ -157,6 +157,39 @@ export interface BulletBlock extends BlockHints {
   text: string;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Cover letter blocks (P28-I2)                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The date and recipient block that opens a letter.
+ *
+ * Added to *this* union rather than given a parallel one, and that is the
+ * whole design: the union is discriminated and every emitter switches over
+ * it, so TypeScript fails the build at each `switch` until all three handle
+ * the new cases. A separate letter-only block union would have compiled
+ * happily with the DOCX emitter silently dropping the recipient.
+ *
+ * `recipientLines` is pre-composed rather than structured because the lines a
+ * letter's address block contains are entirely the user's — a name they
+ * typed, a company they typed, an address they typed with their own line
+ * breaks. There is nothing for an emitter to decide.
+ */
+export interface LetterMetaBlock extends BlockHints {
+  type: "letterMeta";
+  /** Already formatted for display; `null` when the user cleared it. */
+  date: string | null;
+  recipientLines: string[];
+}
+
+/** A run of prose. Used for the salutation, each paragraph, and the sign-off. */
+export interface ParagraphBlock extends BlockHints {
+  type: "paragraph";
+  text: string;
+  /** Identifies the source paragraph, so the UI can map back to it. */
+  paragraphId?: string;
+}
+
 export type DocumentBlock =
   | ContactBlock
   | SectionHeadingBlock
@@ -167,7 +200,9 @@ export type DocumentBlock =
   | CertificationEntryBlock
   | CustomEntryBlock
   | SkillGroupBlock
-  | BulletBlock;
+  | BulletBlock
+  | LetterMetaBlock
+  | ParagraphBlock;
 
 /** Section headings emit these exact strings — the ones ATS parsers pattern-match on. */
 export const STANDARD_SECTION_LABELS: Readonly<Record<StandardSectionType, string>> = {

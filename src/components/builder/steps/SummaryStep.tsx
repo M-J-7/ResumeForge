@@ -34,8 +34,8 @@ export function SummaryStep() {
       <p
         className={
           tooLong
-            ? "text-xs font-medium text-amber-700 dark:text-amber-500"
-            : "text-xs text-zinc-500 dark:text-zinc-400"
+            ? "text-xs font-medium text-warn"
+            : "text-xs text-faint"
         }
       >
         {words} {words === 1 ? "word" : "words"}

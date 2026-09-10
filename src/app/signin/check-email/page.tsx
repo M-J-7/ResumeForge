@@ -28,8 +28,8 @@ export default async function CheckEmailPage({ searchParams }: PageProps<"/signi
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Check your email</h1>
-      <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+      <h1 className="text-text text-2xl font-semibold">Check your email</h1>
+      <p className="text-muted text-sm leading-relaxed">
         {email ? (
           <>
             A sign-in link is on its way to <strong className="font-medium">{email}</strong>.
@@ -39,14 +39,14 @@ export default async function CheckEmailPage({ searchParams }: PageProps<"/signi
         )}{" "}
         It works once and expires in {minutes} minutes.
       </p>
-      <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+      <p className="text-muted text-sm leading-relaxed">
         Nothing arrived? Check the spam folder, then{" "}
         <Link href="/signin" className="underline underline-offset-2">
           request another link
         </Link>
         . An earlier link stays valid until it expires, so either one will work.
       </p>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-faint text-xs">
         You can keep working meanwhile —{" "}
         <Link href="/builder" className="underline underline-offset-2">
           the builder does not need an account

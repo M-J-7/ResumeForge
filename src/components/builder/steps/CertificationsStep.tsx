@@ -3,7 +3,8 @@
 import { Button, Field, Input } from "@/components/ui/control";
 import { PartialDateField } from "@/components/builder/DateRangeFields";
 import { EntryCard, FieldGrid } from "@/components/builder/EntryCard";
-import { EMPTY_STATES, EmptyStatePanel } from "@/components/builder/empty-states";
+import { EmptyStatePanel, emptyStateFor } from "@/components/builder/empty-states";
+import { useExperienceLevel } from "@/components/builder/useExperienceLevel";
 import { SortableItem, SortableList } from "@/components/builder/SortableList";
 import { replaceById, useSection } from "@/components/builder/useSection";
 import { createCertificationEntry } from "@/lib/resume/factory";
@@ -11,6 +12,7 @@ import { isValidUrl } from "@/lib/resume/schema";
 import { moveItem } from "@/store/resume";
 
 export function CertificationsStep() {
+  const level = useExperienceLevel();
   const { section, update } = useSection("certifications");
   if (!section) return null;
 
@@ -18,7 +20,9 @@ export function CertificationsStep() {
 
   return (
     <div className="flex flex-col gap-4">
-      {entries.length === 0 ? <EmptyStatePanel state={EMPTY_STATES.certifications!} /> : null}
+      {entries.length === 0 ? (
+        <EmptyStatePanel state={emptyStateFor("certifications", level)} />
+      ) : null}
 
       <SortableList
         ids={entries.map((e) => e.id)}

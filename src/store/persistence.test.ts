@@ -1,10 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { GUEST_OWNER, namespacedKey } from "./owner";
 import {
   STORAGE_KEY,
   createDraftStore,
   createMemoryBackend,
+  requestPersistentStorage,
   type KeyValueBackend,
 } from "./persistence";
+
+/**
+ * The slot a draft store writes to with nobody signed in.
+ *
+ * Spelled out rather than reusing the store's default, so these tests fail
+ * if the namespacing in `./owner.ts` ever stops being applied — which is the
+ * bug §10.1 fixed, and the one thing here worth pinning.
+ */
+const GUEST_SLOT = namespacedKey(STORAGE_KEY, GUEST_OWNER);
 
 function trackingBackend(): KeyValueBackend & {
   writes: number;
@@ -27,6 +38,9 @@ function trackingBackend(): KeyValueBackend & {
       backend.deletes += 1;
       raw.delete(key);
     },
+    async keys() {
+      return [...raw.keys()];
+    },
   };
   return backend;
 }
@@ -46,7 +60,7 @@ describe("createDraftStore — debounced autosave", () => {
       await vi.advanceTimersByTimeAsync(500);
       expect(backend.writes).toBe(1);
 
-      const saved = JSON.parse(backend.raw.get(STORAGE_KEY) ?? "{}");
+      const saved = JSON.parse(backend.raw.get(GUEST_SLOT) ?? "{}");
       expect(saved.document).toEqual({ keystroke: 39 });
     } finally {
       vi.useRealTimers();
@@ -121,12 +135,12 @@ describe("createDraftStore — read", () => {
   });
 
   it("returns null rather than throwing on corrupt storage", async () => {
-    const store = createDraftStore(createMemoryBackend({ [STORAGE_KEY]: "{not json" }));
+    const store = createDraftStore(createMemoryBackend({ [GUEST_SLOT]: "{not json" }));
     expect(await store.read()).toBeNull();
   });
 
   it("returns null when the stored value is the wrong shape", async () => {
-    const store = createDraftStore(createMemoryBackend({ [STORAGE_KEY]: '{"unexpected":true}' }));
+    const store = createDraftStore(createMemoryBackend({ [GUEST_SLOT]: '{"unexpected":true}' }));
     expect(await store.read()).toBeNull();
   });
 
@@ -162,9 +176,101 @@ describe("createDraftStore — clear", () => {
       store.save({ document: { a: 1 }, savedAt: 0 });
       await store.clear();
       await vi.advanceTimersByTimeAsync(1000);
-      expect(backend.raw.has(STORAGE_KEY)).toBe(false);
+      expect(backend.raw.has(GUEST_SLOT)).toBe(false);
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("createDraftStore — storage persistence request", () => {
+  it("asks for persistent storage once, on the first write", async () => {
+    const backend = trackingBackend();
+    const requestPersistence = vi.fn(async () => true);
+    const store = createDraftStore(backend, { debounceMs: 0, requestPersistence });
+
+    // Nothing written yet: asking before there is anything worth keeping
+    // wastes the one heuristic score we get.
+    expect(requestPersistence).not.toHaveBeenCalled();
+
+    store.save({ document: { a: 1 }, savedAt: 0 });
+    await store.flush();
+    store.save({ document: { a: 2 }, savedAt: 1 });
+    await store.flush();
+
+    expect(backend.writes).toBe(2);
+    expect(requestPersistence).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves even when the request rejects", async () => {
+    const backend = trackingBackend();
+    const requestPersistence = vi.fn(async () => {
+      throw new Error("SecurityError");
+    });
+    const store = createDraftStore(backend, { debounceMs: 0, requestPersistence });
+
+    store.save({ document: { a: 1 }, savedAt: 0 });
+    await store.flush();
+
+    // The whole point of not awaiting it: a storage API that throws must not
+    // be able to fail a draft save.
+    expect(backend.raw.has(GUEST_SLOT)).toBe(true);
+  });
+});
+
+describe("requestPersistentStorage", () => {
+  const originalNavigator = globalThis.navigator;
+
+  function withStorage(storage: unknown): void {
+    Object.defineProperty(globalThis, "navigator", {
+      value: { storage },
+      configurable: true,
+      writable: true,
+    });
+  }
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "navigator", {
+      value: originalNavigator,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it("returns false when the API is absent", async () => {
+    withStorage(undefined);
+    expect(await requestPersistentStorage()).toBe(false);
+  });
+
+  it("does not re-ask when persistence is already granted", async () => {
+    const persist = vi.fn(async () => true);
+    withStorage({ persist, persisted: async () => true });
+
+    expect(await requestPersistentStorage()).toBe(true);
+    // Re-asking costs a round trip and re-prompts in browsers that prompt.
+    expect(persist).not.toHaveBeenCalled();
+  });
+
+  it("asks when persistence has not been granted", async () => {
+    const persist = vi.fn(async () => true);
+    withStorage({ persist, persisted: async () => false });
+
+    expect(await requestPersistentStorage()).toBe(true);
+    expect(persist).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a denial as false rather than throwing", async () => {
+    withStorage({ persist: async () => false, persisted: async () => false });
+    expect(await requestPersistentStorage()).toBe(false);
+  });
+
+  it("swallows a throwing storage API", async () => {
+    withStorage({
+      persist: async () => true,
+      persisted: async () => {
+        throw new Error("denied");
+      },
+    });
+    expect(await requestPersistentStorage()).toBe(false);
   });
 });

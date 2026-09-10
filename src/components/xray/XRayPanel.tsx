@@ -19,11 +19,24 @@ import { useXRay } from "./useXRay";
 import type { FieldResult, FieldStatus } from "@/lib/xray/scorecard";
 import { cn } from "@/lib/utils";
 
+/*
+ * The parser's voice, throughout.
+ *
+ * `design.md` §3.1: monospace in this app means "a machine recovered this",
+ * never a stylistic choice, and `--machine` is the colour that goes with it —
+ * a claim about what a parser read is a different claim, with different
+ * reliability, from anything we wrote, and the two must not share a colour.
+ * So every value on this panel that came *out of the PDF* is slate and mono;
+ * the verdicts about those values keep `--ok` and `--danger`, because a
+ * verdict is ours.
+ */
+const MACHINE_TEXT = "text-machine font-mono";
+
 const STATUS_STYLE: Record<FieldStatus, string> = {
-  recovered: "text-emerald-700 dark:text-emerald-400",
-  wrong: "text-red-700 dark:text-red-400",
-  missing: "text-red-700 dark:text-red-400",
-  "not-applicable": "text-zinc-400 dark:text-zinc-500",
+  recovered: "text-ok",
+  wrong: "text-danger",
+  missing: "text-danger",
+  "not-applicable": "text-faint",
 };
 
 const STATUS_LABEL: Record<FieldStatus, string> = {
@@ -49,7 +62,7 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
 
   if (error) {
     return (
-      <div role="alert" className="p-4 text-sm text-red-700 dark:text-red-400">
+      <div role="alert" className="text-danger p-4 text-sm">
         Could not read the document back: {error}
       </div>
     );
@@ -57,7 +70,7 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
 
   if (!bytes || (!geometric && loading)) {
     return (
-      <p className="p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+      <p className="text-faint p-6 text-center text-sm">
         {bytes ? "Reading your resume back…" : "Add some content to see what a machine reads."}
       </p>
     );
@@ -72,10 +85,8 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
   return (
     <div className="flex flex-col gap-6 overflow-y-auto p-4">
       <header>
-        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-          What the machine actually read
-        </h2>
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <h2 className="text-text text-base font-semibold">What the machine actually read</h2>
+        <p className="text-muted mt-1 text-sm">
           Every other builder tells you a resume is ATS-friendly. This re-reads the file you are
           about to send, and checks it against what you typed.
         </p>
@@ -88,22 +99,20 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
           <span
             className={cn(
               "text-3xl font-semibold tabular-nums",
-              scorecard.score === 100
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-amber-600 dark:text-amber-400",
+              scorecard.score === 100 ? "text-ok" : "text-warn",
             )}
           >
             {scorecard.score}%
           </span>
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">
+          <span className="text-muted text-sm">
             of your fields were recovered correctly
             {failures.length > 0 ? ` — ${failures.length} could not be` : ""}
           </span>
         </div>
 
-        <div className="overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
+        <div className="border-line overflow-x-auto rounded-md border">
           <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-50 dark:bg-zinc-900">
+            <thead className="bg-surface-1">
               <tr>
                 <th scope="col" className="px-3 py-2 font-semibold">
                   Field
@@ -118,20 +127,26 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
             </thead>
             <tbody>
               {scorecard.fields.map((field: FieldResult) => (
-                <tr
-                  key={field.field}
-                  className="border-t border-zinc-200 align-top dark:border-zinc-800"
-                >
+                <tr key={field.field} className="border-line border-t align-top">
                   <td className="px-3 py-2 whitespace-nowrap">
                     <span className={cn("font-medium", STATUS_STYLE[field.status])}>
                       {fieldLabel(field.field)}
                     </span>
                     <span className="sr-only"> — {STATUS_LABEL[field.status]}</span>
                   </td>
-                  <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
-                    {field.expected || <span className="text-zinc-400">—</span>}
+                  <td className="text-muted px-3 py-2">
+                    {field.expected || <span className="text-faint">—</span>}
                   </td>
-                  <td className={cn("px-3 py-2", STATUS_STYLE[field.status])}>
+                  {/* What came back out of the file: the machine's own
+                      words, so slate and mono. A field it could not recover
+                      has no recovered text — what is printed there is our
+                      verdict, and it keeps the verdict's colour. */}
+                  <td
+                    className={cn(
+                      "px-3 py-2",
+                      field.actual ? MACHINE_TEXT : STATUS_STYLE[field.status],
+                    )}
+                  >
                     {field.actual ?? STATUS_LABEL[field.status]}
                   </td>
                 </tr>
@@ -143,23 +158,21 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
 
       {/* Layer 3 — where the two reads diverge. */}
       <section aria-label="Parser disagreements" className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-          Where parsers may differ
-        </h3>
+        <h3 className="text-text text-sm font-semibold">Where parsers may differ</h3>
         {disagreements.length === 0 ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-muted text-sm">
             Both a naive reader and a careful one recover your resume in the same order. That is the
             best case: reading order is unambiguous.
           </p>
         ) : (
           <>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-muted text-sm">
               {disagreements.length} {disagreements.length === 1 ? "line reads" : "lines read"}{" "}
               differently depending on how carefully the parser works. This is normal where a line
               has something aligned to the right — a date beside a job title — and it is where real
               systems diverge from each other.
             </p>
-            <ul className="max-h-40 overflow-y-auto rounded-md border border-zinc-200 p-2 font-mono text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+            <ul className="border-line text-machine max-h-40 overflow-y-auto rounded-md border p-2 font-mono text-xs">
               {disagreements.slice(0, 20).map((line) => (
                 <li key={line} className="py-0.5">
                   {line}
@@ -174,20 +187,21 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
           least immediately legible; the score above is what convinces. */}
       <section aria-label="Extracted text" className="flex min-h-0 flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-            The text a machine extracts
-          </h3>
-          <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400">
+          <h3 className="text-text text-sm font-semibold">The text a machine extracts</h3>
+          <label className="text-muted flex items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={showNaive}
               onChange={(e) => setShowNaive(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300 dark:border-zinc-600"
+              className="control-check focus-visible:ring-accent focus-visible:ring-offset-surface-1 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             />
             Show the naive reading order instead
           </label>
         </div>
-        <pre className="max-h-96 overflow-auto rounded-md bg-zinc-50 p-3 font-mono text-xs whitespace-pre-wrap text-zinc-800 dark:bg-zinc-900 dark:text-zinc-200">
+        {/* The parser's own ground, not the app's. This block is the
+            evidence the whole panel rests on, and it should not look like
+            something we typed. */}
+        <pre className="bg-machine-weak text-machine border-line max-h-96 overflow-auto rounded-md border p-3 font-mono text-xs whitespace-pre-wrap">
           {shown.text}
         </pre>
       </section>

@@ -20,25 +20,14 @@
  * only correct basis for them.
  */
 
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+// Imported for its side effect: pdfjs needs a worker before any call below.
+import "./worker";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
 type PdfDocument = Awaited<ReturnType<typeof getDocument>["promise"]>;
 
-/**
- * In a browser pdfjs refuses to run without a worker script, and there is no
- * sensible default it can guess. Under Node it falls back to a fake worker on
- * its own, so this is set only where a real `window` exists.
- *
- * The file is copied into `public/` by `scripts/sync-public-fonts.mjs`
- * alongside the fonts, so it is served from a stable path rather than
- * depending on how a given bundler chooses to emit worker assets.
- */
-export const PDF_WORKER_URL = "/pdf.worker.min.mjs";
-
-if (typeof window !== "undefined" && !GlobalWorkerOptions.workerSrc) {
-  GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
-}
+export { PDF_WORKER_URL } from "./worker";
 
 /** One positioned text run, with the geometry the invariants reason about. */
 export interface PdfTextItem {

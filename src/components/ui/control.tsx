@@ -20,14 +20,25 @@
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Colours come from the tokens in `globals.css`, not from Tailwind's palette.
+ *
+ * The values behind them are the same zinc-and-sky the app already used, so
+ * nothing changed visually when this was repointed — what changed is that the
+ * accent is now one line in one file rather than forty-odd literals, and the
+ * dark variants follow the theme toggle instead of only the OS.
+ */
 const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-zinc-950";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1";
 
 const fieldBase = cn(
-  "w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm transition",
-  "placeholder:text-zinc-400",
+  "border-line-strong bg-surface-0 text-text w-full rounded-md border px-3 py-2 text-sm shadow-sm",
+  "transition-[border-color,box-shadow,background-color] duration-[var(--dur-fast)] ease-[var(--ease)]",
+  // A boundary that answers the pointer before it is clicked. The border is
+  // already at 3.36:1 for WCAG 1.4.11; this is the affordance on top of it.
+  "hover:border-faint",
+  "placeholder:text-faint",
   "disabled:cursor-not-allowed disabled:opacity-60",
-  "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500",
   focusRing,
 );
 
@@ -44,35 +55,66 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
 }
 
 const buttonVariants = {
-  primary:
-    "bg-sky-700 text-white hover:bg-sky-800 disabled:hover:bg-sky-700 dark:bg-sky-600 dark:hover:bg-sky-500",
-  secondary:
-    "border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800",
-  ghost:
-    "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100",
-  danger:
-    "border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-900 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950",
+  primary: "bg-accent text-on-accent hover:bg-accent-hover disabled:hover:bg-accent",
+  secondary: "border-line-strong bg-surface-0 text-text hover:bg-surface-2 border",
+  ghost: "text-muted hover:bg-surface-2 hover:text-text",
+  danger: "border-danger/40 bg-surface-0 text-danger hover:bg-danger-weak border",
+} as const;
+
+const buttonSizes = {
+  sm: "h-8 px-2.5 text-xs",
+  md: "px-3 py-2 text-sm",
 } as const;
 
 export type ButtonVariant = keyof typeof buttonVariants;
+export type ButtonSize = keyof typeof buttonSizes;
+
+/**
+ * The button's classes, without the button.
+ *
+ * A link that navigates is an `<a>`, not a `<button>` with a router call —
+ * landmine 9, and the reason `useRouter()` is avoided for cross-route links.
+ * But a link that *looks* like a button should not re-type the classes,
+ * because then the two drift. `Button` below is this function plus an
+ * element.
+ */
+export function buttonClassName({
+  variant = "secondary",
+  size = "md",
+  className,
+}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}): string {
+  return cn(
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition",
+    "disabled:cursor-not-allowed disabled:opacity-50",
+    focusRing,
+    buttonSizes[size],
+    buttonVariants[variant],
+    className,
+  );
+}
 
 export function Button({
   className,
   variant = "secondary",
+  size = "md",
+  icon,
+  children,
   ...props
-}: ComponentProps<"button"> & { variant?: ButtonVariant }) {
+}: ComponentProps<"button"> & {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  /**
+   * Rendered before the label. Decorative only — the accessible name still
+   * comes from `children`, which several e2e assertions match by exact
+   * string. See the header of `icons.tsx`.
+   */
+  icon?: ReactNode;
+}) {
   return (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition",
-        "disabled:cursor-not-allowed disabled:opacity-50",
-        focusRing,
-        buttonVariants[variant],
-        className,
-      )}
-      {...props}
-    />
+    <button type="button" className={buttonClassName({ variant, size, className })} {...props}>
+      {icon}
+      {children}
+    </button>
   );
 }
 
@@ -102,17 +144,29 @@ export function Field({ label, hint, error, children, className }: FieldProps) {
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+      <label htmlFor={id} className="text-text text-sm font-medium">
         {label}
       </label>
+      {children({ id, describedBy })}
+      {/*
+        Hint *below* the control, and this is the single highest-value layout
+        fix in the redesign rather than a preference. It used to sit between
+        the label and the input, so in a two-column row a field with a
+        three-line hint pushed its input three lines lower than the field
+        beside it — every contact row was visibly misaligned, and the form
+        looked unfinished because it was. Below the control, every input in a
+        row shares a baseline however long its hint runs.
+
+        `aria-describedby` is unchanged: it names both ids and does not care
+        about document order.
+      */}
       {hint ? (
-        <p id={hintId} className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p id={hintId} className="text-faint text-xs leading-relaxed">
           {hint}
         </p>
       ) : null}
-      {children({ id, describedBy })}
       {error ? (
-        <p id={errorId} role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+        <p id={errorId} role="alert" className="text-danger text-xs font-medium">
           {error}
         </p>
       ) : null}
@@ -120,28 +174,45 @@ export function Field({ label, hint, error, children, className }: FieldProps) {
   );
 }
 
-/** A labelled on/off switch built on a real checkbox. */
+/**
+ * A labelled on/off switch built on a real checkbox.
+ *
+ * `label` is required and must be non-empty, because the label element *is*
+ * the checkbox's accessible name. `SectionManager` previously passed `""` and
+ * put the text in a sibling `sr-only` span, which looks equivalent and is not:
+ * a sibling is not associated with the input, so every visibility toggle in
+ * the builder announced itself as an unnamed checkbox. Use `labelHidden` when
+ * the text should not be seen — the name still exists, it is just not painted.
+ */
 export function Toggle({
   checked,
   onChange,
   label,
+  labelHidden = false,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
+  labelHidden?: boolean;
 }) {
   return (
-    <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+    <label className="text-text inline-flex cursor-pointer items-center gap-2 text-sm">
+      {/*
+        `control-check` in `globals.css` replaces the browser's own box.
+        `text-accent` did nothing here — a native checkbox ignores `color` —
+        so every visibility toggle in the builder painted itself in the
+        system's blue, on a green palette, in the one screen that is the
+        product. It is still a real `<input type="checkbox">`: the appearance
+        is restyled and nothing about the semantics, the label association or
+        the keyboard behaviour is.
+      */}
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className={cn(
-          "h-4 w-4 rounded border-zinc-300 text-sky-700 dark:border-zinc-600",
-          focusRing,
-        )}
+        className={cn("control-check", focusRing)}
       />
-      {label}
+      <span className={labelHidden ? "sr-only" : undefined}>{label}</span>
     </label>
   );
 }

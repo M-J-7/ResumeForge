@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { MAIL_PORT } from "./e2e/mail-server";
+import { OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_ISSUER } from "./e2e/oidc-server";
 
 /** The database the E2E run migrates and signs in against. */
 export const E2E_DATABASE_FILE = "e2e.db";
@@ -16,6 +17,13 @@ export const E2E_DATABASE_URL = `file:./${E2E_DATABASE_FILE}`;
  */
 export default defineConfig({
   testDir: "./e2e",
+  /**
+   * The QA §11 measured pass lives in `e2e/` so it shares the helpers, but it
+   * is not part of this run: it loads ~120MB of weights and runs beam searches
+   * that take tens of seconds. `pnpm qa:enhance` runs it through
+   * `playwright.measure.config.ts`, one worker, on a machine somebody chose.
+   */
+  testIgnore: /\.measured\.spec\.ts$/,
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
@@ -53,6 +61,14 @@ export default defineConfig({
       // to run under the production build this command produces.
       EMAIL_SERVER: `smtp://127.0.0.1:${MAIL_PORT}`,
       EMAIL_FROM: "ATS Resume Builder <no-reply@e2e.test>",
+      // Google sign-in, pointed at the local OpenID provider the auth spec
+      // starts. Same arrangement as the mail server above: the real OAuth
+      // code path runs — discovery, PKCE, a signed id_token, the adapter
+      // write — against an issuer that answers on loopback. `googleIssuer`
+      // accepts plain HTTP there and nowhere else.
+      AUTH_GOOGLE_ID: OIDC_CLIENT_ID,
+      AUTH_GOOGLE_SECRET: OIDC_CLIENT_SECRET,
+      AUTH_GOOGLE_ISSUER: OIDC_ISSUER,
     },
   },
 });

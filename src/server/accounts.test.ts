@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createTestDatabase, type TestDatabase } from "@/test/database";
 import { confirmsDeletion, deleteAccount } from "./accounts";
 import { createResume } from "./resumes";
+import { createJobTarget } from "./job-targets";
 import { midCareerResume } from "@/test/fixtures/resumes";
 import type { PrismaClient } from "@/generated/prisma/client";
 
@@ -52,6 +53,18 @@ beforeEach(async () => {
     },
   });
 
+  // P27/P29's two tables. Added in the same commit as their migration,
+  // because a table that appears without an assertion here is a table that
+  // survives the one operation this product promises is complete.
+  const jobTarget = await createJobTarget(
+    USER,
+    { title: "Acme — Platform Engineer", description: "Requirements: Kubernetes." },
+    client,
+  );
+  await client.coverLetter.create({
+    data: { userId: USER, jobTargetId: jobTarget.id, title: "Acme letter", content: "{}" },
+  });
+
   await createResume(BYSTANDER, { document: midCareerResume }, client);
 });
 
@@ -72,6 +85,11 @@ describe("deleteAccount", () => {
     expect(await client.resumeVersion.count()).toBe(0);
     expect(await client.scoreCheck.count()).toBe(0);
     expect(await client.parseCheck.count()).toBe(0);
+    expect(await client.jobTarget.count({ where: { userId: USER } })).toBe(0);
+    // `CoverLetter.resumeId` and `.jobTargetId` are `SetNull`, deliberately —
+    // so a letter would survive its resume being deleted. Only the `userId`
+    // cascade takes it, and this is the assertion that proves it still does.
+    expect(await client.coverLetter.count({ where: { userId: USER } })).toBe(0);
   });
 
   it("leaves other accounts untouched", async () => {

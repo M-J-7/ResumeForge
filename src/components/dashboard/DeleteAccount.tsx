@@ -28,7 +28,7 @@ export function DeleteAccount({ email, resumeCount }: { email: string; resumeCou
 
   if (!open) {
     return (
-      <section className="border-t border-zinc-200 pt-6 dark:border-zinc-800">
+      <section className="border-line border-t pt-6">
         <Button variant="ghost" onClick={() => setOpen(true)}>
           Delete my account
         </Button>
@@ -37,9 +37,9 @@ export function DeleteAccount({ email, resumeCount }: { email: string; resumeCou
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-red-300 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
-      <h2 className="text-sm font-semibold text-red-950 dark:text-red-100">Delete your account</h2>
-      <p className="text-sm text-red-900 dark:text-red-200">
+    <section className="flex flex-col gap-3 rounded-md border border-danger/40 bg-danger-weak px-4 py-3">
+      <h2 className="text-sm font-semibold text-text">Delete your account</h2>
+      <p className="text-sm text-muted">
         This removes your account,{" "}
         {resumeCount === 1 ? "the resume saved to it" : `all ${resumeCount} resumes saved to it`},
         and their version history. Nothing is kept, there is no trash, and we hold no backup we
@@ -57,7 +57,7 @@ export function DeleteAccount({ email, resumeCount }: { email: string; resumeCou
           })
         }
       >
-        <label className="text-sm text-red-900 dark:text-red-200">
+        <label className="text-sm text-muted">
           Type <strong className="font-medium">{email}</strong> to confirm.
           <Input
             className="mt-1"
@@ -69,7 +69,7 @@ export function DeleteAccount({ email, resumeCount }: { email: string; resumeCou
         </label>
 
         {error ? (
-          <p role="alert" className="text-sm font-medium text-red-700 dark:text-red-300">
+          <p role="alert" className="text-sm font-medium text-danger">
             {error}
           </p>
         ) : null}

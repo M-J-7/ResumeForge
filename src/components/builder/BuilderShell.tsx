@@ -6,6 +6,8 @@ import { StepNav } from "./StepNav";
 import { SectionManager } from "./SectionManager";
 import { IssuesPanel } from "./IssuesPanel";
 import { CommandPalette, useCommandPalette, type Command } from "./CommandPalette";
+import { Tab, TabList, Tabs } from "@/components/ui/tabs";
+import { RedoIcon, UndoIcon } from "@/components/ui/icons";
 import { ContactStep } from "./steps/ContactStep";
 import { SummaryStep } from "./steps/SummaryStep";
 import { ExperienceStep } from "./steps/ExperienceStep";
@@ -16,12 +18,25 @@ import { CertificationsStep } from "./steps/CertificationsStep";
 import { CustomStep } from "./steps/CustomStep";
 import { Button } from "@/components/ui/control";
 import { PreviewPane } from "@/components/preview/PreviewPane";
-import { ImportJsonResume } from "./ImportJsonResume";
+import { ImportResumeFile } from "./ImportResumeFile";
+import { ResumeTitleEditor, SaveAsNewResumeButton } from "./ResumeTitleEditor";
 import { SyncStatus } from "./SyncStatus";
 import { cn } from "@/lib/utils";
 import { configureRemoteSync, installAutosaveFlush, useResumeStore } from "@/store/resume";
 import { createDraftStore, idbBackend } from "@/store/persistence";
+import { useOwnerKey } from "@/store/useOwnerKey";
 import { safeMigrate } from "@/lib/resume/migrate";
+import { takeCheckHandoff } from "@/lib/import/handoff";
+import { takeTemplateHandoff } from "@/lib/resume/template-handoff";
+import { ExperienceLevelPrompt } from "./ExperienceLevelPrompt";
+import { ExperienceLevelProvider, useStoredExperienceLevel } from "./useExperienceLevel";
+import {
+  stepOrderFor,
+  writeExperienceLevel,
+  EXPERIENCE_LEVEL_OPTIONS,
+  type ExperienceLevel,
+} from "@/lib/resume/experience-level";
+import { getTemplate } from "@/lib/resume/templates";
 
 const STEP_COMPONENTS: Record<string, () => React.JSX.Element | null> = {
   contact: ContactStep,
@@ -50,9 +65,34 @@ export interface RemoteResume {
   document: string;
 }
 
-export function BuilderShell({ remote }: { remote?: RemoteResume }) {
+export function BuilderShell({
+  remote,
+  signedIn = false,
+}: {
+  remote?: RemoteResume;
+  /** Gates "Save as new resume" (P24) — a signed-in visitor can copy any
+   *  open document, remote or the local guest draft, into a new resume. */
+  signedIn?: boolean;
+}) {
   const [activeStep, setActiveStep] = useState(DEFAULT_STEP_ID);
   const [mobileView, setMobileView] = useState<MobileView>("edit");
+
+  /**
+   * The experience band (P35).
+   *
+   * Read straight from storage through `useSyncExternalStore`, so the first
+   * client render already has the right step order — an effect that read it
+   * afterwards would rearrange the rail under the cursor of someone already
+   * reading it.
+   *
+   * `dismissed` is separate because **skipping is a real answer**: it leaves
+   * the default order, and it must not re-prompt on the next paint.
+   */
+  const level = useStoredExperienceLevel();
+  const [dismissed, setDismissed] = useState(false);
+  const [levelPromptReopened, setLevelPromptReopened] = useState(false);
+  const levelPromptOpen = levelPromptReopened || (level === null && !dismissed);
+  const levelAsked = level !== null || dismissed;
   const { open, setOpen } = useCommandPalette();
 
   const hydrate = useResumeStore((s) => s.hydrate);
@@ -68,6 +108,21 @@ export function BuilderShell({ remote }: { remote?: RemoteResume }) {
   const externalRevision = useResumeStore((s) => s.externalRevision);
 
   const attachRemote = useResumeStore((s) => s.attachRemote);
+  const importDocument = useResumeStore((s) => s.importDocument);
+  const applyTemplate = useResumeStore((s) => s.applyTemplate);
+
+  /**
+   * Whose local storage this is (§10.1).
+   *
+   * In the dependency list below rather than merely read, and that is the
+   * point of it. This effect used to decide what to open from the `remote`
+   * prop alone; identity was not part of the decision, so a sign-out that
+   * left the builder mounted would keep the previous person's document on
+   * screen and keep writing to it. Signing in or out changes this value,
+   * the effect re-runs, and the document is re-read from the slot that now
+   * belongs to whoever is here.
+   */
+  const owner = useOwnerKey();
 
   useEffect(() => {
     const teardown = installAutosaveFlush();
@@ -108,7 +163,49 @@ export function BuilderShell({ remote }: { remote?: RemoteResume }) {
     })();
 
     return teardown;
-  }, [hydrate, attachRemote, remote]);
+  }, [hydrate, attachRemote, remote, owner]);
+
+  /**
+   * A resume parsed on `/check` and handed over for editing (P31-A4).
+   *
+   * Applied after hydration rather than instead of it, and through
+   * `importDocument`, so it lands on the history stack: whatever draft was
+   * in this browser is one Ctrl+Z away, exactly as it is for a file imported
+   * from inside the builder. The handoff is read once and cleared, so a
+   * refresh does not re-import over work done since.
+   */
+  useEffect(() => {
+    if (!hydrated) return;
+    const handoff = takeCheckHandoff();
+    if (handoff === null) return;
+    const migrated = safeMigrate(handoff);
+    if (migrated.ok) importDocument(migrated.document);
+  }, [hydrated, importDocument]);
+
+  /**
+   * A template chosen on `/templates` and handed over (P32-B3).
+   *
+   * Applied through `applyTemplate`, so it is one history entry and one
+   * Ctrl+Z — the visitor who clicked a thumbnail to see what it looked like
+   * gets their previous design back in one press. Read once and cleared, so
+   * a refresh does not restyle a document they have since adjusted by hand.
+   */
+  useEffect(() => {
+    if (!hydrated) return;
+    const templateId = takeTemplateHandoff();
+    if (templateId === null) return;
+    const template = getTemplate(templateId);
+    if (template) applyTemplate(template.settings, template.sectionOrder);
+  }, [hydrated, applyTemplate]);
+
+  /**
+   * Asked once. A returning visitor gets their order applied silently, which
+   * is the whole point of storing it.
+   */
+  const chooseLevel = (next: ExperienceLevel) => {
+    writeExperienceLevel(next);
+    setLevelPromptReopened(false);
+  };
 
   // Undo/redo shortcuts. Registered on the window so they work wherever
   // focus happens to be, which is the point of a document-level action.
@@ -137,118 +234,208 @@ export function BuilderShell({ remote }: { remote?: RemoteResume }) {
   if (!hydrated) {
     return (
       <div className="flex flex-1 items-center justify-center p-12">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading your draft…</p>
+        <p className="text-muted text-sm">Loading your draft…</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
-      {/* Mobile-only switch between editing and previewing. */}
-      <div
-        role="tablist"
-        aria-label="Editor or preview"
-        className="flex gap-1 border-b border-zinc-200 px-4 py-2 xl:hidden dark:border-zinc-800"
-      >
-        {(["edit", "preview"] as const).map((view) => (
-          <button
-            key={view}
-            type="button"
-            role="tab"
-            aria-selected={mobileView === view}
-            onClick={() => setMobileView(view)}
+    // The band is read once here and shared down; see `useExperienceLevel.ts`
+    // for why it is a context rather than a `localStorage` read per step.
+    <ExperienceLevelProvider value={level}>
+      <div className="flex min-h-0 flex-1 flex-col xl:flex-row">
+        {/*
+        Mobile-only switch between editing and previewing, now on the real
+        `Tabs` primitive rather than a hand-rolled `role="tab"` div. The
+        practical difference is keyboard behaviour: arrow keys move between
+        the two options, where before every element with `role="tab"` was
+        also a tab stop and arrow keys did nothing. No test names this
+        tablist directly, so the swap carries no selector risk.
+      */}
+        {/*
+          On a phone this *is* the primary navigation of the whole product —
+          it decides whether you are looking at the form or at the document —
+          and it was a small inline pill in the corner of a bar. Full width,
+          two equal halves, and it stays put while the form scrolls under it.
+
+          `sticky` here cannot touch the header's height contract with this
+          component: it sticks inside the builder's own column, below a header
+          that is `position: sticky` in its own right.
+        */}
+        <div className="border-line bg-surface-1/85 sticky top-14 z-20 border-b px-4 py-2 backdrop-blur-md xl:hidden">
+          <Tabs value={mobileView} onValueChange={(v) => setMobileView(v as MobileView)}>
+            <TabList label="Editor or preview" className="flex w-full">
+              <Tab value="edit" className="flex-1">
+                Edit
+              </Tab>
+              <Tab value="preview" className="flex-1">
+                Preview
+              </Tab>
+            </TabList>
+          </Tabs>
+        </div>
+
+        <div
+          className={cn(
+            "mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 lg:flex-row lg:px-6",
+            mobileView === "preview" && "hidden xl:flex",
+          )}
+        >
+          {/*
+            The rail recedes; the workspace is the page ground; the canvas
+            beyond it is darker still. Three grounds, spatially separated —
+            `design.md` §3.5. It used to be one continuous near-white plane
+            with hairlines drawn on it, which is why nothing on the screen
+            looked further away than anything else.
+
+            Sticky from `lg`, with its own scroll: the rail is navigation for
+            a form that is taller than the viewport, and navigation that
+            scrolls away is navigation you have to scroll back for.
+          */}
+          <aside
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition",
-              mobileView === view
-                ? "bg-sky-50 text-sky-900 dark:bg-sky-950 dark:text-sky-100"
-                : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800",
+              "flex shrink-0 flex-col gap-5",
+              "lg:border-line lg:bg-surface-2 lg:sticky lg:top-0 lg:w-64 lg:self-start",
+              "lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain",
+              "lg:rounded-xl lg:border lg:p-4",
             )}
           >
-            {view === "edit" ? "Edit" : "Preview"}
-          </button>
-        ))}
-      </div>
-
-      <div
-        className={cn(
-          "mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 lg:flex-row lg:px-6",
-          mobileView === "preview" && "hidden xl:flex",
-        )}
-      >
-        <aside className="flex shrink-0 flex-col gap-6 lg:w-60">
-          <StepNav activeStep={activeStep} onSelect={setActiveStep} />
-          <IssuesPanel onNavigate={setActiveStep} />
-          <div className="hidden lg:block">
-            <SectionManager />
-          </div>
-        </aside>
-
-        <main className="min-w-0 flex-1">
-          {loadError ? (
-            <div
-              role="alert"
-              className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
-            >
-              Your saved draft could not be opened: {loadError} Starting a new one — nothing has
-              been overwritten yet.
+            {remote ? <ResumeTitleEditor resumeId={remote.id} title={remote.title} /> : null}
+            <StepNav
+              activeStep={activeStep}
+              onSelect={setActiveStep}
+              order={stepOrderFor(level)}
+              footer={
+                <div className="flex flex-col gap-3">
+                  {/*
+                    Undo and redo live here rather than in the step header,
+                    where they were competing with the step title for the top
+                    right of the workspace. They are document-level actions —
+                    the same scope as the rail — and the keyboard shortcut
+                    that does the real work is registered on the window.
+                  */}
+                  <div className="border-line flex items-center gap-1 border-t pt-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={undo}
+                      disabled={!canUndo}
+                      icon={<UndoIcon className="h-4 w-4" />}
+                    >
+                      Undo
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={redo}
+                      disabled={!canRedo}
+                      icon={<RedoIcon className="h-4 w-4" />}
+                    >
+                      Redo
+                    </Button>
+                  </div>
+                  {levelAsked ? (
+                    <button
+                      type="button"
+                      onClick={() => setLevelPromptReopened(true)}
+                      className="text-muted hover:text-text focus-visible:ring-accent rounded text-left text-xs transition focus-visible:ring-2 focus-visible:outline-none"
+                    >
+                      Experience:{" "}
+                      {EXPERIENCE_LEVEL_OPTIONS.find((option) => option.id === level)?.label ??
+                        "not set"}
+                      <span className="sr-only"> — change how much work experience you have</span>
+                    </button>
+                  ) : null}
+                </div>
+              }
+            />
+            <IssuesPanel onNavigate={setActiveStep} />
+            <div className="hidden lg:block">
+              <SectionManager />
             </div>
-          ) : null}
+          </aside>
 
-          <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-                {step.label}
-              </h1>
-              <p className="mt-1 max-w-prose text-sm text-zinc-600 dark:text-zinc-400">
+          <main className="min-w-0 flex-1">
+            {loadError ? (
+              <div
+                role="alert"
+                className="border-warn/40 bg-warn-weak text-warn mb-4 rounded-md border p-3 text-sm"
+              >
+                Your saved draft could not be opened: {loadError} Starting a new one — nothing has
+                been overwritten yet.
+              </div>
+            ) : null}
+
+            {/*
+              Above the step, inline, and never a modal — see the component
+              for why. It is the first thing on the page and it blocks
+              nothing.
+            */}
+            <ExperienceLevelPrompt
+              open={levelPromptOpen}
+              current={level}
+              onChoose={chooseLevel}
+              onSkip={() => {
+                setLevelPromptReopened(false);
+                setDismissed(true);
+              }}
+            />
+
+            {/* The step title has the row to itself now that undo and redo
+                have moved to the rail. `h1`, and the name is exactly
+                `step.label`: `BuilderShell.test.tsx` and `builder.spec.ts`
+                both match it by role, level and exact name. */}
+            <header className="mb-6">
+              <h1 className="text-text text-2xl font-semibold tracking-tight">{step.label}</h1>
+              <p className="text-muted mt-1.5 max-w-prose text-sm leading-relaxed">
                 {step.description}
               </p>
-            </div>
-            <div className="flex gap-1">
-              <Button variant="ghost" onClick={undo} disabled={!canUndo} aria-label="Undo">
-                Undo
-              </Button>
-              <Button variant="ghost" onClick={redo} disabled={!canRedo} aria-label="Redo">
-                Redo
-              </Button>
-            </div>
-          </header>
+            </header>
 
-          <StepComponent key={`${step.id}-${externalRevision}`} />
+            <StepComponent key={`${step.id}-${externalRevision}`} />
 
-          <div className="mt-8 border-t border-zinc-200 pt-6 lg:hidden dark:border-zinc-800">
-            <SectionManager />
-          </div>
-
-          <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              <SyncStatus />{" "}
-              <kbd className="rounded border border-zinc-300 px-1 dark:border-zinc-700">Ctrl</kbd>
-              {" + "}
-              <kbd className="rounded border border-zinc-300 px-1 dark:border-zinc-700">K</kbd> to
-              jump sections.
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <ImportJsonResume />
-              <ClearAllButton onConfirm={clearAll} />
+            <div className="border-line mt-8 border-t pt-6 lg:hidden">
+              <SectionManager />
             </div>
-          </footer>
-        </main>
+
+            <footer className="border-line mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-6">
+              <p className="text-muted text-xs">
+                <SyncStatus /> <kbd className="border-line-strong rounded border px-1">Ctrl</kbd>
+                {" + "}
+                <kbd className="border-line-strong rounded border px-1">K</kbd> to jump sections.
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {signedIn ? <SaveAsNewResumeButton /> : null}
+                <ImportResumeFile onNavigateToStep={setActiveStep} />
+                <ClearAllButton onConfirm={clearAll} />
+              </div>
+            </footer>
+          </main>
+        </div>
+
+        <PreviewPane
+          signedIn={signedIn}
+          // The Match tab's "this requirement is missing" rows jump here, so
+          // the finding and the place to act on it are one click apart. On
+          // mobile the two live in different tabs, so the switch comes too.
+          onNavigateToStep={(stepId) => {
+            setActiveStep(stepId);
+            setMobileView("edit");
+          }}
+          className={cn(
+            "border-line min-h-0 flex-1 xl:max-w-2xl xl:border-l",
+            mobileView === "edit" && "hidden xl:flex",
+          )}
+        />
+
+        <CommandPalette
+          open={open}
+          onClose={() => setOpen(false)}
+          onSelectStep={setActiveStep}
+          extraCommands={extraCommands}
+        />
       </div>
-
-      <PreviewPane
-        className={cn(
-          "min-h-0 flex-1 border-zinc-200 xl:max-w-2xl xl:border-l dark:border-zinc-800",
-          mobileView === "edit" && "hidden xl:flex",
-        )}
-      />
-
-      <CommandPalette
-        open={open}
-        onClose={() => setOpen(false)}
-        onSelectStep={setActiveStep}
-        extraCommands={extraCommands}
-      />
-    </div>
+    </ExperienceLevelProvider>
   );
 }
 
@@ -270,9 +457,7 @@ function ClearAllButton({ onConfirm }: { onConfirm: () => Promise<void> }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-zinc-600 dark:text-zinc-400">
-        Delete this draft permanently?
-      </span>
+      <span className="text-muted text-xs">Delete this draft permanently?</span>
       <Button
         variant="danger"
         onClick={async () => {

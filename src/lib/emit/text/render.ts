@@ -24,6 +24,21 @@
  * uses an en dash, typographically right for PDF and DOCX but not ASCII.
  * Date labels are generated entirely by us from structured data, so folding
  * the separator there is safe and touches no user-entered text.
+ *
+ * ## `headerStyle` and `headingStyle` do nothing here, on purpose
+ *
+ * P32 added two template axes, and neither has a plain-text equivalent
+ * worth inventing. "Centred" in a format with no measured line length means
+ * padding with spaces, which is exactly the column alignment the paragraph
+ * above rules out. And all three heading styles are already what this
+ * emitter writes: an uppercase heading on its own line. `rule` would become
+ * a row of dashes and `accent-bar` a leading glyph — decoration a form post
+ * has to survive, for no gain to any reader.
+ *
+ * So a template changes the PDF and the DOCX and leaves this output byte for
+ * byte identical. That is the intended result, not an omission: the golden
+ * extracted-text snapshots are the machine-readable contract, and a purely
+ * visual choice must not move them.
  */
 
 import { DATE_RANGE_SEPARATOR } from "@/lib/resume/dates";
@@ -38,6 +53,14 @@ const BULLET_PREFIX = "- ";
 
 /** Separates fields that share a line, e.g. `title | dates`. */
 const INLINE_SEPARATOR = " | ";
+
+/**
+ * Column width for wrapped prose.
+ *
+ * 78 rather than 80: a couple of characters of headroom for the ">" quoting
+ * an email client adds when the text is replied to.
+ */
+export const TEXT_COLUMN_WIDTH = 78;
 
 /**
  * Folds only the separator this codebase injects into a generated date
@@ -87,9 +110,55 @@ function blockLines(block: DocumentBlock): string[] {
     case "bullet":
       return [bulletLine(block.text)];
 
+    /* ---- Cover letter (P28-I2) ---------------------------------------- */
+
+    case "letterMeta":
+      return [...(block.date ? [block.date, ""] : []), ...block.recipientLines, ""];
+
+    case "paragraph":
+      // Wrapped at the shared column width, so a letter pasted into an
+      // application form's textarea arrives as paragraphs rather than as
+      // four very long lines. A blank line after each, because plain text
+      // has no other way to say "paragraph".
+      return [...wrapParagraph(block.text, TEXT_COLUMN_WIDTH), ""];
+
     default:
       return [];
   }
+}
+
+/**
+ * Greedy wrap at a column width, preserving the user's own line breaks.
+ *
+ * A word longer than the column is left over-long rather than broken: a URL
+ * or a long identifier split across lines is worse than a line that runs
+ * past 78 characters, and a hyphen inserted into someone's text would
+ * violate the rule that everything we inject is ours and everything they
+ * typed is theirs.
+ */
+export function wrapParagraph(text: string, width: number): string[] {
+  const lines: string[] = [];
+
+  for (const source of text.split("\n")) {
+    const words = source.split(/\s+/).filter(Boolean);
+    if (words.length === 0) {
+      lines.push("");
+      continue;
+    }
+
+    let current = "";
+    for (const word of words) {
+      if (current.length === 0) current = word;
+      else if (current.length + 1 + word.length <= width) current = `${current} ${word}`;
+      else {
+        lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+  }
+
+  return lines;
 }
 
 /**
@@ -101,16 +170,27 @@ function startsNewRecord(block: DocumentBlock): boolean {
   return entryLines(block) !== null;
 }
 
-export function renderText(resume: ResumeDocument): string {
+/**
+ * The emitter proper: block list in, text out.
+ *
+ * Split out from `renderText` so the cover letter emitter reuses it rather
+ * than reimplementing the blank-line and trailing-newline rules, which are
+ * fiddly and would drift.
+ */
+export function renderBlocksAsText(blocks: readonly DocumentBlock[]): string {
   const lines: string[] = [];
 
-  for (const block of buildDocument(resume)) {
+  for (const block of blocks) {
     if (startsNewRecord(block) && lines.length > 0) lines.push("");
     lines.push(...blockLines(block));
   }
 
   // A trailing newline so the text ends cleanly when pasted or piped.
   return collapseBlankLines(lines).join("\n") + "\n";
+}
+
+export function renderText(resume: ResumeDocument): string {
+  return renderBlocksAsText(buildDocument(resume));
 }
 
 /**
