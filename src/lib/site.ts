@@ -49,7 +49,7 @@ export function isPublicDeployment(): boolean {
  * somebody can actually open — a bare path in a monospace font is addressed
  * to a developer who already has the checkout.
  */
-export const REPO_URL = "https://github.com/M-J-7/RESUME_BUILDER";
+export const REPO_URL = "https://github.com/M-J-7/ResumeForge";
 
 /** A repository-relative path as a URL on the default branch. */
 export function repoFileUrl(pathname: string): string {
