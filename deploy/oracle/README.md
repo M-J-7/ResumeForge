@@ -49,7 +49,7 @@ step after it, so doing them out of order means debugging the wrong thing.
 
 ### 0. **You** — get the code onto GitHub first
 
-`cloud-init.yaml` clones `https://github.com/M-J-7/RESUME_BUILDER.git` and
+`cloud-init.yaml` clones `https://github.com/M-J-7/ResumeForge.git` and
 `deploy.sh` pulls `origin/master`. **The instance builds what is on master, not
 what is on your laptop**, so anything uncommitted is not deployed — it is
 simply absent, and the deployment will look like a working older version
@@ -59,6 +59,10 @@ rather than like a mistake.
 git status --short | wc -l     # should be 0, or close to it
 git push origin master
 ```
+
+**The instance builds `master`.** If your work is on a branch — as
+`composer-evidence-and-enhance-evaluation` is — merge it first, or change the
+branch `deploy.sh` resets to.
 
 If you deploy from a fork or a private repository, change the clone URL in
 `cloud-init.yaml`. A private one also needs a deploy key on the instance,

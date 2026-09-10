@@ -134,7 +134,9 @@ runcmd:
   # `.env.production` — no AUTH_SECRET, no domain, no SMTP — and a stack that
   # starts without them fails in a way that looks like a bug rather than like
   # the missing step it is. `bootstrap.sh` writes the file and starts it.
-  - git clone https://github.com/M-J-7/RESUME_BUILDER.git /opt/resume-builder
+  # The canonical URL. `RESUME_BUILDER` still redirects here, and a redirect
+  # is a fine thing to rely on until the day it is not.
+  - git clone https://github.com/M-J-7/ResumeForge.git /opt/resume-builder
   - chown -R ubuntu:ubuntu /opt/resume-builder
   # Git on Windows does not record the executable bit unless somebody
   # remembered `git update-index --chmod=+x`, and a deploy that fails with
