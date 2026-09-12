@@ -106,6 +106,13 @@ services:
     image: ${APP_IMAGE:-six-seconds-resume:local}
     build: .
     restart: unless-stopped
+    # Disabled, not overridden. The healthcheck baked into the image probes
+    # localhost:3000, and this container runs a backup loop rather than the
+    # server — so it reports "unhealthy" forever while working perfectly. A
+    # column that is always red is a column nobody reads on the day it means
+    # something.
+    healthcheck:
+      disable: true
     entrypoint:
       - /bin/sh
       - -c
