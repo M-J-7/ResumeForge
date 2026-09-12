@@ -93,6 +93,17 @@ services:
   # It does **not** recover from losing the volume — that is what the
   # Litestream service below is for, and the two are not substitutes.
   backup:
+    # The same image as `app`, with a different entrypoint. The runtime stage
+    # already carries scripts/backup.mjs and src/server/backup.ts precisely so
+    # this service needs nothing of its own.
+    #
+    # Without `image:` here, Compose has a `build:` and no tag to look for, so
+    # `up` builds the entire application from the Dockerfile in order to run a
+    # shell loop — on the deployed instance that means building on 1 GB of RAM
+    # and an eighth of an OCPU, which is the one thing this arrangement exists
+    # to avoid. `app` pulled correctly and `backup` built anyway, which put the
+    # load average above 5 before anything had started.
+    image: ${APP_IMAGE:-six-seconds-resume:local}
     build: .
     restart: unless-stopped
     entrypoint:
