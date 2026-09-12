@@ -110,7 +110,7 @@ SITE_DOMAIN="FILL_ME"
 # is 300 sign-ins; Resend's is 3,000 a month. Both are plain SMTP, so nothing
 # in the application changes between them.
 EMAIL_SERVER="smtp://USER:PASSWORD@smtp-relay.brevo.com:587"
-EMAIL_FROM="Resume Builder <no-reply@FILL_ME>"
+EMAIL_FROM="Six Seconds Resume <no-reply@FILL_ME>"
 
 # ---- Optional -------------------------------------------------------------
 
@@ -131,7 +131,13 @@ EOF
   chmod 600 "$ENV_FILE"
 fi
 
-if grep -q 'FILL_ME' "$ENV_FILE"; then
+# Comments excluded, and that is not a detail: the header this script writes
+# says "Fill in every FILL_ME", so a bare `grep FILL_ME` matches the file's own
+# instructions and keeps matching after every placeholder has been replaced.
+# The script then refuses to start a perfectly configured deployment, and says
+# the outcome is correct while doing it. Nobody hit it until a second run was
+# reached for the first time.
+if grep -v '^[[:space:]]*#' "$ENV_FILE" | grep -q 'FILL_ME'; then
   cat <<EOF
 
 $(printf '%s' "$YELLOW")Stopping here, and that is the correct outcome.$(printf '%s' "$OFF")
