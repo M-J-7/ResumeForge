@@ -195,8 +195,22 @@ fi
 # exactly as before. That is the supported state and it is the right one until
 # a model passes §11. See docs/QA.md and docs/enhance feature.md.
 
-say "Building the image (this takes a while on 2 OCPU — it compiles better-sqlite3)"
-docker compose build
+# Build here, or pull what CI built?
+#
+# The Always Free A1 can build its own image. The other Always Free shape,
+# E2.1.Micro, cannot: an eighth of an OCPU and 1 GB of memory runs the
+# standalone server fine but does not finish `next build`. When APP_IMAGE names
+# a published image we pull it; otherwise we build as before.
+#
+# APP_IMAGE lives in ./.env, which is the file Compose reads for substitution —
+# not .env.production, which is the one handed to the container.
+if [[ -f .env ]] && grep -q '^APP_IMAGE=' .env; then
+  say "Pulling the image CI built ($(grep '^APP_IMAGE=' .env | cut -d= -f2-))"
+  docker compose pull app
+else
+  say "Building the image (this takes a while on a small instance)"
+  docker compose build
+fi
 
 say "Starting"
 docker compose up -d --remove-orphans

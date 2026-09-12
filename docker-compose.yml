@@ -45,6 +45,17 @@ services:
       - app
 
   app:
+    # One field serving two machines. Compose uses `image:` as the tag to write
+    # when it builds and as the reference to fetch when it pulls, so a host that
+    # can build still does, and a host that cannot sets APP_IMAGE and pulls the
+    # image CI published.
+    #
+    # The deployed instance is the second kind: an Always Free E2.1.Micro with
+    # 1 GB of memory, which runs this comfortably but cannot `next build`.
+    # APP_IMAGE goes in `.env` beside this file — Compose reads that one for
+    # substitution, which is a different file from the `.env.production` below
+    # that is handed to the container.
+    image: ${APP_IMAGE:-six-seconds-resume:local}
     build: .
     restart: unless-stopped
     # No `ports:` on purpose. The app is reachable only on the compose network,
