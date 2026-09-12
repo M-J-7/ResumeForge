@@ -122,6 +122,63 @@ variable "instance_name" {
   default     = "resume-builder"
 }
 
+variable "shape" {
+  description = <<-EOT
+    Which Always Free shape to ask for.
+
+    Two are free, and they fail in opposite ways:
+
+      VM.Standard.A1.Flex       aarch64, up to 2 OCPU / 12 GB. The better
+                                machine by far, and permanently contended —
+                                "Out of host capacity" is the usual answer.
+
+      VM.Standard.E2.1.Micro    x86_64, fixed at 1/8 OCPU and 1 GB. Nobody
+                                competes for these, so they provision on the
+                                first try. Two are free.
+
+    The micro cannot build the application — `next build` on an eighth of a
+    core with 1 GB of RAM is not a slow build, it is a failed one. It can
+    comfortably *run* it: the standalone server plus Caddy idles in a few
+    hundred megabytes, and PDF rendering happens in the browser. That is why
+    the image is built in CI and pulled (see docker-compose.yml).
+
+    Changing this changes the architecture, and the image data source above
+    follows it so the right Ubuntu build is selected.
+  EOT
+  type        = string
+  default     = "VM.Standard.A1.Flex"
+}
+
+variable "ocpus" {
+  description = <<-EOT
+    OCPUs for the instance. Always Free allows 2; more is billable.
+
+    Lowering this is the one lever that actually works against "Out of host
+    capacity". Oracle schedules a 1-OCPU fragment far more often than a 2-OCPU
+    one, because it only has to find half as much room on a host — and unlike
+    retrying, it changes the odds rather than rerolling them.
+
+    1 is enough to run this. PDF and DOCX rendering happen in the browser
+    (README.md), so the server renders pages and reads a SQLite file on local
+    disk. The build is the only CPU-hungry step, and it happens once per
+    deploy. `bootstrap.sh` gives the instance 2 GB of swap either way.
+  EOT
+  type        = number
+  default     = 2
+}
+
+variable "memory_in_gbs" {
+  description = <<-EOT
+    Memory for the instance.
+
+    Keep this at 6 GB per OCPU: that is the Always Free ratio, and a request
+    above it creates a billable instance rather than a rejected one — which is
+    a mistake you discover on an invoice.
+  EOT
+  type        = number
+  default     = 12
+}
+
 variable "allowed_ssh_cidr" {
   description = <<-EOT
     Who may reach port 22.
@@ -158,7 +215,11 @@ data "oci_core_images" "ubuntu" {
   compartment_id           = var.compartment_ocid
   operating_system         = "Canonical Ubuntu"
   operating_system_version = "24.04"
-  shape                    = "VM.Standard.A1.Flex"
+  # Filtering by the shape is what makes this resolve the right architecture:
+  # A1 is aarch64 and E2 is x86_64, and an image for the wrong one does not
+  # boot. Deriving it from var.shape rather than naming A1 here is the whole
+  # reason changing shape is a one-line change.
+  shape                    = var.shape
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
 }
@@ -273,13 +334,20 @@ resource "oci_core_instance" "app" {
   compartment_id      = var.compartment_ocid
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[var.availability_domain_index].name
   display_name        = var.instance_name
-  shape               = "VM.Standard.A1.Flex"
+  shape               = var.shape
 
-  shape_config {
-    # The entire Always Free Ampere allowance, as it stands after the
-    # 15 June 2026 reduction. Asking for more creates a billable instance.
-    ocpus         = 2
-    memory_in_gbs = 12
+  # Only Flex shapes accept a shape_config; a fixed shape like
+  # VM.Standard.E2.1.Micro has its size baked into the name, and sending one
+  # anyway is rejected. So the block appears only when it applies.
+  dynamic "shape_config" {
+    for_each = endswith(var.shape, ".Flex") ? [1] : []
+    content {
+      # Defaults to the entire Always Free Ampere allowance, as it stands after
+      # the 15 June 2026 reduction. Asking for more creates a billable instance;
+      # asking for less is the practical answer to "Out of host capacity".
+      ocpus         = var.ocpus
+      memory_in_gbs = var.memory_in_gbs
+    }
   }
 
   source_details {
