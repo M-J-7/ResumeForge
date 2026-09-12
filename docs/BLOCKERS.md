@@ -5,35 +5,45 @@
 > deferred decision: a deferral is a choice we made, a blocker is one we
 > cannot make yet.
 >
-> **Last updated:** 2026-09-10 · Updated in the same commit as the work that
+> **Last updated:** 2026-09-12 · Updated in the same commit as the work that
 > hits or clears a blocker.
 
 ---
 
-## 0. What is waiting on you, and nothing else
+## 0. Deployed, 2026-09-12
 
-Everything that could be built without an account has been. What is left is
-three sign-ups and one DNS record, and each is written out with what to paste
-where in **`deploy/oracle/README.md`**.
+**<https://sixseconds.tech> is live.** An Always Free `VM.Standard.E2.1.Micro`
+in `ap-hyderabad-1`, behind Caddy with a Let's Encrypt certificate, running the
+image CI publishes to ghcr.io. Google sign-in works and has created its first
+account. Litestream replicates the database off-site every second, and a
+restore has been performed and verified.
 
-| #   | Yours to do                              | Then                                                 | Status         |
-| --- | ---------------------------------------- | ---------------------------------------------------- | -------------- |
-| 1   | Merge `launch/six-seconds-resume`        | The instance builds from master, not from a laptop   | **Outstanding** |
-| 2   | An Oracle Cloud account, home region     | `terraform apply` — expect to retry for capacity     | **Outstanding** |
-| 3   | A domain                                 | One `A` record at the printed IP                     | Done — `sixseconds.tech`, 2026-09-10 |
-| 4   | An SMTP provider (Brevo or Resend, free) | `sudo ./deploy/oracle/bootstrap.sh`, twice           | **Outstanding** |
+Ampere A1 was the intended shape and could not be had: seven `Out of host
+capacity` refusals between 16:31 and 17:00, at 2 OCPU / 12 GB and again at
+1 OCPU / 6 GB. Hyderabad has a single availability domain, so there was nowhere
+else in the tenancy to look. The micro provisioned in 45 seconds. It cannot run
+`next build` — hence the published image — and `terraform.tfvars` documents the
+switch back to A1 whenever capacity appears.
 
-**Step 1 is not a formality.** `origin/master` is still `P1: project
-foundation` — the skeleton. `cloud-init.yaml` clones the default branch and
-`deploy.sh` runs `git reset --hard origin/master`, so deploying before the
-merge builds an empty project and serves it over TLS with a valid
-certificate: a deployment that looks entirely successful and contains no
-product.
+| #   | Yours to do                          | Status                                                              |
+| --- | ------------------------------------ | ------------------------------------------------------------------- |
+| 1   | Merge to master                      | Done — `a985c46`. Two later branches still open, see below          |
+| 2   | An Oracle Cloud account, home region | Done — `ap-hyderabad-1`                                             |
+| 3   | A domain                             | Done — `sixseconds.tech`                                            |
+| 4   | An SMTP provider                     | Brevo configured; domain authentication added 2026-09-12            |
 
-The second run of `bootstrap.sh` is the deploy. The first writes
-`.env.production` with a generated `AUTH_SECRET`, tells you which four lines to
-fill in, and stops — deliberately, because a stack that starts on the wrong
-hostname burns Let's Encrypt attempts against a five-a-week limit.
+**Still open:** the branches `fix-backup-image` and `offsite-backups`. The
+second matters more than it looks — `deploy.sh` runs
+`git reset --hard origin/master`, so the Litestream configuration currently
+living only on the instance is destroyed by the next deploy, which would end
+replication with no error anywhere.
+
+**Known risk, not yet a blocker.** Brevo rewrites every link in transactional
+mail through its click tracker and offers no way to disable it over SMTP. The
+sign-in links here are single-use with a 15-minute lifetime, so a mail scanner
+that prefetches the tracked URL spends the token before the recipient clicks.
+Resend allows tracking to be switched off and is a one-line `EMAIL_SERVER`
+change; `deploy/oracle/README.md` already names it as the alternative.
 
 **Not required, and please do not:** `pnpm enhance:fetch`. The QA §11 measured
 pass ran that model in a browser for the first time on 2026-09-10 and it does
@@ -63,13 +73,13 @@ problem, and none has a workaround worth building.
 
 | #      | Blocked                                      | Needs                                                                                                                                                                    | What is already done                                                                                                                                                                                    |
 | ------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **B1** | **P17 — deploy**                             | An Oracle Cloud account and a **registrable** domain. Nothing else — the provisioning is scripted (`deploy/oracle/`) and the arm64 image is verified in CI               | All of it but the two sign-ups: `deploy/oracle/{main.tf,cloud-init.yaml,bootstrap.sh,deploy.sh,README.md}`, `Caddyfile`, the Caddy service, `.env.example`, `RUNBOOK.md`, and the `docker-arm64` CI job |
-| **B2** | **P18 — off-site backups**                   | An S3-compatible bucket plus OCI **Customer Secret Keys** — not API signing keys                                                                                         | `litestream.yml`, the service in `docker-compose.yml`, `scripts/backup.mjs`                                                                                                                             |
-| **B3** | **P20 — live Google sign-in**                | The same registrable domain as B1. Google rejects redirect URIs whose host is on the Public Suffix List, so `*.duckdns.org`, `*.sslip.io` and `*.nip.io` are all refused | The whole code path, plus `pnpm auth:google` as a pre-flight. Magic-link email covers authentication on its own, so this never blocks launch                                                            |
+| ~~**B1**~~ | ~~**P17 — deploy**~~ **RESOLVED 2026-09-12** | Nothing. `https://sixseconds.tech` is live on an Always Free instance in `ap-hyderabad-1`, TLS from Let's Encrypt, image pulled from ghcr.io | All of it but the two sign-ups: `deploy/oracle/{main.tf,cloud-init.yaml,bootstrap.sh,deploy.sh,README.md}`, `Caddyfile`, the Caddy service, `.env.example`, `RUNBOOK.md`, and the `docker-arm64` CI job |
+| ~~**B2**~~ | ~~**P18 — off-site backups**~~ **RESOLVED 2026-09-12** | Nothing. Litestream replicates to Oracle Object Storage every second, and a restore has been performed and verified — see the measured row in `docs/RUNBOOK.md` | `litestream.yml`, the service in `docker-compose.yml`, `scripts/backup.mjs`                                                                                                                             |
+| ~~**B3**~~ | ~~**P20 — live Google sign-in**~~ **RESOLVED 2026-09-12** | Nothing. Live, and used: the first account on the deployment was created through it | The whole code path, plus `pnpm auth:google` as a pre-flight. Magic-link email covers authentication on its own, so this never blocks launch                                                            |
 | **B4** | **P30 — manual QA, 4 checks**                | Word / LibreOffice / Google Docs · a real phone at 390px · a Google consent screen · ten real job postings                                                               | `QA.md` holds each checklist; the automatable parts are already in the two suites                                                                                                                       |
 | **B5** | **P36 · P31-A4 — return on the SEO surface** | A live origin that has been indexed. Not a build blocker — the pages are built and tested; what is blocked is the traffic                                                | All of P36 and `/check`. `sitemap.ts` and `robots.ts` read the origin at runtime, so nothing changes at deploy time                                                                                     |
 | **B7** | **P36 — the Lighthouse ≥ 90 acceptance**     | A deployed origin. Lighthouse against `localhost` measures a machine with no network latency, no TLS handshake and no CDN — a number that would pass and mean nothing    | The structural half is asserted instead: every content route renders with `javaScriptEnabled: false`, and axe is clean on four of them                                                                  |
-| ~~**B6**~~ | ~~**The product name (P37)**~~ **Resolved 2026-09-10** | Nothing. The name is **Six Seconds Resume** and `sixsecondsresume.com` was verified unregistered on the day it was chosen; registering it is now part of B1 | `src/lib/product.ts`, the two PDF constants, `DEFAULT_MAIL_FROM`, the DOCX creator fallback and the two `builder.spec.ts` title assertions all carry it; see below |
+| ~~**B6**~~ | ~~**The product name (P37)**~~ **Resolved 2026-09-10** | Nothing. The name is **Six Seconds Resume**; the domain registered on 2026-09-12 was `sixseconds.tech` | `src/lib/product.ts`, the two PDF constants, `DEFAULT_MAIL_FROM`, the DOCX creator fallback and the two `builder.spec.ts` title assertions all carry it; see below |
 
 ### B1 in detail — what is left, after 2026-09-10
 
