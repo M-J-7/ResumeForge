@@ -13,6 +13,17 @@ jobs:
   verify:
     name: Typecheck, lint, unit tests
     runs-on: ubuntu-latest
+    # Every Prisma CLI call resolves `env("DATABASE_URL")` when
+    # `prisma.config.ts` loads, whether or not it connects — so `db:generate`
+    # needs it, and so does `pnpm verify`, whose `pretypecheck` hook generates
+    # again. Locally a `.env` supplies it; that file is gitignored, so on CI
+    # nothing does and the command fails before it reads the schema.
+    #
+    # Job-level rather than per-step because two different steps need it. The
+    # tests are unaffected: db.test.ts deletes and restores this variable
+    # itself, and migrate.test.ts passes its own to the child process.
+    env:
+      DATABASE_URL: "file:./ci.db"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -32,6 +43,12 @@ jobs:
   e2e:
     name: End-to-end
     runs-on: ubuntu-latest
+    # Only for the `db:generate` step below. Playwright sets its own
+    # DATABASE_URL for the server it spawns (`playwright.config.ts`), pointing
+    # at a separate file so a test run never writes to the database anything
+    # else is using — this value must not be the one the suite runs against.
+    env:
+      DATABASE_URL: "file:./ci.db"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

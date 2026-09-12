@@ -36,6 +36,18 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # `prebuild` runs sync-public-fonts, which populates public/fonts and copies
 # the pdfjs worker, then `prisma generate`.
+#
+# `prisma generate` needs DATABASE_URL even though it never opens a connection:
+# `prisma.config.ts` resolves `env("DATABASE_URL")` when the config loads, so
+# an absent value fails the command before it reads the schema. `.env` is
+# gitignored and therefore not in the build context, which is why nothing
+# supplies it here by accident.
+#
+# A throwaway path under /tmp, deliberately: no step in this stage may touch a
+# real database, and a value that looks plausible is how a build step ends up
+# migrating something it should not. The runtime value is set in the runner
+# stage below and points at the mounted volume.
+ENV DATABASE_URL="file:/tmp/build-only.db"
 RUN pnpm build
 
 # ---- runtime ----------------------------------------------------------------
