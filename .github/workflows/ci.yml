@@ -7,7 +7,17 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Supersede pull-request runs, never master runs.
+  #
+  # A master run publishes the image the deployment pulls. Cancelling one
+  # half-built leaves the registry on whatever tag it had before, with a green
+  # merge and no signal that nothing was published — which is what happened on
+  # 2026-09-12, when two merges minutes apart cancelled each other and the
+  # deploy then had no image to pull.
+  #
+  # On a pull request the old behaviour is right: a superseded commit's run is
+  # worth nothing and the arm64 build is twenty minutes.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
