@@ -47,13 +47,18 @@ describe("outboxTransport", () => {
     expect(Date.parse(entries[0]!.sentAt)).not.toBeNaN();
   });
 
-  it("returns messages newest first", async () => {
+  // Five in a tight loop rather than two with the machine's timing deciding:
+  // the whole loop runs well inside one millisecond, so every pair shares a
+  // timestamp and the ordering is decided entirely by the tiebreak. The
+  // two-message version of this test passed or failed on a coin toss and only
+  // lost it on CI.
+  it("returns messages newest first, including within a single millisecond", async () => {
     const transport = outboxTransport(directory);
-    await transport.send({ ...MESSAGE, subject: "first" });
-    await transport.send({ ...MESSAGE, subject: "second" });
+    const subjects = ["first", "second", "third", "fourth", "fifth"];
+    for (const subject of subjects) await transport.send({ ...MESSAGE, subject });
 
     const entries = await readOutbox(directory);
-    expect(entries.map((e) => e.subject)).toEqual(["second", "first"]);
+    expect(entries.map((e) => e.subject)).toEqual([...subjects].reverse());
   });
 
   it("creates the directory rather than failing on a fresh checkout", async () => {

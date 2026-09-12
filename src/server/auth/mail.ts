@@ -90,6 +90,33 @@ export function smtpTransport(server: string, from: string = DEFAULT_MAIL_FROM):
  * back is polling while the server writes, and a half-written line in a
  * shared log is indistinguishable from a corrupt one.
  */
+/**
+ * A filename prefix that sorts in write order, including within one tick.
+ *
+ * `Date.now()` is milliseconds, and two sends can easily share one — so the
+ * millisecond alone cannot order them. The counter resets whenever the clock
+ * advances, which keeps it short, and the prefix never decreases even if the
+ * system clock jumps backwards: a rewound clock would otherwise write a file
+ * that sorts before messages already sent.
+ *
+ * Process-local, which is the scope that matters. The outbox is a development
+ * transport with one writer (`docs/DECISIONS.md` D6); across processes the
+ * millisecond still orders correctly.
+ */
+let lastTick = 0;
+let tickSequence = 0;
+
+function nextSortKey(): string {
+  const now = Date.now();
+  if (now > lastTick) {
+    lastTick = now;
+    tickSequence = 0;
+  } else {
+    tickSequence += 1;
+  }
+  return `${String(lastTick).padStart(14, "0")}-${String(tickSequence).padStart(6, "0")}`;
+}
+
 export function outboxTransport(dir: string, from: string = DEFAULT_MAIL_FROM): MailTransport {
   return {
     id: "outbox",
@@ -102,9 +129,15 @@ export function outboxTransport(dir: string, from: string = DEFAULT_MAIL_FROM): 
       }
       await mkdir(dir, { recursive: true });
       const entry: OutboxEntry = { from, ...message, sentAt: new Date().toISOString() };
-      // Sortable prefix, unique suffix: the timestamp orders the directory
-      // listing, the uuid keeps two messages in the same millisecond apart.
-      const name = `${String(Date.now()).padStart(14, "0")}-${randomUUID()}.json`;
+      // Sortable prefix, ordered tiebreak, unique suffix.
+      //
+      // The uuid alone is not enough, and this is the bug it used to hide: it
+      // keeps two filenames from colliding, but it is random, so it does not
+      // order them. Two sends inside one millisecond share a timestamp prefix
+      // and `readOutbox` then sorts them by a random string — a coin flip for
+      // "newest first", which fails roughly half the time on hardware fast
+      // enough to send twice in the same tick.
+      const name = `${nextSortKey()}-${randomUUID()}.json`;
       await writeFile(path.join(dir, name), JSON.stringify(entry, null, 2), "utf8");
     },
   };
