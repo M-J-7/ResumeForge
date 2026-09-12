@@ -80,8 +80,40 @@ const migrationV0toV1: Migration = {
   },
 };
 
+/**
+ * P32-B1 — the two template axes.
+ *
+ * Both defaults reproduce the v1 rendering exactly (`"left"`, `"rule"`), so a
+ * document saved before templates existed opens looking identical. That is
+ * the whole bar for this migration: a user who has not asked for anything to
+ * change must not see anything change.
+ *
+ * The values are taken from `DEFAULT_SETTINGS` rather than written as
+ * literals here on purpose — if a later release changes what a *new*
+ * document defaults to, this migration must keep producing the v1
+ * appearance, and a literal is what makes that survive. Hence the explicit
+ * strings below rather than a spread.
+ */
+const migrationV1toV2: Migration = {
+  from: 1,
+  to: 2,
+  description: "Add headerStyle and headingStyle, defaulted to the v1 appearance.",
+  apply: (doc) => {
+    const settings = isRecord(doc.settings) ? doc.settings : {};
+    return {
+      ...doc,
+      schemaVersion: 2,
+      settings: {
+        ...settings,
+        headerStyle: typeof settings.headerStyle === "string" ? settings.headerStyle : "left",
+        headingStyle: typeof settings.headingStyle === "string" ? settings.headingStyle : "rule",
+      },
+    };
+  },
+};
+
 /** Ordered by `from`. Must be contiguous — asserted in the tests. */
-export const MIGRATIONS: readonly Migration[] = [migrationV0toV1];
+export const MIGRATIONS: readonly Migration[] = [migrationV0toV1, migrationV1toV2];
 
 export class ResumeMigrationError extends Error {
   constructor(

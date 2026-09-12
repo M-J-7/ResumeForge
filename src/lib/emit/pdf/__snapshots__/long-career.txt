@@ -1,0 +1,38 @@
+--- page 1 ---
+Marcus Chen
+marcus.chen@example.com +1 415 555 0182 · San Francisco, CA LinkedIn
+SUMMARY
+Engineering leader with fifteen years spanning individual contribution to VP-level scope, across payments,
+logistics, and developer tooling.
+EXPERIENCE
+VP of Engineering Mar 2021 – Present
+Northwind Logistics San Francisco, CA
+• Grew the engineering org from 12 to 64 across four time zones without a quarter of missed roadmap
+commitments.
+• Cut warehouse routing latency 60% by replacing the batch optimizer with a streaming solver.
+• Introduced a blameless incident process that cut mean time to resolution from 4 hours to 35 minutes.
+• Negotiated the cloud vendor migration that reduced infrastructure spend by $2.1M annually.
+Director of Engineering Jun 2018 – Feb 2021
+Adatum Freight Chicago, IL
+• Built the tracking platform that now serves 40,000 shipments a day across three continents.
+• Stood up the first on-call rotation and SLO practice, taking uptime from 98.1% to 99.95%.
+• Mentored six engineers into their first management roles.
+Engineering Manager Jan 2016 – May 2018
+Woodgrove Analytics Austin, TX
+• Shipped the real-time dashboard rebuild that cut customer-reported latency complaints by 80%.
+Senior Software Engineer Sep 2012 – Dec 2015
+Contoso Data Austin, TX
+• Designed the partitioning scheme that let the core datastore scale from 2TB to 40TB without a rewrite.
+• Led the on-call handoff from the founding team to a rotating six-engineer roster.
+Software Engineer Jul 2009 – Aug 2012
+Fabrikam Systems Boston, MA
+• Built the first automated test suite for the billing service, catching 30+ regressions before release over two
+years.
+• Rewrote the nightly batch job in a way that cut its runtime from 6 hours to 45 minutes.
+• Onboarded and paired with four new graduate hires across two summers.
+EDUCATION
+University of Texas at Austin Sep 2005 – May 2009
+BSc, Computer Science Austin, TX
+SKILLS
+Leadership: Org design, Roadmapping, Hiring, Mentorship
+Technical: Distributed systems, Go, PostgreSQL, Kafka

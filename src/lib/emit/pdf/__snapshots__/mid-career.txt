@@ -1,0 +1,32 @@
+--- page 1 ---
+José Ángel Muñoz-Łukasiewicz
+jose.munoz@example.com +34 612 345 678 · Barcelona, Spain LinkedIn GitHub
+SUMMARY
+Backend engineer with seven years building payment infrastructure at scale. Led the migration that cut
+settlement latency from 400ms to 90ms across 12 markets.
+EXPERIENCE
+Senior Backend Engineer Mar 2022 – Present
+Contoso Payments Barcelona, Spain
+• Redesigned the settlement pipeline, cutting median latency from 400ms to 90ms across 12 markets.
+• Led a four-person team through a zero-downtime migration of 2.3 billion ledger rows.
+• Cut infrastructure spend 31% by replacing per-request container spin-up with a warm worker pool.
+Backend Engineer Jun 2019 – Feb 2022
+Fabrikam GmbH Berlin, Germany
+• Built the idempotency layer that eliminated duplicate charges, resolving 94% of billing disputes.
+• Introduced contract testing across 9 services, reducing integration failures from 15 to 2 per month.
+EDUCATION
+Universitat Politècnica de Catalunya Sep 2015 – Jun 2019
+BSc, Computer Science Barcelona, Spain · First Class
+SKILLS
+Languages & Frameworks: Go, TypeScript, Python, PostgreSQL, gRPC
+Infrastructure: Kubernetes, Terraform, AWS, Kafka
+PROJECTS
+ledger-diff Jan 2023 – Aug 2023
+Author
+https://github.com/josemunoz/ledger-diff
+• Open-source reconciliation tool for double-entry ledgers; 1.2k stars and used by three payment processors.
+CERTIFICATIONS
+Certified Kubernetes Administrator Apr 2023
+Cloud Native Computing Foundation ID: CKA-2023-8891
+LANGUAGES
+Spanish (native), Catalan (native), English (fluent), German (B2)

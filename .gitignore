@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the template is documentation and must be committed.
+!.env.example
 
 # vercel
 .vercel
@@ -45,3 +47,60 @@ next-env.d.ts
 
 # local agent/editor settings
 .claude/settings.local.json
+
+# generated: font files copied from src/lib/fonts/files by scripts/sync-public-fonts.mjs
+/public/fonts/
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/public/pdf.worker.min.mjs
+
+# generated: the local enhancement model and its ONNX runtime, vendored by
+# scripts/fetch-enhancement-model.mjs. ~98MB, deliberately not committed and
+# deliberately not part of prebuild — see that script for why.
+/public/models/
+/public/ort/
+
+# Raw output of `pnpm qa:enhance`. QA.md holds the recorded pass; this is the
+# machine-readable artifact it was rendered from, and it is machine-specific.
+/measurements/
+
+# pnpm's local content-addressable store. A build artifact of the package
+# manager, not of this project.
+/.pnpm-store/
+
+# database (M2). DATABASE_URL is relative to the project root, so the dev
+# database lands here rather than under prisma/.
+/*.db
+/*.db-journal
+/*.db-wal
+/*.db-shm
+/prisma/*.db
+/prisma/*.db-journal
+/prisma/*.db-wal
+/prisma/*.db-shm
+/src/generated/
+
+# generated: magic-link emails written to disk by the development mail
+# transport (src/server/auth/mail.ts). Never present in production.
+/.mail-outbox/
+
+# local database snapshots (scripts/backup.mjs)
+/backups/
+
+# Terraform, in deploy/oracle. `terraform.tfvars` holds a compartment OCID and
+# an SSH public key; the state file holds every attribute of every resource,
+# which is a far bigger disclosure than it looks. Neither is a secret store —
+# `bootstrap.sh` generates AUTH_SECRET on the instance precisely so that no
+# secret ever reaches Terraform state.
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# `.terraform.lock.hcl` is deliberately NOT ignored. It pins the provider
+# version and its checksums, which is the whole point of having it, and it is
+# generated with hashes for linux, macOS and Windows so `terraform init` on a
+# machine that is not this one does not fail on a missing hash.

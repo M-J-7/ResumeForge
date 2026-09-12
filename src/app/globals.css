@@ -1,26 +1,1162 @@
+/*
+ * The design system: tokens, one dark-mode variant, and the motion layer.
+ * Tailwind v4 is CSS-first — there is no `tailwind.config.ts` and there
+ * should not be one.
+ *
+ * The direction is "Paper & Ink"; `design.md` holds the argument in full.
+ * Two rules from it decide almost every value in this file.
+ *
+ * ## 1. Warmth is earned by the document
+ *
+ * The app has *chrome* — panels, forms, navigation — and it has *paper*, the
+ * rendered resume page. Chrome is a cool, matte workbench, cooled slightly
+ * green so it separates from paper by temperature as well as by value. Paper
+ * is `#ffffff` in both themes, because a resume page is white in the PDF and
+ * always will be; inverting it in dark mode would show the user something the
+ * recruiter will never see. Only `--canvas`, the surface the page floats on,
+ * follows the theme.
+ *
+ * The corollary is about elevation: **chrome gets hairlines, paper gets the
+ * shadow.** `--shadow-card` is `none` on purpose. Ten identical cards each
+ * wearing the same soft grey shadow is what the old landing page was, and it
+ * is why nothing on it looked more important than anything else. Overlays
+ * that genuinely float — dialogs, the command palette — use `--shadow-pop`.
+ *
+ * ## 2. Monospace is the machine's voice
+ *
+ * `--machine` and `--font-mono` mark text a *parser* recovered, never text we
+ * wrote. X-Ray output, `/check` results, the recovered-text column. The
+ * product's credibility rests on never letting "what a person reads" and
+ * "what a machine read" blur together, so they do not share a colour.
+ *
+ * Every foreground/ground pair below was computed against the WCAG formula
+ * rather than eyeballed — see `design.md` §3.3 for the table. `--text-faint`
+ * and `--ok` both had to be darkened from their first draft to clear 4.5:1 on
+ * `--canvas`, and `--line-strong` was darkened until an input border cleared
+ * the 3:1 that WCAG 1.4.11 asks of an interactive component's boundary. It
+ * was inherited at 1.5:1, which is why the fields used to look unfinished.
+ */
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ---------------------------------------------------------------------------
+ * Dark mode.
+ *
+ * Tailwind v4's stock `dark:` follows `prefers-color-scheme` alone, which a
+ * toggle cannot override. This repoints it at `[data-theme="dark"]` while
+ * keeping the OS as the fallback for the no-JavaScript case — and *only* that
+ * case, because the inline script in `layout.tsx` always resolves a "system"
+ * preference to a concrete `light` or `dark` before first paint.
+ *
+ * That resolution is load-bearing. Leaving `data-theme="system"` on the
+ * element would match neither branch below, and roughly 250 `dark:` classes
+ * across the app would keep compiling, keep linting, and quietly do nothing.
+ * ------------------------------------------------------------------------ */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme]), :root:not([data-theme]) *) {
+      @slot;
+    }
   }
 }
 
+:root {
+  color-scheme: light;
+
+  /* Chrome — the workbench. Cool, matte, faintly green. */
+  --surface-0: #fbfcfb; /* cards, inputs, anything raised   */
+  --surface-1: #f2f4f2; /* the app background               */
+  --surface-2: #e7eae7; /* recessed wells, hover states     */
+  --line: #dde1dd; /* hairline borders, decorative     */
+  /* 3.36:1 against `--surface-1`. This is an input's boundary, and WCAG
+     1.4.11 asks 3:1 of it. The inherited value was 1.5:1. */
+  --line-strong: #7a887f;
+  /* Ink: near-black with a green cast, so it sits in the same family as the
+     chrome rather than reading as a neutral dropped on top of it. */
+  --text: #16211d;
+  --text-muted: #4a5750;
+  --text-faint: #55635d;
+
+  /* Paper — the document object. Deliberately theme-invariant. */
+  --paper: #ffffff;
+  --paper-edge: rgb(22 33 29 / 0.12);
+  --canvas: #e6e5e1; /* the warm grey the page floats on */
+
+  /* Pine. Actions, active state, focus. */
+  --accent: #2f6b57;
+  --accent-hover: #245645;
+  --accent-weak: #e7f0eb;
+  --on-accent: #ffffff;
+
+  /* Slate — the parser's voice. Never used for an action. */
+  --machine: #3b5a78;
+  --machine-weak: #eaf0f6;
+
+  --ok: #1a6b4a;
+  --ok-weak: #e8f2ec;
+  --warn: #8a5a08;
+  --warn-weak: #fbf3e3;
+  --danger: #a32020;
+  --danger-weak: #fbeceb;
+
+  /* Radius varies by role rather than being one value on everything.
+     Paper is nearly square, because paper is. */
+  --radius-paper: 2px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  /* The document's shadow — the only real one in the app. */
+  --shadow-page:
+    0 1px 1px rgb(22 33 29 / 0.05), 0 4px 12px -4px rgb(22 33 29 / 0.1),
+    0 16px 40px -12px rgb(22 33 29 / 0.16);
+  /* Chrome is flat. See the header of this file. */
+  --shadow-card: none;
+  --shadow-pop: 0 2px 4px rgb(22 33 29 / 0.06), 0 12px 32px -8px rgb(22 33 29 / 0.22);
+
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
+  --dur-hero: 900ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  /* A spring with just enough overshoot to feel answered rather than
+     playful — bounce 0.15, perceptual duration 0.28s. Generated rather than
+     hand-picked; the tail past 280ms is the settle, so time nothing off the
+     550ms. Press and lift only, never a colour change. */
+  --dur-press: 550ms;
+  --ease-press: linear(
+    0,
+    0.1298,
+    0.3693,
+    0.5949,
+    0.7654,
+    0.8784,
+    0.9458,
+    0.9819,
+    0.9988,
+    1.0052,
+    1.0063,
+    1.0053,
+    1.0037,
+    1.0024,
+    1.0014,
+    1.0007,
+    1,
+    1
+  );
+
+  /* Depth on *interaction*, not at rest. The rule that chrome is flat still
+     holds for the resting page — this is what a surface does when a pointer
+     is on it, which is a different claim. */
+  --shadow-lift: 0 1px 2px rgb(22 33 29 / 0.06), 0 8px 24px -10px rgb(22 33 29 / 0.18);
+  --shadow-accent: 0 8px 24px -10px rgb(47 107 87 / 0.45);
+
+  /* What an overlay dims the page with. The last raw palette value in the
+     app was `backdrop:bg-zinc-900/40` on two dialogs; a token also lets the
+     dark theme go further, where 40% of a near-black over a near-black page
+     separates almost nothing. */
+  --scrim: rgb(22 33 29 / 0.45);
+}
+
+/*
+ * The dark palette, duplicated across two selectors on purpose.
+ *
+ * CSS has no way to alias a declaration block, and the alternative — dropping
+ * the media query and relying on the attribute alone — would serve the wrong
+ * theme to anyone with JavaScript disabled. Keep the two in sync; they are
+ * the only duplicated block in this file.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-0: #161c19;
+  --surface-1: #0e1311;
+  --surface-2: #202824;
+  --line: #253029;
+  --line-strong: #5e7166;
+  --text: #ecefec;
+  --text-muted: #a3afa8;
+  --text-faint: #8a968f;
+
+  --paper-edge: rgb(0 0 0 / 0.6);
+  /* Darker than every chrome surface, so the white page is unmistakably the
+     lit object on the screen. This is the payoff for keeping paper invariant. */
+  --canvas: #0a0f0d;
+
+  --accent: #6fcfa8;
+  --accent-hover: #96e0c1;
+  --accent-weak: #10281f;
+  --on-accent: #06251a;
+
+  --machine: #8fb6da;
+  --machine-weak: #131f2a;
+
+  --ok: #5fd3a0;
+  --ok-weak: #0a2419;
+  --warn: #e5b45c;
+  --warn-weak: #2a1f0a;
+  --danger: #f08a82;
+  --danger-weak: #2c1210;
+
+  --shadow-page:
+    0 1px 1px rgb(0 0 0 / 0.4), 0 4px 12px -4px rgb(0 0 0 / 0.5), 0 20px 48px -12px rgb(0 0 0 / 0.7);
+  --shadow-card: none;
+  --shadow-pop: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -10px rgb(0 0 0 / 0.7);
+  --shadow-accent: 0 8px 24px -10px rgb(111 207 168 / 0.35);
+  --scrim: rgb(0 0 0 / 0.66);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+
+    --surface-0: #161c19;
+    --surface-1: #0e1311;
+    --surface-2: #202824;
+    --line: #253029;
+    --line-strong: #5e7166;
+    --text: #ecefec;
+    --text-muted: #a3afa8;
+    --text-faint: #8a968f;
+
+    --paper-edge: rgb(0 0 0 / 0.6);
+    --canvas: #0a0f0d;
+
+    --accent: #6fcfa8;
+    --accent-hover: #96e0c1;
+    --accent-weak: #10281f;
+    --on-accent: #06251a;
+
+    --machine: #8fb6da;
+    --machine-weak: #131f2a;
+
+    --ok: #5fd3a0;
+    --ok-weak: #0a2419;
+    --warn: #e5b45c;
+    --warn-weak: #2a1f0a;
+    --danger: #f08a82;
+    --danger-weak: #2c1210;
+
+    --shadow-page:
+      0 1px 1px rgb(0 0 0 / 0.4), 0 4px 12px -4px rgb(0 0 0 / 0.5),
+      0 20px 48px -12px rgb(0 0 0 / 0.7);
+    --shadow-card: none;
+    --shadow-pop: 0 2px 4px rgb(0 0 0 / 0.4), 0 12px 32px -8px rgb(0 0 0 / 0.6);
+    --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -10px rgb(0 0 0 / 0.7);
+    --shadow-accent: 0 8px 24px -10px rgb(111 207 168 / 0.35);
+    --scrim: rgb(0 0 0 / 0.66);
+  }
+}
+
+/*
+ * What turns the tokens above into real utilities: `bg-surface-1`,
+ * `text-muted`, `border-line`, `bg-paper`, `rounded-md`. Components use these
+ * rather than raw hex, which is what makes the accent a one-line change.
+ */
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+
+  --color-paper: var(--paper);
+  --color-paper-edge: var(--paper-edge);
+  --color-canvas: var(--canvas);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-weak: var(--accent-weak);
+  --color-on-accent: var(--on-accent);
+
+  --color-machine: var(--machine);
+  --color-machine-weak: var(--machine-weak);
+
+  --color-ok: var(--ok);
+  --color-ok-weak: var(--ok-weak);
+  --color-warn: var(--warn);
+  --color-warn-weak: var(--warn-weak);
+  --color-danger: var(--danger);
+  --color-danger-weak: var(--danger-weak);
+
+  --radius-paper: var(--radius-paper);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /*
+   * Fraunces, and only on reading surfaces — marketing, guides, examples.
+   * Never in the builder: the split is semantic (serif is what you read, sans
+   * is what you work in), and the resume's own templates already ship EB
+   * Garamond and Tinos. The paper must stay the most typographically
+   * interesting thing on the screen.
+   */
+  --font-display: var(--font-fraunces);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface-1);
+  color: var(--text);
+  /*
+   * The previous value here was `Arial, Helvetica, sans-serif`, which
+   * overrode the Geist that `layout.tsx` loads and puts on <html>. The font
+   * was being downloaded and then thrown away on every page in the app.
+   */
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Text selection (§10.5).
+ *
+ * `--accent-weak` was here, and it is a near-ground *tint*, not a highlight:
+ * measured against the surface it sits on it is ≈1.14:1 in light, ≈1.20:1 in
+ * dark, ≈1.19:1 inside `.band-invert`. The text also kept its normal colour,
+ * so dragging across a paragraph read as doing nothing at all.
+ *
+ * One rule, not four. `::selection` resolves custom properties from the
+ * element it originates on, so this same block picks up the right pair in
+ * every context the palette defines — light, `data-theme="dark"`, the
+ * `prefers-color-scheme` fallback, and inside `.band-invert` — with no
+ * per-theme duplication. Both pairs are the palette's own and are
+ * high-contrast by construction: `#2f6b57` on white in light, `#6fcfa8` on
+ * `#06251a` in dark and in the inverted band.
+ */
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/*
+ * The rendered page is the one surface that stays white in both themes
+ * (`--paper` is invariant, which is the whole point of it). In dark mode the
+ * accent is a light mint, so the pairing above would paint a pale highlight
+ * on white paper — visible, but the weakest version of this in the app. The
+ * page borrows the light pair instead, which is the same dark-green-on-white
+ * a light-theme reader sees, and is correct on white by construction.
+ */
+.bg-paper ::selection,
+.bg-paper::selection {
+  background: #2f6b57;
+  color: #ffffff;
+}
+
+/*
+ * Fraunces is variable on `SOFT` and `WONK` as well as weight. Dialled soft
+ * and slightly wonky, it reads warm and humanist; left at its defaults it
+ * reads like the high-contrast display serif on every other landing page
+ * this year. `opsz` is set per size by `font-optical-sizing: auto`.
+ */
+.font-display {
+  font-variation-settings:
+    "SOFT" 28,
+    "WONK" 1;
+  font-optical-sizing: auto;
+  letter-spacing: -0.015em;
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion.
+ *
+ * §2.2's performance budget is binding — typing must never drop a frame — so
+ * nothing here may be applied to an input, to the preview canvas, or to
+ * anything inside a step form. Entrances and state changes only.
+ *
+ * One orchestrated moment per page, at most. A fade-and-slide-up on every
+ * section as it scrolls into view is the generic default, it delays reading,
+ * and it is not what these are for.
+ * ------------------------------------------------------------------------ */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.anim-fade-up {
+  animation: fade-up var(--dur) var(--ease) both;
+}
+
+.anim-pop {
+  animation: pop var(--dur-fast) var(--ease) both;
+}
+
+.anim-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-2) 25%,
+    var(--surface-1) 37%,
+    var(--surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------------------
+ * The build layer.
+ *
+ * `design.md` §5 said one orchestrated moment per page. That was the right
+ * rule for a page whose job was to be read quietly, and it produced a page
+ * that read as quiet to the point of inert. The direction is now **live**:
+ * the marketing surfaces assemble themselves, and every surface answers a
+ * pointer. The two rules that made the system coherent are untouched — paper
+ * is still the only warm, lit object, monospace is still the machine's voice
+ * — and the performance budget is untouched too: none of this is allowed
+ * anywhere near the builder's typing path.
+ *
+ * What is here is the CSS half. Hover, focus and press are CSS because CSS
+ * does them better; Motion is reserved for the things CSS genuinely cannot
+ * express, which is entrances, scroll linkage and the pointer-driven tilt.
+ * ------------------------------------------------------------------------ */
+
+/*
+ * A band that flips to the machine's palette.
+ *
+ * The landing page needed one hard contrast beat — six sections on one ground
+ * is what made the old page read as a list of boxes. Rather than invent a
+ * third palette, this re-points the *same* semantic tokens at the dark values
+ * already computed and contrast-checked in §3.3, so every `text-muted`,
+ * `border-line` and `text-machine` inside the band is a pair that was
+ * verified for dark mode. Nothing inside needs to know it is on a dark ground.
+ *
+ * The band is the evidence section, which makes the choice semantic rather
+ * than decorative: it is the parser's page, and the parser reads in the dark.
+ */
+.band-invert {
+  color-scheme: dark;
+
+  --surface-0: #182120;
+  --surface-1: #0d1412;
+  --surface-2: #212b28;
+  --line: #26322d;
+  --line-strong: #5e7166;
+  --text: #ecefec;
+  --text-muted: #a3afa8;
+  --text-faint: #8a968f;
+
+  --accent: #6fcfa8;
+  --accent-hover: #96e0c1;
+  --accent-weak: #10281f;
+  --on-accent: #06251a;
+
+  --machine: #8fb6da;
+  --machine-weak: #131f2a;
+
+  --shadow-page:
+    0 1px 1px rgb(0 0 0 / 0.4), 0 4px 12px -4px rgb(0 0 0 / 0.5), 0 20px 48px -12px rgb(0 0 0 / 0.7);
+  --shadow-lift: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -10px rgb(0 0 0 / 0.7);
+
+  /* Lit from its own top edge, so the band reads as a lit surface rather
+     than as a hole cut in the page. The tint is `--machine`, because this is
+     the parser's section and the accent would be the wrong voice. */
+  background:
+    radial-gradient(
+      85% 60% at 50% 0%,
+      color-mix(in oklab, var(--machine) 14%, transparent),
+      transparent 72%
+    ),
+    var(--surface-1);
+  color: var(--text);
+}
+
+/* In dark mode the band would otherwise be the page ground again, and the
+   beat would vanish. It lifts instead of dropping — the inversion is the
+   step in value, not the direction of it. */
+:root[data-theme="dark"] .band-invert {
+  --surface-0: #202b27;
+  --surface-1: #151d1a;
+  --surface-2: #2a3733;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .band-invert {
+    --surface-0: #202b27;
+    --surface-1: #151d1a;
+    --surface-2: #2a3733;
+  }
+}
+
+/*
+ * The workbench, drawn.
+ *
+ * A hairline dot grid, masked so it is dense behind the hero and gone by the
+ * time it reaches body copy. It is what gives the ground depth without giving
+ * it a colour, and it is the reason the document now reads as sitting *on*
+ * something. Requires `relative` and `isolate` on the host.
+ */
+.field-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle at 1px 1px, var(--line-strong) 1px, transparent 0);
+  background-size: 30px 30px;
+  opacity: 0.18;
+  -webkit-mask-image: radial-gradient(75% 65% at 50% 0%, #000 0%, transparent 100%);
+  mask-image: radial-gradient(75% 65% at 50% 0%, #000 0%, transparent 100%);
+}
+
+/*
+ * A soft field of colour behind the document. Not a gradient *on* anything —
+ * it is light on the workbench, which is why the paper reads as lit rather
+ * than as a white rectangle. `--aura` picks the colour; the drift is slow
+ * enough to be felt rather than watched.
+ */
+.aura {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--aura, var(--accent)) 30%, transparent),
+    transparent
+  );
+  filter: blur(44px);
+  will-change: transform;
+  animation: drift 26s var(--ease-soft) infinite alternate;
+}
+
+@keyframes drift {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+}
+
+/*
+ * The light that crosses a control when a pointer arrives. One sweep, no
+ * loop, and it is the only place in the app that uses white as an effect
+ * rather than as paper.
+ */
+.sheen {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.22) 50%,
+    transparent 62%
+  );
+  transform: translateX(-130%);
+  transition: transform 640ms var(--ease-soft);
+}
+
+.sheen:hover::after,
+.sheen:focus-visible::after {
+  transform: translateX(130%);
+}
+
+/*
+ * What a surface does when a pointer is on it. The resting page keeps its
+ * hairlines; this is the interaction, and it settles on a spring rather than
+ * arriving flat.
+ */
+.lift {
+  transition:
+    transform var(--dur-press) var(--ease-press),
+    box-shadow var(--dur) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    background-color var(--dur-fast) var(--ease);
+}
+
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+}
+
+.lift:active {
+  transform: translateY(0);
+  transition-duration: var(--dur-fast);
+}
+
+/* A rule that grows from the left under a link, instead of an underline that
+   was always there. Used on navigation and the footer, where a permanent
+   underline on every item made the quietest strip on the page the busiest. */
+.rule-grow {
+  position: relative;
+}
+
+.rule-grow::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -2px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur) var(--ease);
+}
+
+.rule-grow:hover::after,
+.rule-grow:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/*
+ * The refusals, struck through as they arrive.
+ *
+ * `text-decoration-color` is animatable, and a strike that draws in is the
+ * visual form of a clause being removed — which is what that list is. The
+ * meaning is carried in text by the sentence above the list, because a line
+ * through a word is not something a screen reader conveys.
+ */
+.strike-in {
+  text-decoration-line: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: transparent;
+  transition:
+    text-decoration-color var(--dur-slow) var(--ease-soft),
+    color var(--dur-slow) var(--ease-soft);
+}
+
+.strike-in[data-struck] {
+  text-decoration-color: var(--line-strong);
+  /* Both ends of this are AA-verified foregrounds, so the transition cannot
+     pass through a failing value on its way. */
+  color: var(--text-faint);
+}
+
+/*
+ * The two halves of one highlight.
+ *
+ * Pointing at a line of recovered text lights the block it came out of, and
+ * vice versa. `.paper-mark` lives on the page, so it is a fixed pine — paper
+ * does not follow the theme and neither may anything drawn on it. The
+ * side-shadows extend the wash a little past the text box, the way a marker
+ * would; the recovered side gets the machine's colour instead, because that
+ * pane is the machine's voice.
+ */
+.paper-mark {
+  background: rgb(47 107 87 / 0.14);
+  box-shadow:
+    -0.3em 0 0 rgb(47 107 87 / 0.14),
+    0.3em 0 0 rgb(47 107 87 / 0.14);
+}
+
+.machine-mark {
+  background: color-mix(in oklab, var(--machine) 18%, transparent);
+  box-shadow:
+    -0.3em 0 0 color-mix(in oklab, var(--machine) 18%, transparent),
+    0.3em 0 0 color-mix(in oklab, var(--machine) 18%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+ * The ambient layer.
+ *
+ * One fixed field behind every marketing page: a masked hairline grid that
+ * parallaxes with the scrollbar, three slow lights that drift on their own
+ * clocks, a soft glow that follows the pointer, and a film of grain over all
+ * of it.
+ *
+ * It is decorative and it is built to cost nothing. Everything here animates
+ * `transform` or `opacity` only, the whole field is `pointer-events: none`
+ * and `aria-hidden`, and it is mounted on marketing routes alone — the
+ * builder never renders it, so §5.1's budget is untouched.
+ *
+ * Why grain. Large soft gradients band on 8-bit displays, and the banding is
+ * what makes a gradient read as cheap. A film of noise over the top dithers
+ * the steps away, and it is the single cheapest thing that separates a
+ * considered surface from a default one.
+ * ------------------------------------------------------------------------ */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Light from above, before anything moves.
+ *
+ * A page whose ground is one flat value reads as a document viewer no matter
+ * what is drawn on top of it. This is the broad, static wash the drifting
+ * lights sit inside: pine from overhead, slate off the top-right corner. It
+ * is what makes the ground feel lit rather than filled.
+ */
+.ambient-wash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      125% 65% at 50% -12%,
+      color-mix(in oklab, var(--accent) 15%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      85% 50% at 100% 0%,
+      color-mix(in oklab, var(--machine) 12%, transparent),
+      transparent 65%
+    );
+}
+
+/* The workbench, drawn once for the whole page rather than per section. */
+.ambient-grid {
+  position: absolute;
+  inset: -15% 0;
+  background-image: radial-gradient(circle at 1px 1px, var(--line-strong) 1px, transparent 0);
+  background-size: 32px 32px;
+  opacity: 0.26;
+  -webkit-mask-image: radial-gradient(115% 85% at 50% 0%, #000 8%, transparent 72%);
+  mask-image: radial-gradient(115% 85% at 50% 0%, #000 8%, transparent 72%);
+  will-change: transform;
+}
+
+/*
+ * A light on the workbench. Three of them, on three different clocks, so the
+ * field never repeats visibly — two lights on one duration read as a pattern
+ * within about a minute, which is exactly how long a visitor stays.
+ */
+.ambient-light {
+  position: absolute;
+  border-radius: 999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--ambient-tint, var(--accent)) 42%, transparent),
+    transparent
+  );
+  filter: blur(52px);
+  will-change: transform;
+  animation: drift-a 34s var(--ease-soft) infinite alternate;
+}
+
+.ambient-light-b {
+  animation: drift-b 46s var(--ease-soft) infinite alternate;
+}
+
+.ambient-light-c {
+  animation: drift-c 58s var(--ease-soft) infinite alternate;
+}
+
+@keyframes drift-a {
+  from {
+    transform: translate3d(-4%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) scale(1.12);
+  }
+}
+
+@keyframes drift-b {
+  from {
+    transform: translate3d(4%, 3%, 0) scale(1.08);
+  }
+  to {
+    transform: translate3d(-6%, -3%, 0) scale(0.94);
+  }
+}
+
+@keyframes drift-c {
+  from {
+    transform: translate3d(-2%, 4%, 0) scale(0.96);
+  }
+  to {
+    transform: translate3d(3%, -5%, 0) scale(1.1);
+  }
+}
+
+/*
+ * Grain. An inline SVG turbulence, so it costs one paint and no request —
+ * and it must stay a `data:` URI rather than a file, because the CSP is
+ * `img-src 'self' data: blob:` and a CDN texture would simply be blocked.
+ */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] .ambient-grid {
+  opacity: 0.34;
+}
+
+:root[data-theme="dark"] .ambient-light {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--ambient-tint, var(--accent)) 30%, transparent),
+    transparent
+  );
+}
+
+:root[data-theme="dark"] .grain::after {
+  opacity: 0.05;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .ambient-grid {
+    opacity: 0.34;
+  }
+
+  :root:not([data-theme]) .ambient-light {
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklab, var(--ambient-tint, var(--accent)) 30%, transparent),
+      transparent
+    );
+  }
+
+  :root:not([data-theme]) .grain::after {
+    opacity: 0.05;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Cards that answer the pointer.
+ *
+ * Two layers, both driven by `--mx`/`--my`, which a pointer handler writes
+ * straight onto the element — no React render, no motion value, no work on
+ * the main thread beyond one style write per frame.
+ *
+ * `::before` is the wash: a soft pool of accent under the content. `::after`
+ * is the *border*, lit only where the pointer is near it — a one-pixel ring
+ * painted through a mask that punches out everything but the edge. Together
+ * they are what makes a flat card feel like a physical surface under a light,
+ * and neither touches a text colour, so a contrast check never sees them.
+ * ------------------------------------------------------------------------ */
+
+.spot {
+  position: relative;
+  isolation: isolate;
+  --mx: 50%;
+  --my: 50%;
+}
+
+.spot::before,
+.spot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  /*
+   * Driven by `--spot-o`, not by `:hover` alone. A card on its own gets it
+   * from the hover rule below; a card inside a `SpotlightGroup` is given a
+   * value by the group, so the light spills onto the neighbours the pointer
+   * is merely *near*. That spill is the whole effect — a grid lit by one
+   * moving source reads as a surface, where twelve independent hover states
+   * read as twelve buttons.
+   */
+  opacity: var(--spot-o, 0);
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.spot::before {
+  z-index: -1;
+  background: radial-gradient(
+    17rem circle at var(--mx) var(--my),
+    color-mix(in oklab, var(--spot-tint, var(--accent)) 20%, transparent),
+    transparent 68%
+  );
+}
+
+.spot::after {
+  padding: 1px;
+  background: radial-gradient(
+    11rem circle at var(--mx) var(--my),
+    color-mix(in oklab, var(--spot-tint, var(--accent)) 95%, transparent),
+    transparent 62%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.spot:hover,
+.spot:focus-within {
+  --spot-o: 1;
+}
+
+/* The parser's rows are lit in the parser's colour. Anywhere `--machine`
+   leads, the pointer light follows it rather than the accent. */
+.spot-machine {
+  --spot-tint: var(--machine);
+}
+
+/*
+ * The landing page's cards, in the palette rather than in outline.
+ *
+ * They were `border-line` on nothing: a hairline rectangle over whatever the
+ * ambient field happened to be behind it. That is a legitimate way to draw a
+ * card and it was the wrong one here, because the page has a colour — pine
+ * for our voice, slate for the parser's — and none of it reached the three
+ * places a visitor actually stops to read. The spotlight was doing all the
+ * work, which meant the cards were only ever coloured under the pointer, and
+ * on a phone they were never coloured at all.
+ *
+ * ## `background-color` and `background-image`, deliberately not `background`
+ *
+ * The corner wash is a gradient, and `background-image` does not interpolate
+ * — set both through the `background` shorthand and the hover state snaps
+ * while the border beside it fades over 120ms, which reads as a rendering
+ * fault rather than a transition. So the gradient is fixed and carries the
+ * depth, and only the flat colour under it moves. `.lift` already transitions
+ * `background-color` and `border-color`, so these inherit the timing every
+ * other card on the page uses instead of declaring their own.
+ *
+ * ## Mixed against the tokens, never hard-coded
+ *
+ * Every value is a `color-mix` of `--accent` into `--surface-0` and `--line`,
+ * so the dark theme and the inverted band get this for free and a palette
+ * change cannot leave one card behind. The proportions are low on purpose:
+ * at 7% the tint is a ground, not a highlight, and `--text-muted` clears the
+ * 4.5:1 floor §9 sets on it in both themes — including at the 15% the hover
+ * reaches, which is the strongest this ever gets.
+ */
+.card-tinted {
+  border-color: color-mix(in oklab, var(--accent) 18%, var(--line));
+  background-color: color-mix(in oklab, var(--accent) 7%, var(--surface-0));
+  background-image: radial-gradient(
+    130% 110% at 0% 0%,
+    color-mix(in oklab, var(--accent) 10%, transparent),
+    transparent 58%
+  );
+}
+
+.card-tinted:hover {
+  border-color: color-mix(in oklab, var(--accent) 38%, var(--line));
+  background-color: color-mix(in oklab, var(--accent) 15%, var(--surface-0));
+}
+
+/*
+ * The step numerals, coloured at rest.
+ *
+ * They were `--line-strong` — the hairline colour — and only became the
+ * accent on hover, so the one element on the page sized to be read across the
+ * room was drawn in the palette's most neutral value. Mixed rather than set
+ * to `--accent` outright: at 2.75rem the full accent competes with the
+ * headings, and this is a marker, not a claim. `aria-hidden` on the span, so
+ * the contrast checker has nothing to measure and the sequence is carried by
+ * the `<ol>` itself.
+ */
+.numeral-accent {
+  color: color-mix(in oklab, var(--accent) 45%, var(--line-strong));
+}
+
+/*
+ * The marker on each promise.
+ *
+ * Four statements stacked in one column need something that says where each
+ * one starts before the eye reaches the words. A rule would have been a fifth
+ * hairline on a page that already has plenty; this is the accent, at the size
+ * where it registers as punctuation. Decorative, so it is drawn from the term
+ * rather than added to the tree — there is nothing here for a screen reader
+ * that the `<dl>` does not already say.
+ */
+.promise-mark::before {
+  content: "";
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-inline-end: 0.6rem;
+  border-radius: 2px;
+  background: var(--accent);
+  vertical-align: 0.12em;
+}
+
+/*
+ * The checkbox, on palette.
+ *
+ * A native checkbox ignores `color`, so `text-accent` on one does nothing —
+ * which is why every visibility toggle in the builder painted itself in the
+ * system's blue, on a green palette, in the one screen that is the product.
+ * `appearance: none` takes the box back and the rest draws it.
+ *
+ * It is still a real `<input type="checkbox">`. Only the appearance changes:
+ * the label association, the keyboard behaviour and the accessibility tree
+ * are the browser's, which is the whole reason not to build this out of divs.
+ */
+.control-check {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  height: 1.05rem;
+  width: 1.05rem;
+  border-radius: 5px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface-0);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+.control-check::after {
+  content: "";
+  height: 0.62rem;
+  width: 0.62rem;
+  background: var(--on-accent);
+  transform: scale(0);
+  transition: transform var(--dur-fast) var(--ease);
+  /* A tick, drawn rather than shipped as an icon: it is one property, it
+     inherits `--on-accent`, and it cannot go missing from a sprite. */
+  clip-path: polygon(14% 44%, 0 60%, 39% 100%, 100% 18%, 84% 4%, 39% 68%);
+}
+
+.control-check:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.control-check:checked::after {
+  transform: scale(1);
+}
+
+.control-check:hover:not(:disabled) {
+  border-color: var(--text-faint);
+}
+
+.control-check:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/*
+ * A rule that fades out at both ends.
+ *
+ * A hairline that runs edge to edge stops the eye at a hard terminal; one
+ * that dissolves reads as a section boundary rather than as a box. Used where
+ * a rule is separating rather than underlining.
+ */
+.rule-fade {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--line-strong) 12%,
+    var(--line-strong) 88%,
+    transparent
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Touch targets.
+ *
+ * `design.md` §6 asks for 44px minimum on touch. Doing it with utility
+ * classes would mean auditing every control in the app and would make the
+ * desktop UI, where a 32px button is correct, worse to pay for it.
+ *
+ * `pointer: coarse` is the right gate: it is true on a phone and false on a
+ * mouse, so the density follows the input device rather than the viewport —
+ * a small window on a laptop keeps its compact controls, and a large tablet
+ * gets the big ones it needs.
+ *
+ * Scoped to real controls. Deliberately not `a[href]`: a link inside a
+ * paragraph is not a target to enlarge, and giving one a 44px box breaks the
+ * line it sits in.
+ * ------------------------------------------------------------------------ */
+@media (pointer: coarse) {
+  button,
+  [role="tab"],
+  select,
+  summary {
+    min-height: 44px;
+  }
+
+  /* An icon-only control needs the width as well, and has no text to give
+     it any. */
+  button:not(:has(> :not(svg))) {
+    min-width: 44px;
+  }
+}
+
+/*
+ * Not a nicety. Vestibular disorders make parallax and slide transitions
+ * genuinely unpleasant, and the OS setting is the user telling us so.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /*
+   * The ambient lights are the one exception worth spelling out. Clamping
+   * their duration would snap them to the *end* of a drift — a composition
+   * nobody designed. `none` holds them where they were placed.
+   *
+   * The pointer wash and the card border still appear on hover: they are a
+   * response to the pointer rather than motion of their own, and removing
+   * them would take away the affordance along with the animation.
+   */
+  .ambient-light,
+  .ambient-light-b,
+  .ambient-light-c {
+    animation: none !important;
+  }
+
+  /*
+   * The build, cancelled in CSS rather than only in JavaScript.
+   *
+   * `useReducedMotion()` cannot run on the server, so every built element is
+   * *server-rendered clipped* and only unclipped once React hydrates. For
+   * everyone else that gap is the reveal; for someone who has asked for less
+   * motion it is a blank page until the bundle arrives. This is the same rule
+   * the `<noscript>` block applies, for the same reason and one frame
+   * earlier.
+   */
+  [data-build] {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    filter: none !important;
+  }
 }

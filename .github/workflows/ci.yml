@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, unit tests
+    runs-on: ubuntu-latest
+    # Every Prisma CLI call resolves `env("DATABASE_URL")` when
+    # `prisma.config.ts` loads, whether or not it connects — so `db:generate`
+    # needs it, and so does `pnpm verify`, whose `pretypecheck` hook generates
+    # again. Locally a `.env` supplies it; that file is gitignored, so on CI
+    # nothing does and the command fails before it reads the schema.
+    #
+    # Job-level rather than per-step because two different steps need it. The
+    # tests are unaffected: db.test.ts deletes and restores this variable
+    # itself, and migrate.test.ts passes its own to the child process.
+    env:
+      DATABASE_URL: "file:./ci.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Fonts are vendored in the repo but copied into public/ by a script;
+      # the emitter tests read them from src/, so this is only needed for the
+      # build. Run it anyway so a failure here is loud rather than latent.
+      - run: pnpm fonts:sync
+      # The Prisma client is generated, not committed; typecheck fails without it.
+      - run: pnpm db:generate
+      - run: pnpm verify
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    # Only for the `db:generate` step below. Playwright sets its own
+    # DATABASE_URL for the server it spawns (`playwright.config.ts`), pointing
+    # at a separate file so a test run never writes to the database anything
+    # else is using — this value must not be the one the suite runs against.
+    env:
+      DATABASE_URL: "file:./ci.db"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm exec playwright install --with-deps chromium
+      # Covers the worker, canvas rasterization, and IndexedDB — none of
+      # which the Node suite can exercise. pdfjs in particular behaves
+      # differently under Node, so this is the only place browser-only
+      # regressions surface.
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  docker:
+    name: Docker image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # The deploy target is an Oracle Ampere A1, which is arm64, and the two
+  # things this image builds from source — better-sqlite3's native binding and
+  # the Next standalone output — are exactly the kind that build on one
+  # architecture and not the other. Finding that out on the instance means
+  # finding it out after provisioning, DNS and TLS, which is the worst place.
+  #
+  # Kept off pull requests deliberately. Under QEMU this takes about twenty
+  # minutes, and paying that on every PR to verify a target that only changes
+  # when the Dockerfile does would make the fast checks above useless. Master
+  # is where a deploy is cut from, so master is where it has to hold.
+  docker-arm64:
+    name: Docker image builds for arm64 (the deploy target)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64

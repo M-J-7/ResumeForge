@@ -1,3 +1,25 @@
+# Install scripts are opt-in. Each entry is a deliberate decision about
+# whether a package may execute code during install.
 allowBuilds:
+  # Native SQLite binding, and Prisma's query engine plus its codegen. All
+  # three are required for M2's database layer to work at all.
+  "@prisma/engines": true
+  better-sqlite3: true
+  prisma: true
+  # Ships a native binary used by the toolchain during build.
+  esbuild: true
+  # Optional native accelerator; the JS fallback is fine and one less
+  # compile step in CI.
+  msgpackr-extract: false
+  # Pulled in transitively and unused by this project.
   sharp: false
   unrs-resolver: false
+  workerd: false
+  # Pulled in by `@huggingface/transformers` for its Node backend. The
+  # enhancement feature is browser-only by construction — `enhance.browser.ts`
+  # is `client-only` and runs on WASM or WebGPU — so this binding is never
+  # loaded by any shipping code path, and its install script exists to
+  # download a native binary we would not call. `protobufjs` comes with it and
+  # only builds a CLI.
+  onnxruntime-node: false
+  protobufjs: false

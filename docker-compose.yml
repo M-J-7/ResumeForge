@@ -1,0 +1,126 @@
+# A running deployment, in one file.
+#
+#   cp .env.example .env.production   # then fill in the required values
+#   docker compose up -d --build
+#
+# Everything durable is on the `data` volume: the SQLite database, its WAL,
+# and the local snapshots. The container applies its own pending migrations on
+# first use, so there is no separate migrate step to forget.
+#
+# See docs/RUNBOOK.md for what each variable does and what to do when the
+# database is gone.
+#
+# ## One instance, one disk
+#
+# This stack is deliberately not horizontally scalable, and the constraint is
+# structural rather than a limit to raise later. `better-sqlite3` is a single
+# writer against a file on a local volume: two app processes on two hosts
+# corrupt it, a network filesystem breaks its locking, and a rolling deploy
+# runs two writers by definition. One VM, one Compose stack, one volume is
+# what makes the whole architecture — including Litestream below — correct.
+
+services:
+  # The only publicly reachable service. See Caddyfile for why terminating TLS
+  # is a correctness requirement here and not a nicety: Auth.js issues
+  # `__Secure-` cookies against the https origin in AUTH_URL, and a browser
+  # will not send those back over plain HTTP.
+  #
+  # For a local run without a real domain, set SITE_DOMAIN=localhost — Caddy
+  # then issues its own local certificate instead of asking Let's Encrypt.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env.production
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and ACME account keys. Without this volume every redeploy
+      # re-requests from Let's Encrypt and eventually trips the rate limit.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+  app:
+    build: .
+    restart: unless-stopped
+    # No `ports:` on purpose. The app is reachable only on the compose network,
+    # as `app`, and only Caddy talks to it. Publishing 3000 as well would leave
+    # a plain-HTTP route to the same application sitting beside the encrypted
+    # one — which is exactly the route the `__Secure-` cookies fail on, and the
+    # one a scanner finds first.
+    env_file:
+      - .env.production
+    environment:
+      # Overridden here rather than left to the image default so the path is
+      # visible next to the volume that has to hold it.
+      DATABASE_URL: "file:/data/app.db"
+      BACKUP_DIR: "/data/backups"
+    volumes:
+      - data:/data
+    healthcheck:
+      # Repeated from the Dockerfile so `docker compose ps` reports health
+      # even when the image is pulled rather than built here.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  # Hourly snapshots on the same volume, pruned to the last two days.
+  #
+  # This is the layer that recovers from a bad migration or a mistaken delete.
+  # It does **not** recover from losing the volume — that is what the
+  # Litestream service below is for, and the two are not substitutes.
+  backup:
+    build: .
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'while true; do node scripts/backup.mjs create --keep 48 || echo "backup FAILED"; sleep 3600; done'
+    environment:
+      DATABASE_URL: "file:/data/app.db"
+      BACKUP_DIR: "/data/backups"
+    volumes:
+      - data:/data
+    depends_on:
+      - app
+
+  # Off-site, continuous replication (D9, M2-T5).
+  #
+  # `litestream.yml` now exists in the repository as a template. Fill in its
+  # four placeholders, put the two credentials in .env.production, uncomment
+  # this block — and then run the restore rehearsal in docs/RUNBOOK.md before
+  # relying on it. An untested backup is not a backup.
+  #
+  # It stays commented until then on purpose: uncommented against an unfilled
+  # template, Litestream restart-loops against a bucket that does not exist,
+  # which is noise on the one deploy where you most need the logs readable.
+  #
+  # litestream:
+  #   image: litestream/litestream:0.3
+  #   restart: unless-stopped
+  #   command: replicate
+  #   environment:
+  #     LITESTREAM_ACCESS_KEY_ID: "${LITESTREAM_ACCESS_KEY_ID}"
+  #     LITESTREAM_SECRET_ACCESS_KEY: "${LITESTREAM_SECRET_ACCESS_KEY}"
+  #   volumes:
+  #     - data:/data
+  #     - ./litestream.yml:/etc/litestream.yml:ro
+  #   depends_on:
+  #     - app
+
+volumes:
+  data:
+  caddy_data:
+  caddy_config:

@@ -31,7 +31,7 @@ import { isValidRange } from "./dates";
  * Bump this whenever the shape of a persisted document changes, and add the
  * matching migration in `./migrate.ts`. Never renumber existing versions.
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 const MAX_BULLETS = 50;
 const MAX_BULLET_LENGTH = 1000;
@@ -43,9 +43,40 @@ const idSchema = z.string().min(1, "Every entry needs a stable id.");
 /** User-entered text: trimmed and length-capped, but may be empty while editing. */
 const text = (max: number) => z.string().trim().max(max);
 
-/** Optional-format fields accept "" so a partially-typed value can persist. */
-const emailField = z.union([z.literal(""), z.email("Enter a valid email address.")]);
-const urlField = z.union([z.literal(""), z.url("Enter a full URL, including https://")]);
+/**
+ * Email and URL are stored as plain text, not as `z.email()` / `z.url()`.
+ *
+ * The store persists on every keystroke (M0-T7), so a document must be able
+ * to hold `"jo"` on the way to `"jose@example.com"`. A format-validating
+ * schema would reject that intermediate state, and since the migration chain
+ * parses on load, the user would lose the entire draft on refresh for the
+ * crime of reloading mid-word.
+ *
+ * That does not mean the format goes unchecked — it means the check belongs
+ * where the user can act on it. The builder form reports it inline as they
+ * type (M0-T8), and the lint engine reports it in "issues left" (M0-T11).
+ * Both use the predicates below, so there is one definition of valid.
+ *
+ * This is the same rule the rest of this schema already follows: structural
+ * integrity here, content quality in the lint engine.
+ */
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_PATTERN.test(value.trim());
+}
+
+export function isValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+const emailField = text(160);
+const urlField = text(400);
 
 /* -------------------------------------------------------------------------- */
 /* Dates                                                                       */
@@ -244,6 +275,36 @@ export type PageSize = (typeof PAGE_SIZES)[number];
 export const DENSITIES = ["compact", "comfortable"] as const;
 export type Density = (typeof DENSITIES)[number];
 
+/**
+ * Where the name and contact line sit (P32-B1).
+ *
+ * Two values, not a free-form layout system. D2 says there is one layout
+ * engine and D3 says page counts are measured rather than estimated; a second
+ * rendering path would break both. This is the same single-column document
+ * with its header block aligned differently, which is enough to make two
+ * templates look like two templates while every guarantee about the output
+ * stays exactly where it was.
+ */
+export const HEADER_STYLES = ["left", "centered"] as const;
+export type HeaderStyle = (typeof HEADER_STYLES)[number];
+
+/**
+ * How a section heading is set (P32-B1).
+ *
+ * `rule` is what shipped: small caps with a full-width rule beneath.
+ * `caps` drops the rule, which reads quieter and saves a little vertical
+ * space. `accent-bar` replaces the rule with a short bar to the left of the
+ * heading.
+ *
+ * All three keep the heading as **real uppercase text in the document flow**,
+ * which is the only property the ATS argument actually depends on — the
+ * landing page's claim is about structure, not decoration, so none of these
+ * weakens it. The golden extracted-text snapshots are unaffected by design,
+ * and a test asserts exactly that.
+ */
+export const HEADING_STYLES = ["rule", "caps", "accent-bar"] as const;
+export type HeadingStyle = (typeof HEADING_STYLES)[number];
+
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hex colour, e.g. #1F2937.");
 
 /**
@@ -263,6 +324,8 @@ export const settingsSchema = z.object({
   fontSizePt: z.number().min(9).max(12),
   /** Unitless multiplier of font size. */
   lineHeight: z.number().min(1).max(1.6),
+  headerStyle: z.enum(HEADER_STYLES),
+  headingStyle: z.enum(HEADING_STYLES),
 });
 
 /* -------------------------------------------------------------------------- */
@@ -327,4 +390,7 @@ export const DEFAULT_SETTINGS: Settings = {
   margins: 0.75,
   fontSizePt: 10.5,
   lineHeight: 1.2,
+  // The v1 rendering, so every existing document opens looking identical.
+  headerStyle: "left",
+  headingStyle: "rule",
 };

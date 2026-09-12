@@ -1,0 +1,33 @@
+node_modules
+.next
+.git
+.claude
+coverage
+test-results
+playwright-report
+blob-report
+public/fonts
+public/pdf.worker.min.mjs
+*.tsbuildinfo
+
+# Secrets. `bootstrap.sh` writes .env.production into /opt/resume-builder,
+# which is also the build context — so without this the file holding
+# AUTH_SECRET would be copied into the builder stage and kept in an
+# intermediate image layer. Compose reads it from the host at container start
+# (`env_file:`), never from inside the image, so excluding it costs nothing.
+.env
+.env.*
+
+# Databases. The real one lives on the volume at /data/app.db; these are a
+# developer's local file and the E2E scratch file, and copying them in would
+# put somebody's test resumes in an image layer.
+*.db
+*.db-shm
+*.db-wal
+
+# Host-side only: Terraform and the deploy scripts run from the checkout, not
+# from the image. Raw QA output is machine-specific and belongs to nobody but
+# the machine that produced it.
+deploy
+measurements
+.mail-outbox

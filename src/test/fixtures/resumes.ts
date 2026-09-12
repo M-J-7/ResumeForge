@@ -221,7 +221,329 @@ export function emptyResume(): ResumeDocument {
   return createEmptyResume();
 }
 
+/**
+ * Fifteen years across five roles. Exercises hint assignment at scale
+ * (M0-T3's "5 roles" acceptance case) and gives the M0-T4 pagination sweep a
+ * fixture with real page-boundary pressure. Bullet counts are deliberately
+ * mixed, including one single-bullet role, so every branch of
+ * `splitBullets` fires within one document.
+ */
+export const longCareerResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Marcus Chen",
+    email: "marcus.chen@example.com",
+    phone: "+1 415 555 0182",
+    location: "San Francisco, CA",
+    links: [{ id: "lc-link-1", label: "LinkedIn", url: "https://linkedin.com/in/marcuschen" }],
+  },
+  sections: [
+    {
+      id: "lc-sec-summary",
+      type: "summary",
+      visible: true,
+      content:
+        "Engineering leader with fifteen years spanning individual contribution to VP-level scope, " +
+        "across payments, logistics, and developer tooling.",
+    },
+    {
+      id: "lc-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "lc-exp-1",
+          title: "VP of Engineering",
+          organization: "Northwind Logistics",
+          location: "San Francisco, CA",
+          dates: { start: { year: 2021, month: 3 }, end: null, current: true },
+          bullets: [
+            "Grew the engineering org from 12 to 64 across four time zones without a quarter of missed roadmap commitments.",
+            "Cut warehouse routing latency 60% by replacing the batch optimizer with a streaming solver.",
+            "Introduced a blameless incident process that cut mean time to resolution from 4 hours to 35 minutes.",
+            "Negotiated the cloud vendor migration that reduced infrastructure spend by $2.1M annually.",
+          ],
+        },
+        {
+          id: "lc-exp-2",
+          title: "Director of Engineering",
+          organization: "Adatum Freight",
+          location: "Chicago, IL",
+          dates: { start: { year: 2018, month: 6 }, end: { year: 2021, month: 2 }, current: false },
+          bullets: [
+            "Built the tracking platform that now serves 40,000 shipments a day across three continents.",
+            "Stood up the first on-call rotation and SLO practice, taking uptime from 98.1% to 99.95%.",
+            "Mentored six engineers into their first management roles.",
+          ],
+        },
+        {
+          id: "lc-exp-3",
+          title: "Engineering Manager",
+          organization: "Woodgrove Analytics",
+          location: "Austin, TX",
+          dates: { start: { year: 2016, month: 1 }, end: { year: 2018, month: 5 }, current: false },
+          bullets: [
+            "Shipped the real-time dashboard rebuild that cut customer-reported latency complaints by 80%.",
+          ],
+        },
+        {
+          id: "lc-exp-4",
+          title: "Senior Software Engineer",
+          organization: "Contoso Data",
+          location: "Austin, TX",
+          dates: {
+            start: { year: 2012, month: 9 },
+            end: { year: 2015, month: 12 },
+            current: false,
+          },
+          bullets: [
+            "Designed the partitioning scheme that let the core datastore scale from 2TB to 40TB without a rewrite.",
+            "Led the on-call handoff from the founding team to a rotating six-engineer roster.",
+          ],
+        },
+        {
+          id: "lc-exp-5",
+          title: "Software Engineer",
+          organization: "Fabrikam Systems",
+          location: "Boston, MA",
+          dates: { start: { year: 2009, month: 7 }, end: { year: 2012, month: 8 }, current: false },
+          bullets: [
+            "Built the first automated test suite for the billing service, catching 30+ regressions before release over two years.",
+            "Rewrote the nightly batch job in a way that cut its runtime from 6 hours to 45 minutes.",
+            "Onboarded and paired with four new graduate hires across two summers.",
+          ],
+        },
+      ],
+    },
+    {
+      id: "lc-sec-education",
+      type: "education",
+      visible: true,
+      entries: [
+        {
+          id: "lc-edu-1",
+          institution: "University of Texas at Austin",
+          credential: "BSc",
+          field: "Computer Science",
+          location: "Austin, TX",
+          dates: { start: { year: 2005, month: 9 }, end: { year: 2009, month: 5 }, current: false },
+          result: "",
+          bullets: [],
+        },
+      ],
+    },
+    {
+      id: "lc-sec-skills",
+      type: "skills",
+      visible: true,
+      groups: [
+        {
+          id: "lc-skill-1",
+          label: "Leadership",
+          skills: ["Org design", "Roadmapping", "Hiring", "Mentorship"],
+        },
+        {
+          id: "lc-skill-2",
+          label: "Technical",
+          skills: ["Distributed systems", "Go", "PostgreSQL", "Kafka"],
+        },
+      ],
+    },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * A single role with exactly one bullet — the header and bullet fuse into
+ * one atomic block (rule 2) and there is nothing left in the entry that
+ * could orphan (M0-T3's third acceptance case, isolated from the noise of
+ * a full resume).
+ */
+export const singleBulletRoleResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Priya Natarajan",
+    email: "priya.natarajan@example.com",
+    phone: "+1 512 555 0143",
+    location: "Remote",
+    links: [],
+  },
+  sections: [
+    { id: "sb-sec-summary", type: "summary", visible: true, content: "" },
+    {
+      id: "sb-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "sb-exp-1",
+          title: "Freelance Consultant",
+          organization: "Independent",
+          location: "Remote",
+          dates: { start: { year: 2023, month: 1 }, end: null, current: true },
+          bullets: [
+            "Advised three Series A startups on infrastructure cost reduction, saving a combined $400k annually.",
+          ],
+        },
+      ],
+    },
+    { id: "sb-sec-education", type: "education", visible: true, entries: [] },
+    { id: "sb-sec-skills", type: "skills", visible: true, groups: [] },
+    { id: "sb-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "sb-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * Builds a resume whose final role has exactly `bulletCount` bullets,
+ * holding everything else in `longCareerResume` fixed. Used to sweep the
+ * page break across a role boundary in the pagination-invariant test
+ * (plan §2.5's sequencing note): two static fixtures can pass by luck,
+ * sweeping a bullet count through the boundary is what actually surfaces a
+ * react-pdf break-control failure.
+ */
+export function buildOverflowFixture(bulletCount: number): ResumeDocument {
+  const bullets = Array.from(
+    { length: bulletCount },
+    (_, i) =>
+      `Delivered platform improvement number ${i + 1}, cutting latency and raising reliability for every downstream consumer.`,
+  );
+
+  const sections = longCareerResume.sections.map((section) => {
+    if (section.type !== "experience") return section;
+    const last = section.entries[section.entries.length - 1];
+    if (!last) return section;
+    return { ...section, entries: [...section.entries.slice(0, -1), { ...last, bullets }] };
+  });
+
+  return { ...longCareerResume, sections };
+}
+
+/**
+ * Names and organizations in scripts the vendored fonts do not cover, plus
+ * extended Latin that they do.
+ *
+ * `docs/ATTRIBUTION.md` records the gap: Devanagari, CJK, Arabic, Hebrew and
+ * others render as .notdef boxes. This fixture exists so that failure is
+ * visible in the test suite rather than discovered by a user, and so the
+ * Latin coverage that *is* claimed stays proven.
+ */
+export const nonLatinNameResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Zoë Đurđević-Þórsdóttir",
+    email: "zoe@example.com",
+    phone: "+354 555 0100",
+    location: "Reykjavík, Ísland",
+    links: [],
+  },
+  sections: [
+    { id: "nl-sec-summary", type: "summary", visible: true, content: "" },
+    {
+      id: "nl-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "nl-exp-1",
+          title: "Sénior Software Engineer",
+          organization: "Ålborg Teknologi Ø/S",
+          location: "København, Danmark",
+          dates: { start: { year: 2021, month: 4 }, end: null, current: true },
+          bullets: [
+            "Reduced cost per transaction by 38% — measured across ≥1M requests a day.",
+            "Led the €2.4M platform migration with zero customer-visible downtime.",
+          ],
+        },
+      ],
+    },
+    { id: "nl-sec-education", type: "education", visible: true, entries: [] },
+    { id: "nl-sec-skills", type: "skills", visible: true, groups: [] },
+    { id: "nl-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "nl-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * Organization and title strings long enough to wrap the right-aligned date
+ * column. This is where a two-column header layout breaks if the tab stop or
+ * flex sizing is wrong.
+ */
+export const longOrganizationNamesResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Robert Whitfield",
+    email: "robert.whitfield@example.com",
+    phone: "+44 20 7946 0100",
+    location: "London, United Kingdom",
+    links: [],
+  },
+  sections: [
+    { id: "lo-sec-summary", type: "summary", visible: true, content: "" },
+    {
+      id: "lo-sec-experience",
+      type: "experience",
+      visible: true,
+      entries: [
+        {
+          id: "lo-exp-1",
+          title: "Senior Principal Engineering Manager, Platform Infrastructure and Reliability",
+          organization:
+            "The International Consolidated Financial Technologies and Services Group Limited",
+          location: "London, United Kingdom",
+          dates: { start: { year: 2019, month: 2 }, end: null, current: true },
+          bullets: [
+            "Consolidated 14 regional deployment pipelines into one, cutting release lead time from 9 days to 4 hours.",
+          ],
+        },
+      ],
+    },
+    { id: "lo-sec-education", type: "education", visible: true, entries: [] },
+    { id: "lo-sec-skills", type: "skills", visible: true, groups: [] },
+    { id: "lo-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "lo-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
+/**
+ * Every section present and visible but only one populated — the shape a
+ * document takes early in editing, and the case where a bare heading or an
+ * orphaned break rule is most likely to surface.
+ */
+export const onlyOneSectionResume: ResumeDocument = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
+  contact: {
+    fullName: "Sam Okonkwo",
+    email: "sam.okonkwo@example.com",
+    phone: "",
+    location: "",
+    links: [],
+  },
+  sections: [
+    { id: "os-sec-summary", type: "summary", visible: true, content: "" },
+    { id: "os-sec-experience", type: "experience", visible: true, entries: [] },
+    { id: "os-sec-education", type: "education", visible: true, entries: [] },
+    {
+      id: "os-sec-skills",
+      type: "skills",
+      visible: true,
+      groups: [{ id: "os-skill-1", label: "Technical", skills: ["Python", "SQL"] }],
+    },
+    { id: "os-sec-projects", type: "projects", visible: true, entries: [] },
+    { id: "os-sec-certifications", type: "certifications", visible: true, entries: [] },
+  ],
+  settings: { ...DEFAULT_SETTINGS },
+};
+
 export const ALL_FIXTURES: ReadonlyArray<{ name: string; document: ResumeDocument }> = [
   { name: "mid-career", document: midCareerResume },
   { name: "fresher", document: fresherResume },
+  { name: "long-career", document: longCareerResume },
+  { name: "single-bullet-role", document: singleBulletRoleResume },
+  { name: "non-latin-name", document: nonLatinNameResume },
+  { name: "long-organization-names", document: longOrganizationNamesResume },
+  { name: "only-one-section", document: onlyOneSectionResume },
 ];

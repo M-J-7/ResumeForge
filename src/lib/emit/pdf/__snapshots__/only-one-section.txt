@@ -1,0 +1,5 @@
+--- page 1 ---
+Sam Okonkwo
+sam.okonkwo@example.com
+SKILLS
+Technical: Python, SQL

@@ -1,0 +1,40 @@
+# Copy to terraform.tfvars and fill in. Never commit the filled-in copy —
+# .gitignore already refuses it.
+#
+# There are three required values and one you will probably need on the second
+# attempt. Authentication is not among them: the provider reads ~/.oci/config,
+# which `oci setup config` writes, so the tenancy OCID, the user OCID and the
+# API key stay in one place instead of four.
+
+# Your tenancy's home region. Cannot be changed after signup, and Always Free
+# resources can only exist here.
+#   oci iam region-subscription list --query 'data[0]."region-name"' --raw-output
+region = "uk-london-1"
+
+# Where to create everything. The tenancy OCID — the root compartment — is a
+# valid answer and is what a personal account normally uses.
+#   oci iam compartment list --all --query 'data[0]."compartment-id"' --raw-output
+compartment_ocid = "ocid1.tenancy.oc1..REPLACE_ME"
+
+# There is no password login. If this is wrong the instance is unreachable and
+# the only fix is to destroy and recreate it, so paste it rather than typing it.
+ssh_public_key = "ssh-ed25519 AAAA... you@example.com"
+
+# ---------------------------------------------------------------------------
+# For the retry, not the first attempt
+# ---------------------------------------------------------------------------
+
+# "Out of host capacity" is the normal first outcome, and it is not a mistake
+# in this file. Most regions have one availability domain, so 0 is the only
+# choice; Ashburn, Phoenix and Frankfurt have three, and capacity differs
+# between them minute to minute.
+#
+#   terraform apply -var availability_domain_index=1
+#
+# availability_domain_index = 0
+
+# Narrow this once the deployment is settled. It defaults to the whole
+# internet because locking yourself out of the only way in is a worse first
+# day than a key-only SSH port — but a home connection that does have a static
+# address should say so.
+# allowed_ssh_cidr = "203.0.113.4/32"

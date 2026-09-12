@@ -1,0 +1,263 @@
+// Data model (M2-T1), following §7 of docs/EXECUTION_PLAN.md.
+//
+// SQLite via better-sqlite3. Two properties of that combination shape almost
+// every decision below, and both are easy to forget:
+//
+//   1. `better-sqlite3` is SYNCHRONOUS. A slow query does not block one
+//      request, it blocks the event loop for every user on the server. Keep
+//      queries indexed and small; never scan a table on a request path.
+//   2. `Json` columns on SQLite are TEXT. They are NOT queryable and NOT
+//      indexable. Anything sortable or filterable has to be denormalized into
+//      a real column — which is why `lastScore`, `pageCount`, and `wordCount`
+//      exist alongside the `content` blob rather than inside it.
+//
+// `onDelete: Cascade` on every relation is what makes M2-T6's hard delete
+// actually complete. Removing it would leave orphaned rows holding resume
+// content after a user asked to be forgotten.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7 removed `url` from the datasource block: the connection string
+// for migrations now lives in `prisma.config.ts`, and the runtime client
+// takes a driver adapter instead. See `src/server/db.ts`.
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
+
+  /// Set by Auth.js when the address is proven — by following a magic link,
+  /// or by Google asserting it. Required by the adapter, and meaningful in
+  /// its own right: it is the only evidence we hold that this address
+  /// belongs to whoever is signing in.
+  ///
+  /// There is deliberately no `image` column beside it. Auth.js's default
+  /// Google profile mapping would store an avatar URL; §7 does not ask for
+  /// one, nothing renders one, and an unused piece of personal data is a
+  /// liability rather than a feature. `buildAuthConfig` maps the profile
+  /// explicitly so the field is never sent.
+  emailVerified DateTime?
+
+  createdAt DateTime @default(now())
+
+  resumes      Resume[]
+  accounts     Account[]
+  sessions     Session[]
+  jobTargets   JobTarget[]
+  coverLetters CoverLetter[]
+}
+
+model Resume {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title   String
+  /// A ResumeDocument. Never queried directly — see the Json note above.
+  content String
+
+  /// D10 — never remove. Documents outlive the code that wrote them.
+  schemaVersion Int    @default(1)
+  pageSize      String @default("A4")
+
+  /// Denormalized for sorting and filtering, because Json is neither.
+  lastScore Int?
+  pageCount Float?
+  wordCount Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions     ResumeVersion[]
+  scoreChecks  ScoreCheck[]
+  parseChecks  ParseCheck[]
+  coverLetters CoverLetter[]
+
+  @@index([userId, updatedAt])
+}
+
+/// Required for diffing (M4-T2). Cannot be retrofitted — history not captured
+/// as it happens is history that does not exist.
+model ResumeVersion {
+  id       String @id @default(cuid())
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  /// Immutable snapshot.
+  content   String
+  /// e.g. "Sent to Google, 12 Aug"
+  label     String?
+  createdAt DateTime @default(now())
+
+  @@index([resumeId, createdAt])
+}
+
+model ScoreCheck {
+  id       String @id @default(cuid())
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  jobTitle       String?
+  jobDescription String
+  overallScore   Int
+  breakdown      String
+  createdAt      DateTime @default(now())
+
+  @@index([resumeId, createdAt])
+}
+
+/// X-Ray results (M1-T2), stored so recovery can be tracked over time.
+model ParseCheck {
+  id       String @id @default(cuid())
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  /// "PDF" | "DOCX"
+  format        String
+  /// Per-field pass/fail against ground truth.
+  fieldRecovery String
+  recoveryScore Int
+  createdAt     DateTime @default(now())
+
+  @@index([resumeId, createdAt])
+}
+
+/// A job description the user pasted and chose to keep (P27).
+///
+/// The pasted text is stored verbatim rather than only its parse: the parser
+/// will improve, and re-analysing an old posting against a better parser is
+/// only possible if the source survived. It is also what the cover-letter
+/// composer reads.
+///
+/// Guests never reach this table — a guest's job targets live in IndexedDB
+/// and nowhere else (D6).
+model JobTarget {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The user's own save name. Never derived silently — see P29 J4.
+  title       String
+  company     String?
+  roleTitle   String?
+  /// The posting, exactly as pasted.
+  description String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  coverLetters CoverLetter[]
+
+  @@index([userId, updatedAt])
+}
+
+/// A saved cover letter (P29).
+///
+/// `resumeId` and `jobTargetId` are `SetNull`, which is deliberate and
+/// different from every other relation in this schema. Deleting a resume must
+/// not silently destroy the letters written from it — the letter's `content`
+/// is already a complete, self-contained copy of its own text, so the link is
+/// provenance rather than a dependency.
+///
+/// `userId` stays `Cascade`, so M2-T6's "delete removes every row" guarantee
+/// is intact. `accounts.test.ts` asserts this table empties with the user.
+model CoverLetter {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  jobTargetId String?
+  jobTarget   JobTarget? @relation(fields: [jobTargetId], references: [id], onDelete: SetNull)
+
+  /// The user's chosen save name.
+  title String
+  /// A serialized CoverLetterDocument.
+  content String
+
+  /// D10 — never remove. Letters outlive the code that wrote them.
+  schemaVersion Int @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+  @@index([resumeId])
+  @@index([jobTargetId])
+}
+
+// ---------------------------------------------------------------------------
+// Auth.js tables (M2-T2).
+//
+// Per D7 there is no password column anywhere, and there never will be. That
+// deletes password reset, email verification, credential-breach exposure, and
+// login rate limiting — weeks of security-sensitive work a solo developer
+// would otherwise own forever.
+// ---------------------------------------------------------------------------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@index([userId])
+}
+
+/// Backs the email magic link. Rows are single-use and short-lived.
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+/// Fixed-window counters (production hardening).
+///
+/// Kept in SQLite rather than in memory because the limit has to survive a
+/// restart: an in-process counter is reset by every deploy, and by every
+/// crash an attacker can provoke. One row per key, expired rows swept
+/// opportunistically.
+///
+/// **No relation to User, and none is needed** — because `key` is a hash, not
+/// an address. A key like `signin:email:ada@example.com` would be personal
+/// data in a table nothing cascades from, so account deletion would leave it
+/// behind, and it would exist for people who only ever requested a link.
+/// See `signInKey` in `src/server/rate-limit.ts`.
+model RateLimit {
+  /// `signin:email:<sha256>` / `signin:ip:<sha256>` / `export:<userId>`.
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

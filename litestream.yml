@@ -1,0 +1,52 @@
+# Continuous off-site replication of the SQLite database (D9, M2-T5).
+#
+#   1. Create an S3-compatible bucket.
+#   2. Fill in the four placeholders below.
+#   3. Put LITESTREAM_ACCESS_KEY_ID and LITESTREAM_SECRET_ACCESS_KEY in
+#      .env.production.
+#   4. Uncomment the `litestream` service in docker-compose.yml.
+#   5. **Rehearse the restore** — docs/RUNBOOK.md. An untested backup is not a
+#      backup, and step 5 is the only one of these that proves anything.
+#
+# ## What this is for, and what it is not for
+#
+# The `backup` service in docker-compose.yml already takes hourly snapshots.
+# Those recover from a bad migration or a mistaken delete. They sit on the same
+# volume as the database, so they recover from **nothing** that takes the
+# volume with it. That is the gap this closes, and it is the largest single
+# tail risk in the architecture: one lost disk is every user's resumes.
+#
+# ## Why WAL is load-bearing here
+#
+# `journal_mode=WAL` is set on every connection in src/server/db.ts. Litestream
+# replicates by tailing that write-ahead log — without WAL there is no stream
+# to tail and this file does nothing. The pragma is a backup dependency, not
+# only a concurrency setting.
+#
+# ## Oracle Cloud Object Storage
+#
+# It speaks the S3 compatibility API, and the 20 GB Always Free allowance is
+# far more than this database will need. Two things catch people out:
+#
+#   - The credentials are **Customer Secret Keys** (Identity -> your user ->
+#     Customer Secret Keys), not API signing keys. The signing keys are for
+#     Oracle's own SDK and will authenticate nothing here.
+#   - The endpoint embeds your tenancy namespace, which is not the tenancy
+#     name. `oci os ns get` prints it.
+#
+# Any S3-compatible bucket works — Cloudflare R2, Backblaze B2, Tigris, AWS.
+# Only `endpoint` and `region` change.
+
+dbs:
+  - path: /data/app.db
+    replicas:
+      - type: s3
+        bucket: REPLACE_ME_BUCKET
+        path: app.db
+        endpoint: https://REPLACE_ME_NAMESPACE.compat.objectstorage.REPLACE_ME_REGION.oraclecloud.com
+        region: REPLACE_ME_REGION
+
+        # One second of acknowledged writes is the most this can lose. The
+        # cost is a PUT per second only while something is actually being
+        # written; an idle database replicates nothing.
+        sync-interval: 1s

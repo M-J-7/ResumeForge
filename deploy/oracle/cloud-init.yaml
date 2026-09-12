@@ -1,0 +1,157 @@
+#cloud-config
+# Everything the VM needs, applied once at first boot.
+#
+# ## Read this before changing it
+#
+# cloud-init runs **once**, as root, before anybody logs in. If it fails, it
+# fails silently from the console's point of view — the instance boots, SSH
+# works, and nothing is installed. `/var/log/cloud-init-output.log` is where
+# the reason is, and `deploy/oracle/bootstrap.sh` is the same steps written to
+# be run by hand and to be safe to re-run, which is what you want when
+# diagnosing rather than provisioning.
+#
+# ## The three things that bite on Oracle specifically
+#
+# 1. **The instance's own firewall.** Oracle's images ship iptables rules that
+#    accept 22 and reject the rest, *regardless* of what the VCN security list
+#    says. Opening 80/443 in the console and stopping there is the single most
+#    common way an Oracle deploy ends up unreachable, and it looks exactly like
+#    a DNS problem. Both halves are done: the security list in `main.tf`, the
+#    local rules here.
+# 2. **Ampere is arm64.** Every image in the stack has to have an arm64 build.
+#    Caddy and Litestream publish multi-arch images; ours is built on the box,
+#    so it is arm64 by construction. `docker-arm64` in CI is what proves that
+#    before you get here.
+# 3. **Idle reclamation.** Always Free A1 instances are stopped when 95th
+#    percentile CPU *and* network *and* memory are all under 20% for 7 days.
+#    The hourly backup job and Litestream keep disk and network from flatlining.
+#    Do not add a busy loop — see docs/RUNBOOK.md.
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - git
+  - gnupg
+  - iptables-persistent
+  - unattended-upgrades
+
+write_files:
+  # Swap. 12GB is generous for this stack, but the PDF worker is the one
+  # thing that allocates in bursts, and an OOM kill of the app container
+  # during a render is a worse failure than a slow render.
+  - path: /etc/systemd/system/app-swap.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Create and enable a 2G swapfile
+      ConditionPathExists=!/swapfile
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStart=/usr/bin/fallocate -l 2G /swapfile
+      ExecStart=/bin/chmod 600 /swapfile
+      ExecStart=/sbin/mkswap /swapfile
+      ExecStart=/sbin/swapon /swapfile
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # The app, as a unit, so a reboot brings it back without anybody logging in.
+  #
+  # `docker compose up` rather than `up --build`: a reboot must not rebuild.
+  # Deploys go through `deploy/oracle/deploy.sh`, which builds deliberately.
+  - path: /etc/systemd/system/resume-builder.service
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Resume builder (Docker Compose)
+      Requires=docker.service
+      After=docker.service network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=/opt/resume-builder
+      ExecStart=/usr/bin/docker compose up -d --remove-orphans
+      ExecStop=/usr/bin/docker compose down
+      TimeoutStartSec=0
+
+      [Install]
+      WantedBy=multi-user.target
+
+  # Unattended security updates, but never an unprompted reboot: this stack is
+  # a single writer against one SQLite file, and a reboot at 06:00 while a
+  # backup is mid-copy is a needless risk for a machine that is patched
+  # anyway. Reboots are a deliberate act — see docs/RUNBOOK.md.
+  - path: /etc/apt/apt.conf.d/51-unattended-no-reboot
+    permissions: "0644"
+    content: |
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+runcmd:
+  # ---- Docker, from Docker's own repository --------------------------------
+  # Ubuntu's `docker.io` package lags and does not ship the compose plugin,
+  # which this stack needs as `docker compose` (not `docker-compose`).
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - chmod a+r /etc/apt/keyrings/docker.asc
+  - >
+    echo "deb [arch=arm64 signed-by=/etc/apt/keyrings/docker.asc]
+    https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable"
+    > /etc/apt/sources.list.d/docker.list
+  - apt-get update
+  - DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker ubuntu
+
+  # ---- The firewall Oracle ships, and the one thing everybody misses -------
+  #
+  # The default INPUT chain ends in a REJECT, so an ACCEPT *appended* with `-A`
+  # lands after it and is never reached. That is the version everybody writes
+  # first, and it fails silently: the rule is listed, and the port is still
+  # closed.
+  #
+  # `-I INPUT 1` inserts at the top, which is unconditionally before the
+  # REJECT. A specific index like `-I INPUT 6` would put it in Oracle's own
+  # rule layout more tidily and fails outright on an image whose chain is
+  # shorter than that — correctness over tidiness on the one step that decides
+  # whether the site is reachable at all.
+  - iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+  - iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+  - netfilter-persistent save
+
+  # ---- Swap -----------------------------------------------------------------
+  - systemctl enable --now app-swap.service
+  - grep -q "^/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
+
+  # ---- The application ------------------------------------------------------
+  #
+  # Cloned, but deliberately **not started**. The first boot has no
+  # `.env.production` — no AUTH_SECRET, no domain, no SMTP — and a stack that
+  # starts without them fails in a way that looks like a bug rather than like
+  # the missing step it is. `bootstrap.sh` writes the file and starts it.
+  # The canonical URL. `RESUME_BUILDER` still redirects here, and a redirect
+  # is a fine thing to rely on until the day it is not.
+  - git clone https://github.com/M-J-7/ResumeForge.git /opt/resume-builder
+  - chown -R ubuntu:ubuntu /opt/resume-builder
+  # Git on Windows does not record the executable bit unless somebody
+  # remembered `git update-index --chmod=+x`, and a deploy that fails with
+  # "permission denied" on its own bootstrap script is a bad first minute.
+  # Set it here, where it cannot be forgotten.
+  - chmod +x /opt/resume-builder/deploy/oracle/bootstrap.sh /opt/resume-builder/deploy/oracle/deploy.sh
+  - systemctl enable unattended-upgrades
+
+final_message: |
+  Base image ready after $UPTIME seconds.
+
+  Nothing is serving yet, on purpose. Finish it with:
+
+    ssh ubuntu@<this instance>
+    cd /opt/resume-builder
+    sudo ./deploy/oracle/bootstrap.sh
+
+  That writes .env.production, builds the image and starts the stack.
