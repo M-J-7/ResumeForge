@@ -296,10 +296,9 @@ not only a concurrency setting.**
 
 Recovers from: losing the machine.
 
-> **Not yet rehearsed.** M2-T5's acceptance is a restore that has actually
-> been performed with a measured RPO and RTO, and that needs a bucket and a
-> Docker host. Until it has been done, treat this layer as a plan. The
-> procedure is below; the table is empty on purpose.
+> **Live since 2026-09-12**, replicating to Oracle Object Storage in
+> `ap-hyderabad-1`. A restore has been performed and verified — see the
+> measured row below, including what that rehearsal did **not** cover.
 
 ---
 
@@ -346,9 +345,24 @@ To be run against a real deployment and recorded here. Kill the container with
 `docker kill`, not `stop` — a graceful stop lets everything flush, which is
 the case that was never in doubt.
 
-| Date | RPO (data lost)  | RTO (time to serve) | Notes                             |
-| ---- | ---------------- | ------------------- | --------------------------------- |
-| —    | not yet measured | not yet measured    | Needs a bucket and a Docker host. |
+| Date       | RPO (data lost) | RTO (time to serve) | Notes                                                                                                                   |
+| ---------- | --------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-12 | ≤ 1 s           | 83 ms restore       | **Partial rehearsal.** Restored the off-site replica to a scratch path beside the live database; `verify` reported integrity ok, 0 broken refs, 4 migrations, and the live row counts. The volume was **not** destroyed — see below. |
+
+RPO is the `sync-interval: 1s` in `litestream.yml`, and the restore did replay
+the newest WAL segment rather than only the snapshot, so the bound is real
+rather than nominal. The 83 ms is the restore itself (snapshot download, WAL
+replay, rename) for a 180 KB database; end to end, including recreating the
+container, it was about two minutes.
+
+**What this rehearsal did not prove.** The procedure above says to `docker kill`
+the app and destroy the volume. This was run against a live deployment with
+real accounts in it, so the replica was restored *alongside* the database
+instead. That proves the replica exists, is complete, and reconstructs a
+byte-correct database — it does not prove the operator steps under real data
+loss, where the pressure is different and `restore` refuses to overwrite an
+existing file. Do the destructive version at the next maintenance window, and
+replace this row with it.
 
 ---
 

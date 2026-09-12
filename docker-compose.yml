@@ -118,29 +118,28 @@ services:
     depends_on:
       - app
 
-  # Off-site, continuous replication (D9, M2-T5).
+  # Off-site, continuous replication (D9, M2-T5). Live since 2026-09-12, and
+  # rehearsed — see the measured row in docs/RUNBOOK.md.
   #
-  # `litestream.yml` now exists in the repository as a template. Fill in its
-  # four placeholders, put the two credentials in .env.production, uncomment
-  # this block — and then run the restore rehearsal in docs/RUNBOOK.md before
-  # relying on it. An untested backup is not a backup.
-  #
-  # It stays commented until then on purpose: uncommented against an unfilled
-  # template, Litestream restart-loops against a bucket that does not exist,
-  # which is noise on the one deploy where you most need the logs readable.
-  #
-  # litestream:
-  #   image: litestream/litestream:0.3
-  #   restart: unless-stopped
-  #   command: replicate
-  #   environment:
-  #     LITESTREAM_ACCESS_KEY_ID: "${LITESTREAM_ACCESS_KEY_ID}"
-  #     LITESTREAM_SECRET_ACCESS_KEY: "${LITESTREAM_SECRET_ACCESS_KEY}"
-  #   volumes:
-  #     - data:/data
-  #     - ./litestream.yml:/etc/litestream.yml:ro
-  #   depends_on:
-  #     - app
+  # This closes the gap the `backup` service above cannot: those snapshots sit
+  # on the same volume as the database, so they survive a bad migration and
+  # nothing that takes the disk with it.
+  litestream:
+    image: litestream/litestream:0.3
+    restart: unless-stopped
+    command: replicate
+    # `env_file`, not `environment:` with ${...}. Compose substitutes those
+    # from ./.env, while the credentials live in .env.production alongside
+    # every other secret — so the template's version handed Litestream two
+    # empty strings and failed with SignatureDoesNotMatch, which reads like a
+    # wrong key rather than an absent one.
+    env_file:
+      - .env.production
+    volumes:
+      - data:/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+    depends_on:
+      - app
 
 volumes:
   data:
