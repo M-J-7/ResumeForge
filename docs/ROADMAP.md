@@ -24,6 +24,7 @@
 | Phase 1.7 — internal linking | **Done** — "Keep reading" cards and visible breadcrumbs on examples and guides; every example is linked from another |
 | Phase 3 — `/resume-action-verbs` | **Done** — 115 verbs in the phrase bank's 12 groups, each held to the lint engine, plus the openers the checker flags |
 | Phase 3 — `/bullet-point-checker` | **Done** — the builder's coach and lint engine on pasted bullets, in the browser; asserted to send nothing anywhere |
+| Phase 3 — `/resume-keyword-scanner` | **Done** — the builder's match engine and report on a pasted posting and resume; hands the resume to the builder. Found and fixed an importer bug that dropped the first bullet of every role for `●` and `-` markers |
 | Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
 | Everything else | Not started |
 

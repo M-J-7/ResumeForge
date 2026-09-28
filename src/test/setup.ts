@@ -8,9 +8,21 @@
 
 import "@testing-library/jest-dom/vitest";
 import { afterEach } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 
 afterEach(cleanup);
+
+// How long `findBy*` and `waitFor` keep looking. Testing Library's default is
+// one second, which is a measure of this machine's load rather than of the
+// code: `BuilderShell.test.tsx`'s malformed-email test types twelve characters
+// through user-event before its alert can appear, and with the whole suite
+// running in parallel that took 2.8–3.2 s and failed two runs in three
+// (2026-09-28), while passing every time alone. A wait resolves the moment
+// its element appears, so a longer ceiling costs a passing test nothing; it
+// only changes how long a genuinely broken one takes to say so. Same
+// principle as the e2e rule in `e2e/draft.ts`: wait on the observable thing,
+// and give it time a loaded machine actually needs.
+configure({ asyncUtilTimeout: 5_000 });
 
 // jsdom implements <dialog> only partially: showModal/close are missing, and
 // the command palette depends on them. These stubs give the element the

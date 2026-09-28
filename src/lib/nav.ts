@@ -94,6 +94,7 @@ export const FOOTER_SECTIONS: readonly { title: string; links: readonly NavLink[
       LETTERS,
       { href: CHECK.href, label: "ATS check" },
       { href: "/bullet-point-checker", label: "Bullet checker" },
+      { href: "/resume-keyword-scanner", label: "Keyword scanner" },
     ],
   },
   {

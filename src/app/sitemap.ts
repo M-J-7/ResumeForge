@@ -82,6 +82,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // The free bullet checker. No lastModified: it is a tool, and the date a
     // tool's code last changed is not a date its page content did.
     { url: siteUrl("/bullet-point-checker"), changeFrequency: "monthly", priority: 0.8 },
+    { url: siteUrl("/resume-keyword-scanner"), changeFrequency: "monthly", priority: 0.8 },
 
     // A reference page filed under the guides, dated the same way they are.
     {
