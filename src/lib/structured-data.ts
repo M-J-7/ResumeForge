@@ -34,7 +34,7 @@
 
 import { PASS } from "./pricing";
 import { PRODUCT_NAME } from "./product";
-import { SITE_DESCRIPTION, siteUrl } from "./site";
+import { REPO_URL, SITE_DESCRIPTION, siteOrigin, siteUrl } from "./site";
 import type { Guide } from "./guides/guides";
 import type { RoleExample } from "./examples/roles";
 
@@ -51,6 +51,65 @@ export type JsonLd = Record<string, unknown>;
  */
 export function jsonLdScript(data: JsonLd): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+/**
+ * The mark at a stable URL, rendered from `src/app/icon.svg` by
+ * `scripts/build-icons.mjs`. Not the hashed `/icon.svg` Next serves: a logo
+ * in structured data is cached by whoever reads it, so its URL must not change
+ * with every build.
+ */
+export const LOGO_PATH = "/logo.png";
+
+/**
+ * Who publishes this site, as one entity every other block can point at.
+ *
+ * The name is the whole three-word name, never "Six Seconds" alone: the bare
+ * phrase already belongs to an emotional-intelligence nonprofit
+ * (6seconds.org) that owns that search result, and a result reading "Six
+ * Seconds" beside our favicon would be indistinguishable from theirs.
+ *
+ * `sameAs` is the public repository, the one other place that is
+ * authoritatively this product. There are no social profiles to list, and
+ * listing ones that do not exist is the decorative untruth this file refuses.
+ */
+export function organizationJsonLd(): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: PRODUCT_NAME,
+    url: siteUrl("/"),
+    logo: siteUrl(LOGO_PATH),
+    sameAs: [REPO_URL],
+  };
+}
+
+/**
+ * The site, for the name a search engine prints above a result.
+ *
+ * Google reads the site name from `WebSite` markup on the home page; without
+ * it the name is guessed from the title and headings, and ours share a phrase
+ * with a much older, much larger site. `alternateName` is the hostname, which
+ * is the other thing a person types to find it.
+ */
+export function websiteJsonLd(): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: PRODUCT_NAME,
+    alternateName: new URL(siteOrigin()).hostname,
+    url: siteUrl("/"),
+  };
+}
+
+/** The publisher on every `Article`: the organization above, with its logo. */
+function publisher(): JsonLd {
+  return {
+    "@type": "Organization",
+    name: PRODUCT_NAME,
+    url: siteUrl("/"),
+    logo: { "@type": "ImageObject", url: siteUrl(LOGO_PATH) },
+  };
 }
 
 /**
@@ -140,7 +199,7 @@ export function guideArticleJsonLd(guide: Guide): JsonLd {
     description: guide.summary,
     url: siteUrl(`/guides/${guide.slug}`),
     mainEntityOfPage: siteUrl(`/guides/${guide.slug}`),
-    publisher: { "@type": "Organization", name: PRODUCT_NAME, url: siteUrl("/") },
+    publisher: publisher(),
     // Roughly, and the page says the same number to the reader.
     timeRequired: `PT${guide.minutes}M`,
   };
@@ -245,7 +304,7 @@ export function roleExampleJsonLd(example: RoleExample): JsonLd {
     description: example.summary,
     url: siteUrl(`/examples/${example.slug}`),
     mainEntityOfPage: siteUrl(`/examples/${example.slug}`),
-    publisher: { "@type": "Organization", name: PRODUCT_NAME, url: siteUrl("/") },
+    publisher: publisher(),
     about: example.occupationTitle,
   };
 }

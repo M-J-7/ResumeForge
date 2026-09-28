@@ -72,7 +72,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppFooter } from "@/components/shell/AppFooter";
 import { JsonLdScript } from "@/components/seo/JsonLd";
-import { faqPageJsonLd, softwareApplicationJsonLd } from "@/lib/structured-data";
+import {
+  faqPageJsonLd,
+  organizationJsonLd,
+  softwareApplicationJsonLd,
+  websiteJsonLd,
+} from "@/lib/structured-data";
 import { AmbientBackground } from "@/components/marketing/AmbientBackground";
 import { BuildGroup, Built, BuiltListItem, DrawnRule } from "@/components/marketing/Build";
 import { CtaLink } from "@/components/marketing/CtaLink";
@@ -187,6 +192,11 @@ export default function Home() {
         as firmly as for a person. See `lib/structured-data.ts`.
       */}
       <JsonLdScript data={softwareApplicationJsonLd()} />
+      {/* The site name a search result prints, and who publishes it. Home
+          page only: Google reads `WebSite` from here, and "Six Seconds" on
+          its own is another organization's name (see `organizationJsonLd`). */}
+      <JsonLdScript data={websiteJsonLd()} />
+      <JsonLdScript data={organizationJsonLd()} />
       {/* Built from the same array the `<details>` below are, because markup
           describing answers the page does not contain is a policy violation
           and the way it happens is two copies drifting. */}
