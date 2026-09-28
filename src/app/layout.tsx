@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
-import { AppHeader } from "@/components/shell/AppHeader";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -129,12 +128,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         {/*
-         * The header is global; the footer is not. `/builder` is a
+         * No header here, and that is what makes the content pages static.
+         *
+         * This used to render `AppHeader`, which reads the session — and a
+         * session read in the root layout makes every route in the app
+         * per-request, the landing page included. The header now comes from
+         * one layer down: `(site)/layout.tsx` for the prerendered content
+         * pages (`SiteHeader`, which asks from the browser), and a
+         * `layout.tsx` in each application route (`AppHeader`, which reads it
+         * on the server). `not-found.tsx` and `error.tsx` render above both
+         * and mount `SiteHeader` themselves.
+         *
+         * The footer is per page for a different reason: `/builder` is a
          * full-height application view whose preview pane fills whatever is
-         * left below this bar, and a footer here would take height from it on
-         * every page. Content pages mount `AppFooter` themselves.
+         * left below the bar, and a footer would take height from it.
          */}
-        <AppHeader />
         {children}
       </body>
     </html>

@@ -115,8 +115,17 @@ describe("the measured numbers are actually measured", () => {
 
       if (signal.href.startsWith("/")) {
         const route = signal.href.replace(/^\//, "");
+        // A route may live inside a route group — `src/app/(site)/check` serves
+        // `/check` — so look in each group as well as at the top level.
+        const app = path.join(ROOT, "src", "app");
+        const roots = [
+          app,
+          ...readdirSync(app, { withFileTypes: true })
+            .filter((entry) => entry.isDirectory() && /^\(.+\)$/.test(entry.name))
+            .map((entry) => path.join(app, entry.name)),
+        ];
         expect(
-          existsSync(path.join(ROOT, "src", "app", route, "page.tsx")),
+          roots.some((root) => existsSync(path.join(root, route, "page.tsx"))),
           `${signal.claim} links to /${route}, which is not a route`,
         ).toBe(true);
         continue;

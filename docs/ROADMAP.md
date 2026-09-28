@@ -6,6 +6,21 @@
 >
 > **Written:** 2026-09-28 · **Owner:** solo, part-time.
 
+## Progress
+
+| Item | State |
+|---|---|
+| A1 — commit the working tree | **Done** 2026-09-28 (`93cdbc1`). One commit: `trust-signals.test.ts` pins the suite size exactly, so any split leaves intermediate commits red |
+| A2 — merge to master and deploy | **Waiting on you.** The branch contains every open branch, and a dry-run merge with `origin/master` produces an identical tree. Needs: push, PR, merge, then `sudo ./deploy/oracle/deploy.sh` on the instance |
+| A3 — `deploy.sh` built on a box that cannot build | **Done.** Pulls the image CI published for the exact commit, before moving the checkout |
+| A4 — Brevo click tracking burns magic links | **Waiting on you** — a Resend account, then one `EMAIL_SERVER` line in `.env.production` |
+| A5 — `/pricing` stated limits nothing enforces | **Done.** The account tier says there is no limit while the Pass is not on sale; a test ties the two |
+| A6 — uptime monitor | **Waiting on you** — UptimeRobot (free) on `https://sixseconds.tech/api/health` |
+| Phase 1.1 — Search Console and Bing | **Waiting on you** — both verify by DNS TXT record at the registrar |
+| Phase 1.3 — content pages static | **Done.** Ten routes prerendered (`○`/`●`); header split into `AppHeader` (server) and `SiteHeader` (browser); the Dockerfile refuses to build without the public origin. IMPLEMENTATION.md landmines 25–27 |
+| Phase 1.5 — brand disambiguation | **Done.** `WebSite` + `Organization` JSON-LD, and a real favicon — the shipped one was create-next-app's Vercel triangle |
+| Everything else in Phase 1 onward | Not started |
+
 ## Context
 
 You asked three things: **what is still remaining**, **what features would make this beat other

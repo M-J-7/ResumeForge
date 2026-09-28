@@ -26,9 +26,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/guides",
 });
 
-/** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
-export const dynamic = "force-dynamic";
-
 export default function GuidesIndexPage() {
   return (
     <>

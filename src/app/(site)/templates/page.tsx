@@ -53,9 +53,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/templates",
 });
 
-/** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
-export const dynamic = "force-dynamic";
-
 export default function TemplatesPage() {
   return (
     <>

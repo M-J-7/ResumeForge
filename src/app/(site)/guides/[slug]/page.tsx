@@ -43,9 +43,6 @@ export async function generateMetadata({ params }: PageProps<"/guides/[slug]">):
   });
 }
 
-/** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
-export const dynamic = "force-dynamic";
-
 export default async function GuidePage({ params }: PageProps<"/guides/[slug]">) {
   const { slug } = await params;
   const guide = getGuide(slug);

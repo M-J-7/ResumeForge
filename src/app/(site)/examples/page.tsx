@@ -34,9 +34,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/examples",
 });
 
-/** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
-export const dynamic = "force-dynamic";
-
 /** Fields in the order they first appear, so the grouping is data-driven. */
 function fields(): string[] {
   return [...new Set(ROLE_EXAMPLES.map((example) => example.field))];

@@ -40,9 +40,6 @@ export const metadata: Metadata = pageMetadata({
   path: "/check",
 });
 
-/** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
-export const dynamic = "force-dynamic";
-
 export default function CheckPage() {
   return (
     <>

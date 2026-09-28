@@ -14,6 +14,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AppFooter } from "@/components/shell/AppFooter";
+import { SiteHeader } from "@/components/shell/SiteHeader";
 import { Band, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/Band";
 import { buttonClassName } from "@/components/ui/button-style";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,10 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <>
+      {/* Above both route groups, so neither group's header reaches here.
+          The browser-side one, because an unknown URL has no session read
+          worth making. It carries no Motion — see the note below. */}
+      <SiteHeader />
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         {/*
           `Band`, not `PageHeader`, and the reason is a hard gate rather than
