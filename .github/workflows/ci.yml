@@ -90,6 +90,12 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          # The content pages are prerendered, and bake this origin into their
+          # canonical links and structured data. The Dockerfile refuses to
+          # build without it rather than ship pages claiming localhost. Set the
+          # SITE_URL repository variable to deploy somewhere else.
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://sixseconds.tech' }}
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -135,6 +141,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://sixseconds.tech' }}
           platforms: linux/amd64
           push: true
           # Both tags on purpose: `latest` is what the instance pulls, and the
@@ -168,6 +176,8 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://sixseconds.tech' }}
           platforms: linux/arm64
           push: false
           cache-from: type=gha,scope=arm64

@@ -78,9 +78,16 @@ fi
 git reset --hard --quiet origin/master
 say "Checked out ${current}"
 
+# The Dockerfile refuses to build without the public origin — the content
+# pages are prerendered and bake it into their canonical links — and AUTH_URL
+# in .env.production is that origin.
+# Tolerant of a missing line: under `pipefail` a grep that matches nothing
+# would end the deploy here, including a pull that never needed the value.
+site_url=$({ grep '^AUTH_URL=' .env.production 2>/dev/null || true; } | tail -n 1 | cut -d= -f2- | tr -d "\"'")
+
 if [[ -z $image ]]; then
   say "Building"
-  docker compose build app backup
+  NEXT_PUBLIC_SITE_URL="$site_url" docker compose build app backup
 fi
 
 # Pending migrations are applied by the server on first use
@@ -108,7 +115,7 @@ if [[ -n $image ]]; then
   # no-op when an earlier deploy already fetched it.
   restore_image="docker pull ${repo}:${previous_full} && docker tag ${repo}:${previous_full} ${image}"
 else
-  restore_image="docker compose build app backup"
+  restore_image="NEXT_PUBLIC_SITE_URL=${site_url} docker compose build app backup"
 fi
 
 cat >&2 <<EOF

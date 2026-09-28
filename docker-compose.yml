@@ -56,7 +56,14 @@ services:
     # substitution, which is a different file from the `.env.production` below
     # that is handed to the container.
     image: ${APP_IMAGE:-six-seconds-resume:local}
-    build: .
+    # Only used when building here rather than pulling. The Dockerfile refuses
+    # to build without the public origin, because the content pages bake it
+    # into their canonical links at build time; bootstrap.sh and deploy.sh
+    # export it from AUTH_URL before they build.
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
     restart: unless-stopped
     # No `ports:` on purpose. The app is reachable only on the compose network,
     # as `app`, and only Caddy talks to it. Publishing 3000 as well would leave
@@ -104,7 +111,10 @@ services:
     # to avoid. `app` pulled correctly and `backup` built anyway, which put the
     # load average above 5 before anything had started.
     image: ${APP_IMAGE:-six-seconds-resume:local}
-    build: .
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
     restart: unless-stopped
     # Disabled, not overridden. The healthcheck baked into the image probes
     # localhost:3000, and this container runs a backup loop rather than the
