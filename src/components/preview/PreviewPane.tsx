@@ -6,6 +6,7 @@ import { ExportPanel } from "./ExportPanel";
 import { usePdfPreview } from "./usePdfPreview";
 import { XRayPanel } from "@/components/xray/XRayPanel";
 import { MatchPanel } from "@/components/match/MatchPanel";
+import { SixSecondPanel } from "@/components/six-seconds/SixSecondPanel";
 import { Button, Select } from "@/components/ui/control";
 import { Tab, TabList, Tabs } from "@/components/ui/tabs";
 import { DesignPanel } from "@/components/builder/DesignPanel";
@@ -17,11 +18,12 @@ import { cn } from "@/lib/utils";
 type ZoomMode = "fit-width" | "fit-page" | "actual";
 
 /**
- * The preview shows the document; X-Ray shows what a parser reads from it;
- * Match shows what one specific posting asks for and how the document
- * answers it (P27).
+ * The preview shows the document; Six seconds shows where the facts a
+ * recruiter's first read looks for landed on it (F1); X-Ray shows what a
+ * parser reads from it; Match shows what one specific posting asks for and how
+ * the document answers it (P27). A person, then a machine, then a posting.
  */
-type ViewMode = "preview" | "xray" | "match";
+type ViewMode = "preview" | "scan" | "xray" | "match";
 
 /** A4 and Letter are both ~600pt wide; used to size fit-width before measuring. */
 const NOMINAL_PAGE_WIDTH_PT = 595;
@@ -133,6 +135,7 @@ export function PreviewPane({
         <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
           <TabList label="Document view">
             <Tab value="preview">Preview</Tab>
+            <Tab value="scan">Six seconds</Tab>
             <Tab value="xray">X-Ray</Tab>
             <Tab value="match">Match</Tab>
           </TabList>
@@ -213,6 +216,11 @@ export function PreviewPane({
         )}
       >
         {bytes ? <PdfCanvas bytes={bytes} scale={scale} /> : <EmptyPage rendering={rendering} />}
+      </div>
+
+      {/* Kept mounted, like X-Ray below; it measures only while open. */}
+      <div className={cn("min-h-0 flex-1", viewMode !== "scan" && "hidden")}>
+        <SixSecondPanel bytes={bytes} active={viewMode === "scan"} />
       </div>
 
       {/* Kept mounted so switching tabs does not discard the extraction. */}

@@ -605,6 +605,57 @@ body {
   animation: shimmer 1.4s ease-in-out infinite;
 }
 
+/*
+ * The Six-Second View (`SixSecondPanel`): the quick-read zone fills from the
+ * top while a line sweeps down it, then each fact a first read looks for is
+ * marked in turn, left to right, the way it is read.
+ *
+ * CSS rather than Motion because this renders inside the builder, whose
+ * bundle deliberately carries no Motion (design.md §7). Clip-path and `top`
+ * only — the markers carry numbers, and text is never faded (axe scores
+ * contrast mid-flight). Each animation ends in the drawn state, so the
+ * reduced-motion rule below, which clamps every duration, shows the finished
+ * picture rather than an empty page.
+ */
+@keyframes six-fill {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes six-sweep {
+  from {
+    top: 0%;
+  }
+  to {
+    top: 100%;
+  }
+}
+
+@keyframes six-mark {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+.six-zone {
+  animation: six-fill 1.6s var(--ease) both;
+}
+
+.six-sweep {
+  animation: six-sweep 1.6s var(--ease) both;
+}
+
+.six-mark {
+  animation: six-mark 0.45s var(--ease) both;
+}
+
 /* ---------------------------------------------------------------------------
  * The build layer.
  *
