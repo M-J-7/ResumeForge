@@ -95,7 +95,7 @@ export interface TrustSignal {
  */
 export const MEASURED = {
   /** What `pnpm test` prints — cases, not declarations. See the test. */
-  unitTests: 2067,
+  unitTests: 2070,
   /**
    * Test *declarations* under `src`, pinned exactly.
    *
@@ -106,7 +106,7 @@ export const MEASURED = {
    * of whoever made the change — which is what stops half the tests being
    * deleted while the landing page goes on claiming the old total.
    */
-  testDeclarations: 1064,
+  testDeclarations: 1067,
   e2eTests: 102,
   lintRules: 14,
   skillTerms: 7432,

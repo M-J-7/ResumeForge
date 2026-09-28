@@ -53,12 +53,49 @@ const fieldBase = cn(
   focusRing,
 );
 
-export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(fieldBase, className)} {...props} />;
+/**
+ * Whether an input holds an identifier rather than prose — a name, an
+ * address, a number, a link — where a spell checker only underlines things
+ * that are correct.
+ */
+export function isIdentifierInput(props: ComponentProps<"input">): boolean {
+  const { type, inputMode, autoComplete } = props;
+  return (
+    ["email", "tel", "url", "search", "number", "password"].includes(type ?? "") ||
+    ["email", "tel", "url", "numeric", "decimal"].includes(inputMode ?? "") ||
+    ["name", "given-name", "family-name", "email", "tel", "url"].includes(autoComplete ?? "")
+  );
 }
 
-export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cn(fieldBase, "min-h-24 resize-y", className)} {...props} />;
+/**
+ * A text input, spell-checked when it holds prose (ROADMAP F10).
+ *
+ * Browsers disagree on the default. Firefox checks only multi-line fields, so
+ * a job title or an employer typed into a single-line box was never checked
+ * there — on the one document where a typo costs the most. Chrome checks
+ * single-line fields and so underlined every name, address and URL in red.
+ * Stating it explicitly makes both behave: prose is checked everywhere, and
+ * identifiers (`isIdentifierInput`) are not. A caller can still say either.
+ */
+export function Input({ className, spellCheck, ...props }: ComponentProps<"input">) {
+  return (
+    <input
+      className={cn(fieldBase, className)}
+      spellCheck={spellCheck ?? !isIdentifierInput(props)}
+      {...props}
+    />
+  );
+}
+
+/** Multi-line text is always prose here — a summary, a bullet — so it is checked. */
+export function Textarea({ className, spellCheck = true, ...props }: ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={cn(fieldBase, "min-h-24 resize-y", className)}
+      spellCheck={spellCheck}
+      {...props}
+    />
+  );
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
