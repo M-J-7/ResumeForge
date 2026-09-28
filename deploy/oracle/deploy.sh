@@ -98,12 +98,50 @@ fi
 say "Restarting"
 docker compose up -d --remove-orphans
 
+# Tell IndexNow (Bing, Yandex, Seznam, Naver — and through Bing, ChatGPT
+# search and Copilot) that pages changed, so they are recrawled in hours rather
+# than whenever a crawler next happens by. Google does not take part; Search
+# Console and the sitemap cover it.
+#
+# Only when this deploy changed what a content page says. The protocol asks
+# for changed URLs, and pinging an unchanged site on every deploy is how a key
+# gets ignored. The whole sitemap is sent rather than a computed subset: it is
+# a few dozen URLs, and working out which route a change to `roles.ts`
+# affects is a mapping that would drift. Never fails the deploy.
+notify_indexnow() {
+  local key host urls
+  key=$(cat public/indexnow-key.txt 2>/dev/null || true)
+  host=${site_url#https://}
+  host=${host%%/*}
+  [[ -n $key && -n $host ]] || return 0
+
+  if git diff --quiet "$previous_full" "$target" -- \
+      'src/app/(site)' src/lib/examples src/lib/guides src/lib/faq.ts src/lib/pricing.ts; then
+    say "No content page changed; not pinging IndexNow"
+    return 0
+  fi
+
+  urls=$(curl -fsS --max-time 20 "https://${host}/sitemap.xml" \
+    | grep -o '<loc>[^<]*</loc>' | sed -e 's#<loc>##' -e 's#</loc>##' -e 's/.*/"&"/' \
+    | paste -sd, -) || return 0
+  [[ -n $urls ]] || return 0
+
+  if curl -fsS --max-time 20 -o /dev/null -X POST "https://api.indexnow.org/indexnow" \
+      -H 'Content-Type: application/json; charset=utf-8' \
+      -d "{\"host\":\"${host}\",\"key\":\"${key}\",\"keyLocation\":\"https://${host}/indexnow-key.txt\",\"urlList\":[${urls}]}"; then
+    say "IndexNow told about $(tr -cd ',' <<<"$urls" | wc -c | awk '{print $1 + 1}') URLs"
+  else
+    printf '%s!!!%s IndexNow ping failed; the deploy itself is fine.\n' "$RED" "$OFF" >&2
+  fi
+}
+
 say "Waiting for health"
 for attempt in $(seq 1 30); do
   if docker compose exec -T app node -e \
       "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
       2>/dev/null; then
     say "Healthy. Deployed ${previous} -> ${current}"
+    notify_indexnow || true
     exit 0
   fi
   sleep 5
