@@ -97,7 +97,7 @@ export const FOOTER_SECTIONS: readonly { title: string; links: readonly NavLink[
   },
   {
     title: "Learn",
-    links: [EXAMPLES, GUIDES],
+    links: [EXAMPLES, GUIDES, { href: "/resume-action-verbs", label: "Action verbs" }],
   },
   {
     title: "About",

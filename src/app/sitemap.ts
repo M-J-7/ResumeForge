@@ -13,6 +13,7 @@ import { siteUrl } from "@/lib/site";
 import { ROLE_EXAMPLES } from "@/lib/examples/roles";
 import { GUIDES } from "@/lib/guides/guides";
 import { latestUpdate } from "@/lib/content-dates";
+import { ACTION_VERBS_PATH, ACTION_VERBS_UPDATED } from "@/lib/verbs/action-verbs";
 
 /**
  * Evaluated per request, not at build time.
@@ -77,6 +78,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
+
+    // A reference page filed under the guides, dated the same way they are.
+    {
+      url: siteUrl(ACTION_VERBS_PATH),
+      lastModified: ACTION_VERBS_UPDATED,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
 
     { url: siteUrl("/privacy"), changeFrequency: "yearly", priority: 0.3 },
     { url: siteUrl("/terms"), changeFrequency: "yearly", priority: 0.3 },

@@ -20,7 +20,11 @@
 | Phase 1.2 — IndexNow | **Done** — `deploy.sh` pings after a healthy deploy that changed content; first runs on the next deploy |
 | Phase 1.3 — content pages static | **Done.** Ten routes prerendered (`○`/`●`); header split into `AppHeader` (server) and `SiteHeader` (browser); the Dockerfile refuses to build without the public origin. IMPLEMENTATION.md landmines 25–27 |
 | Phase 1.5 — brand disambiguation | **Done.** `WebSite` + `Organization` JSON-LD, and a real favicon — the shipped one was create-next-app's Vercel triangle |
-| Everything else in Phase 1 onward | Not started |
+| Phase 1.4 — sitemap dates | **Done** — `updated` on every example, guide and reference page; a hash pin fails the build if content changes without its date |
+| Phase 1.7 — internal linking | **Done** — "Keep reading" cards and visible breadcrumbs on examples and guides; every example is linked from another |
+| Phase 3 — `/resume-action-verbs` | **Done** — 115 verbs in the phrase bank's 12 groups, each held to the lint engine, plus the openers the checker flags |
+| Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
+| Everything else | Not started |
 
 ## Context
 

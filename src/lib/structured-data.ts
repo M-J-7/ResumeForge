@@ -279,6 +279,29 @@ export function faqSections(guide: Guide): { heading: string; answer: string }[]
   return found;
 }
 
+/**
+ * A reference page that is neither a guide nor an example — the action-verbs
+ * page. Same shape as a guide's `Article`, and the same refusal to name an
+ * author nobody credited.
+ */
+export function referenceArticleJsonLd(page: {
+  headline: string;
+  description: string;
+  path: string;
+  dateModified: string;
+}): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: page.headline,
+    description: page.description,
+    url: siteUrl(page.path),
+    mainEntityOfPage: siteUrl(page.path),
+    publisher: publisher(),
+    dateModified: page.dateModified,
+  };
+}
+
 /** `/examples` and `/templates`: a list, with each item's own URL. */
 export function itemListJsonLd(
   name: string,

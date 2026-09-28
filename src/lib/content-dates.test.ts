@@ -20,6 +20,7 @@ import { describe, expect, it } from "vitest";
 import { GUIDES } from "./guides/guides";
 import { ROLE_EXAMPLES } from "./examples/roles";
 import { formatContentDate, isContentDate, latestUpdate } from "./content-dates";
+import { ACTION_VERBS_UPDATED, VERB_GROUPS, WEAK_OPENERS } from "./verbs/action-verbs";
 
 /** A short, stable fingerprint of everything on the page but the date. */
 function contentHash(entry: { updated: string }): string {
@@ -45,6 +46,7 @@ const PINNED: Readonly<Record<string, string>> = {
   "project-manager": "2026-09-10@f59a6c9fb30a",
   "registered-nurse": "2026-09-10@4a33ac242415",
   "resume-file-format": "2026-09-10@b4194032e7b3",
+  "resume-action-verbs": "2026-09-28@fc907c074407",
   "resume-with-no-experience": "2026-09-10@5f609b76dfbe",
   "retail-store-manager": "2026-09-10@a34a7123f10d",
   "sales-representative": "2026-09-10@bdaee7676e3a",
@@ -56,6 +58,15 @@ const PINNED: Readonly<Record<string, string>> = {
 const PAGES = [
   ...ROLE_EXAMPLES.map((example) => ({ kind: "example", entry: example })),
   ...GUIDES.map((guide) => ({ kind: "guide", entry: guide })),
+  {
+    kind: "reference",
+    entry: {
+      slug: "resume-action-verbs",
+      updated: ACTION_VERBS_UPDATED,
+      groups: VERB_GROUPS,
+      weak: WEAK_OPENERS,
+    },
+  },
 ];
 
 describe("content dates", () => {

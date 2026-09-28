@@ -14,6 +14,7 @@ import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/mark
 import { SpotlightGroup } from "@/components/ui/Spotlight";
 import { Card } from "@/components/ui/card";
 import { GUIDES } from "@/lib/guides/guides";
+import { ACTION_VERBS_PATH, ALL_ACTION_VERBS } from "@/lib/verbs/action-verbs";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { itemListJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
@@ -74,6 +75,27 @@ export default function GuidesIndexPage() {
                   </Card>
                 </li>
               ))}
+              {/* A reference rather than a guide — it answers "which word"
+                  rather than a question — so it is not in `GUIDES` and has no
+                  reading time. It sits at the end of the list, which is where a
+                  reader who finished the guides wants the next thing. */}
+              <li className="relative">
+                <Card className="spot lift hover:border-line-strong p-5">
+                  <h2 className="text-text text-title font-semibold">
+                    <Link
+                      href={ACTION_VERBS_PATH}
+                      className="hover:text-accent rounded-sm after:absolute after:inset-0"
+                    >
+                      Resume action verbs, grouped by what you did
+                    </Link>
+                  </h2>
+                  <p className="text-muted text-small mt-2 leading-relaxed">
+                    {ALL_ACTION_VERBS.length} verbs to open a bullet with, the sentence shapes that
+                    go with them, and the openers the builder&rsquo;s checker will flag.
+                  </p>
+                  <p className="text-faint text-micro mt-3 font-mono">Reference</p>
+                </Card>
+              </li>
             </ul>
           </SpotlightGroup>
 
