@@ -17,6 +17,7 @@
 | A5 — `/pricing` stated limits nothing enforces | **Done.** The account tier says there is no limit while the Pass is not on sale; a test ties the two |
 | A6 — uptime monitor | **Waiting on you** — UptimeRobot (free) on `https://sixseconds.tech/api/health` |
 | Phase 1.1 — Search Console and Bing | **Waiting on you** — both verify by DNS TXT record at the registrar |
+| Phase 1.2 — IndexNow | **Done** — `deploy.sh` pings after a healthy deploy that changed content; first runs on the next deploy |
 | Phase 1.3 — content pages static | **Done.** Ten routes prerendered (`○`/`●`); header split into `AppHeader` (server) and `SiteHeader` (browser); the Dockerfile refuses to build without the public origin. IMPLEMENTATION.md landmines 25–27 |
 | Phase 1.5 — brand disambiguation | **Done.** `WebSite` + `Organization` JSON-LD, and a real favicon — the shipped one was create-next-app's Vercel triangle |
 | Everything else in Phase 1 onward | Not started |
