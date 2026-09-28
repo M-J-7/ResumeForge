@@ -31,22 +31,57 @@ say "Snapshot first"
 docker compose exec -T app node scripts/backup.mjs create --keep 48
 
 previous=$(git rev-parse --short HEAD)
+previous_full=$(git rev-parse HEAD)
 say "Currently at ${previous}"
 
 say "Fetching"
 git fetch --quiet origin
-git reset --hard --quiet origin/master
-current=$(git rev-parse --short HEAD)
+target=$(git rev-parse origin/master)
+current=$(git rev-parse --short "$target")
 
 if [[ $previous == "$current" ]]; then
   say "Already at ${current}. Nothing to do."
   exit 0
 fi
-say "Now at ${current}"
+say "Deploying ${current}"
 git --no-pager log --oneline "${previous}..${current}" | sed 's/^/    /'
 
-say "Building"
-docker compose build app backup
+# Pull what CI built, or build here — the same choice bootstrap.sh makes.
+#
+# This used to build unconditionally, and the E2.1.Micro this runs on cannot
+# finish `next build`: the first deploy after bootstrap would have hung or
+# been killed for memory. When ./.env names a published image, pull it.
+#
+# Pulled by *commit*, not by `latest`. CI tags every publish with the full sha
+# (.github/workflows/ci.yml), and `latest` is whichever publish finished last —
+# which, a minute after a push, is still the previous commit. Deploying
+# `latest` would restart onto old code and report success. The pinned image is
+# then tagged locally under the name ./.env uses, so a later hand-typed
+# `docker compose up` runs what was deployed rather than a stale `latest`.
+#
+# The image is fetched before the checkout moves, so a commit CI has not
+# published yet stops here with the instance exactly as it was.
+image=""
+if [[ -f .env ]] && grep -q '^APP_IMAGE=' .env; then
+  image=$(grep '^APP_IMAGE=' .env | tail -n 1 | cut -d= -f2- | tr -d "\"'")
+  repo=$image
+  # Strip a tag, but not a registry port: only a colon in the last segment is one.
+  [[ ${image##*/} == *:* ]] && repo=${image%:*}
+  pinned="${repo}:${target}"
+
+  say "Pulling ${pinned}"
+  docker pull --quiet "$pinned" >/dev/null \
+    || die "No image for ${current} yet. Wait for CI's publish job on master, then re-run."
+  docker tag "$pinned" "$image"
+fi
+
+git reset --hard --quiet origin/master
+say "Checked out ${current}"
+
+if [[ -z $image ]]; then
+  say "Building"
+  docker compose build app backup
+fi
 
 # Pending migrations are applied by the server on first use
 # (src/server/db.ts), inside a transaction, using Prisma's own
@@ -67,6 +102,15 @@ for attempt in $(seq 1 30); do
   sleep 5
 done
 
+if [[ -n $image ]]; then
+  # CI published the previous commit under its sha, so going back is a pull
+  # and a retag rather than a rebuild the instance cannot do. The pull is a
+  # no-op when an earlier deploy already fetched it.
+  restore_image="docker pull ${repo}:${previous_full} && docker tag ${repo}:${previous_full} ${image}"
+else
+  restore_image="docker compose build app backup"
+fi
+
 cat >&2 <<EOF
 
 ${RED}Unhealthy after 150 seconds.${OFF}
@@ -76,7 +120,8 @@ ${RED}Unhealthy after 150 seconds.${OFF}
 To go back:
 
   git reset --hard ${previous}
-  docker compose build app && docker compose up -d
+  ${restore_image}
+  docker compose up -d
 
 A rollback does **not** undo a migration that has already applied. If the new
 version migrated the schema, restore the snapshot taken at the top of this
