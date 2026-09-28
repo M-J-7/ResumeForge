@@ -240,6 +240,12 @@ export default function ActionVerbsPage() {
             >
               All guides
             </Link>
+            <Link
+              href="/bullet-point-checker"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
+            >
+              Check a bullet
+            </Link>
             <Link href="/check" className="text-accent rule-grow text-small rounded-sm font-medium">
               Check a resume
             </Link>

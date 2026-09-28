@@ -302,6 +302,33 @@ export function referenceArticleJsonLd(page: {
   };
 }
 
+/**
+ * A free tool that runs in the browser — the bullet checker.
+ *
+ * `WebApplication` with a free `Offer`, which is true permanently for the same
+ * reason the landing page's is. No rating, for the same reason there is none
+ * anywhere: nobody has rated it.
+ */
+export function webApplicationJsonLd(tool: {
+  name: string;
+  description: string;
+  path: string;
+}): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: tool.name,
+    description: tool.description,
+    url: siteUrl(tool.path),
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Any",
+    browserRequirements: "Requires JavaScript.",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    publisher: publisher(),
+  };
+}
+
 /** `/examples` and `/templates`: a list, with each item's own URL. */
 export function itemListJsonLd(
   name: string,
