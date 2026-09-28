@@ -26,6 +26,10 @@ import { GUIDE_SLUGS, getGuide, type GuideBlock } from "@/lib/guides/guides";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
+import { examplesForGuide, otherGuides } from "@/lib/related";
+import { formatContentDate } from "@/lib/content-dates";
+import { Breadcrumbs } from "@/components/marketing/Breadcrumbs";
+import { RelatedLinks } from "@/components/marketing/RelatedLinks";
 
 export function generateStaticParams() {
   return GUIDE_SLUGS.map((slug) => ({ slug }));
@@ -48,6 +52,12 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
   const guide = getGuide(slug);
   if (!guide) notFound();
 
+  // One list for the visible trail and the JSON-LD — see `/examples/[role]`.
+  const trail = [
+    { name: "Guides", path: "/guides" },
+    { name: guide.title, path: `/guides/${guide.slug}` },
+  ];
+
   return (
     <>
       {/*
@@ -58,12 +68,7 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
         a page that answers none would be both false and a manual-action risk.
       */}
       <JsonLdScript data={guideArticleJsonLd(guide)} />
-      <JsonLdScript
-        data={breadcrumbJsonLd([
-          { name: "Guides", path: "/guides" },
-          { name: guide.title, path: `/guides/${guide.slug}` },
-        ])}
-      />
+      <JsonLdScript data={breadcrumbJsonLd(trail)} />
       <JsonLdScript data={guideFaqJsonLd(guide)} />
 
       {/*
@@ -81,6 +86,9 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <PageHeader stage containerClassName="max-w-2xl">
           <Built>
+            <Breadcrumbs trail={trail} />
+          </Built>
+          <Built className="mt-3">
             <h1 className={PAGE_TITLE_CLASS}>{guide.title}</h1>
           </Built>
           <Built className="mt-5">
@@ -89,7 +97,10 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
           <Built className="mt-4">
             {/* Mono, because it is a measurement of the page rather than a
                 sentence we wrote about it. */}
-            <p className="text-faint text-micro font-mono">{guide.minutes} minute read</p>
+            <p className="text-faint text-micro font-mono">
+              {guide.minutes} minute read · Updated{" "}
+              <time dateTime={guide.updated}>{formatContentDate(guide.updated)}</time>
+            </p>
           </Built>
         </PageHeader>
 
@@ -102,6 +113,28 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
               ))}
             </section>
           ))}
+
+          <RelatedLinks
+            stacked
+            groups={[
+              {
+                title: "Examples that show it",
+                items: examplesForGuide(guide).map((example) => ({
+                  href: `/examples/${example.slug}`,
+                  label: `${example.role} resume example`,
+                  detail: example.summary,
+                })),
+              },
+              {
+                title: "Other guides",
+                items: otherGuides(guide).map((other) => ({
+                  href: `/guides/${other.slug}`,
+                  label: other.title,
+                  detail: other.summary,
+                })),
+              },
+            ]}
+          />
 
           <section className="border-line flex flex-wrap items-center gap-x-6 gap-y-4 border-t pt-8">
             {/* `MotionProvider` because `CtaLink` is an `m.*` component and

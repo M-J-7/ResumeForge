@@ -52,11 +52,19 @@ export interface RoleExample {
   /** Three or four observations about this specific resume. */
   readonly notes: readonly { readonly title: string; readonly body: string }[];
   readonly resume: ResumeDocument;
+  /**
+   * When what this page says last changed, as YYYY-MM-DD. It is the sitemap's
+   * `lastmod`, the Article's `dateModified` and the "Updated" line on the
+   * page. `content-dates.test.ts` pins a hash of the content beside it, so the
+   * content cannot change without somebody deciding what this should say.
+   */
+  readonly updated: string;
 }
 
 export const ROLE_EXAMPLES: readonly RoleExample[] = [
   {
     slug: "software-developer",
+    updated: "2026-09-10",
     role: "Software Developer",
     occupationTitle: "Software Developers",
     field: "Technology",
@@ -140,6 +148,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "registered-nurse",
+    updated: "2026-09-10",
     role: "Registered Nurse",
     occupationTitle: "Registered Nurses",
     field: "Healthcare",
@@ -221,6 +230,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "accountant",
+    updated: "2026-09-10",
     role: "Accountant",
     occupationTitle: "Accountants and Auditors",
     field: "Finance",
@@ -304,6 +314,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "data-analyst",
+    updated: "2026-09-10",
     role: "Data Analyst",
     occupationTitle: "Data Scientists",
     field: "Technology",
@@ -392,6 +403,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "project-manager",
+    updated: "2026-09-10",
     role: "Project Manager",
     occupationTitle: "Project Management Specialists",
     field: "Operations",
@@ -471,6 +483,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "teacher",
+    updated: "2026-09-10",
     role: "Teacher",
     occupationTitle: "Secondary School Teachers, Except Special and Career/Technical Education",
     field: "Education",
@@ -561,6 +574,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "sales-representative",
+    updated: "2026-09-10",
     role: "Sales Representative",
     occupationTitle:
       "Sales Representatives, Wholesale and Manufacturing, Except Technical and Scientific Products",
@@ -642,6 +656,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "graduate-no-experience",
+    updated: "2026-09-10",
     role: "Graduate with no work experience",
     occupationTitle: "Software Developers",
     field: "Early career",
@@ -744,6 +759,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "customer-service-representative",
+    updated: "2026-09-10",
     role: "Customer Service Representative",
     occupationTitle: "Customer Service Representatives",
     field: "Operations",
@@ -830,6 +846,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "administrative-assistant",
+    updated: "2026-09-10",
     role: "Administrative Assistant",
     occupationTitle: "Secretaries and Administrative Assistants",
     field: "Operations",
@@ -912,6 +929,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "marketing-manager",
+    updated: "2026-09-10",
     role: "Marketing Manager",
     occupationTitle: "Marketing Managers",
     field: "Marketing",
@@ -989,6 +1007,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "human-resources-manager",
+    updated: "2026-09-10",
     role: "Human Resources Manager",
     occupationTitle: "Human Resources Managers",
     field: "Operations",
@@ -1071,6 +1090,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "financial-analyst",
+    updated: "2026-09-10",
     role: "Financial Analyst",
     occupationTitle: "Financial and Investment Analysts",
     field: "Finance",
@@ -1152,6 +1172,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "mechanical-engineer",
+    updated: "2026-09-10",
     role: "Mechanical Engineer",
     occupationTitle: "Mechanical Engineers",
     field: "Engineering",
@@ -1234,6 +1255,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "graphic-designer",
+    updated: "2026-09-10",
     role: "Graphic Designer",
     occupationTitle: "Graphic Designers",
     field: "Creative",
@@ -1322,6 +1344,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "retail-store-manager",
+    updated: "2026-09-10",
     role: "Retail Store Manager",
     occupationTitle: "First-Line Supervisors of Retail Sales Workers",
     field: "Operations",

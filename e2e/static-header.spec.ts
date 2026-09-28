@@ -136,8 +136,11 @@ test("a signed-in reader sees their account on a content page, and the purge run
   const theirs = `resume-draft::${ada.id}`;
   const someoneElses = "resume-draft::somebody-who-used-this-computer-before";
 
-  // Seed as a guest first, so the slots exist before anybody is signed in.
-  await page.goto("/terms");
+  // Seed from a same-origin URL that runs none of the app's JavaScript. Seeding
+  // on a page would race that page's own guest purge — which, correctly,
+  // deletes every slot that is not a guest's, and under load ran *after* the
+  // seed and took both slots with it.
+  await page.goto("/api/health");
   await seedSlots(page, [theirs, someoneElses]);
 
   await signInAs(context, ada.token);

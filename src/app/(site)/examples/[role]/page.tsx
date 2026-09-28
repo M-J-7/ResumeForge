@@ -42,6 +42,10 @@ import { breadcrumbJsonLd, roleExampleJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
 import { phrasesForTitle } from "@/lib/phrases/lookup";
 import { renderText } from "@/lib/emit/text/render";
+import { guidesForExample, relatedExamples } from "@/lib/related";
+import { formatContentDate } from "@/lib/content-dates";
+import { Breadcrumbs } from "@/components/marketing/Breadcrumbs";
+import { RelatedLinks } from "@/components/marketing/RelatedLinks";
 
 export function generateStaticParams() {
   return EXAMPLE_SLUGS.map((role) => ({ role }));
@@ -79,6 +83,12 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
   // browser: the scaffolds are page content, so they have to be in the HTML.
   const phrases = await phrasesForTitle(example.occupationTitle);
   const plainText = renderText(example.resume);
+  // One list for the visible trail and the JSON-LD, so a search result and the
+  // page cannot describe the page's place differently.
+  const trail = [
+    { name: "Examples", path: "/examples" },
+    { name: `${example.role} resume example`, path: `/examples/${example.slug}` },
+  ];
 
   return (
     <>
@@ -88,12 +98,7 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
         is what makes the result read as part of a gallery.
       */}
       <JsonLdScript data={roleExampleJsonLd(example)} />
-      <JsonLdScript
-        data={breadcrumbJsonLd([
-          { name: "Examples", path: "/examples" },
-          { name: `${example.role} resume example`, path: `/examples/${example.slug}` },
-        ])}
-      />
+      <JsonLdScript data={breadcrumbJsonLd(trail)} />
       {/*
         Brought onto the system with `/guides/[slug]` — both hand-rolled a
         heading row, a `bg-accent` anchor and an underlined link where the rest
@@ -106,11 +111,10 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <PageHeader stage containerClassName="max-w-5xl">
           <Built>
-            {/* A grouping key rather than an eyebrow: it says which index this
-                page belongs to, which the heading below does not. */}
-            <p className="text-faint text-small font-semibold tracking-wide uppercase">
-              {example.field}
-            </p>
+            {/* Which index this page belongs to, which the heading below does
+                not say — and now a way back to it, where the grouping key it
+                replaced was only a label. The field is in "Keep reading". */}
+            <Breadcrumbs trail={trail} />
           </Built>
           <Built className="mt-3">
             <h1 className={PAGE_TITLE_CLASS}>{example.role} resume example</h1>
@@ -122,6 +126,12 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
             <p className="text-faint text-small max-w-measure leading-relaxed">
               Invented for this page. The name, the employers and every number in it are made up
               &mdash; a real resume is somebody&rsquo;s personal data and is not ours to publish.
+            </p>
+          </Built>
+          <Built className="mt-3">
+            {/* Mono, like a guide's reading time: a fact about the page. */}
+            <p className="text-faint text-micro font-mono">
+              Updated <time dateTime={example.updated}>{formatContentDate(example.updated)}</time>
             </p>
           </Built>
         </PageHeader>
@@ -201,6 +211,27 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
               {plainText}
             </pre>
           </section>
+
+          <RelatedLinks
+            groups={[
+              {
+                title: "More examples",
+                items: relatedExamples(example).map((related) => ({
+                  href: `/examples/${related.slug}`,
+                  label: `${related.role} resume example`,
+                  detail: related.summary,
+                })),
+              },
+              {
+                title: "Guides that apply",
+                items: guidesForExample(example).map((guide) => ({
+                  href: `/guides/${guide.slug}`,
+                  label: guide.title,
+                  detail: guide.summary,
+                })),
+              },
+            ]}
+          />
 
           <section className="border-line flex flex-wrap items-center gap-x-6 gap-y-4 border-t pt-8">
             {/* `MotionProvider` because `CtaLink` is an `m.*` component and

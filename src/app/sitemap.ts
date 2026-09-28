@@ -10,8 +10,9 @@
 
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site";
-import { EXAMPLE_SLUGS } from "@/lib/examples/roles";
-import { GUIDE_SLUGS } from "@/lib/guides/guides";
+import { ROLE_EXAMPLES } from "@/lib/examples/roles";
+import { GUIDES } from "@/lib/guides/guides";
+import { latestUpdate } from "@/lib/content-dates";
 
 /**
  * Evaluated per request, not at build time.
@@ -46,15 +47,33 @@ export default function sitemap(): MetadataRoute.Sitemap {
      * sitemap is that it silently stops listing the newest pages, which are
      * exactly the ones that need discovering.
      */
-    { url: siteUrl("/examples"), changeFrequency: "monthly", priority: 0.8 },
-    ...EXAMPLE_SLUGS.map((slug) => ({
-      url: siteUrl(`/examples/${slug}`),
+    //
+    // `lastModified` only where it is known to be true: each example and
+    // guide carries the date its content last changed, held to the content by
+    // `content-dates.test.ts`, and an index changes when its newest entry
+    // does. The other pages leave it out — a guessed date is worse than none,
+    // because a crawler that catches a site's dates being wrong stops using them.
+    {
+      url: siteUrl("/examples"),
+      lastModified: latestUpdate(ROLE_EXAMPLES),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    ...ROLE_EXAMPLES.map((example) => ({
+      url: siteUrl(`/examples/${example.slug}`),
+      lastModified: example.updated,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
-    { url: siteUrl("/guides"), changeFrequency: "monthly", priority: 0.8 },
-    ...GUIDE_SLUGS.map((slug) => ({
-      url: siteUrl(`/guides/${slug}`),
+    {
+      url: siteUrl("/guides"),
+      lastModified: latestUpdate(GUIDES),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    ...GUIDES.map((guide) => ({
+      url: siteUrl(`/guides/${guide.slug}`),
+      lastModified: guide.updated,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),

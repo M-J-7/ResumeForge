@@ -202,6 +202,9 @@ export function guideArticleJsonLd(guide: Guide): JsonLd {
     publisher: publisher(),
     // Roughly, and the page says the same number to the reader.
     timeRequired: `PT${guide.minutes}M`,
+    // The date the page shows as "Updated". No `datePublished`: when each
+    // guide was first written is not recorded, and a guess would be a claim.
+    dateModified: guide.updated,
   };
 }
 
@@ -306,5 +309,6 @@ export function roleExampleJsonLd(example: RoleExample): JsonLd {
     mainEntityOfPage: siteUrl(`/examples/${example.slug}`),
     publisher: publisher(),
     about: example.occupationTitle,
+    dateModified: example.updated,
   };
 }
