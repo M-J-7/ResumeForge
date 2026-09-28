@@ -22,16 +22,25 @@
  */
 
 import type { Metadata } from "next";
+import { appPageMetadata } from "@/lib/seo";
 import { getSessionUser } from "@/server/auth/session";
 import { listResumes } from "@/server/resumes";
 import { listJobTargets } from "@/server/job-targets";
 import { loadCoverLetter } from "@/server/cover-letters";
 import { LetterEditor, type InitialLetter } from "@/components/letters/LetterEditor";
 
-export const metadata: Metadata = {
+/*
+ * `noindex` with a static canonical: this is one editor serving `/letters/new`
+ * and `/letters/<id>`, and pointing every letter at the same URL is correct
+ * only because none of them should be in the index at all. The alternative —
+ * inheriting the root's `canonical: "/"` — was telling a crawler that a
+ * private draft was the home page.
+ */
+export const metadata: Metadata = appPageMetadata({
   title: "Cover letter",
   description: "A cover letter assembled from your own resume. Nothing invented, all editable.",
-};
+  path: "/letters",
+});
 
 /** Reads the session and possibly the database; nothing here is prerenderable. */
 export const dynamic = "force-dynamic";
@@ -52,7 +61,7 @@ export default async function LetterPage({ params, searchParams }: PageProps<"/l
 
   if (!user) {
     return (
-      <main className="flex min-h-0 flex-1 flex-col">
+      <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col">
         <LetterEditor
           signedIn={false}
           letterId={id === "new" ? null : id}
@@ -63,10 +72,7 @@ export default async function LetterPage({ params, searchParams }: PageProps<"/l
     );
   }
 
-  const [resumes, jobTargets] = await Promise.all([
-    listResumes(user.id),
-    listJobTargets(user.id),
-  ]);
+  const [resumes, jobTargets] = await Promise.all([listResumes(user.id), listJobTargets(user.id)]);
 
   let initial: InitialLetter | null = null;
   if (id !== "new") {
@@ -89,7 +95,7 @@ export default async function LetterPage({ params, searchParams }: PageProps<"/l
   }
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col">
+    <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col">
       <LetterEditor
         signedIn
         letterId={id === "new" ? null : id}

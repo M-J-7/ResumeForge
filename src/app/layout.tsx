@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { AppHeader } from "@/components/shell/AppHeader";
@@ -16,25 +16,32 @@ const geistMono = Geist_Mono({
 });
 
 /**
- * The display face, and the only new family the redesign adds.
+ * The display face.
  *
- * `axes` is what makes it worth choosing at all. By default `next/font` ships
- * the weight axis alone to keep the file small; `SOFT` and `WONK` are what
- * separate Fraunces from the high-contrast display serif on every other
- * landing page this year, and `globals.css` dials them in `.font-display`.
- * Without them this is an expensive way to get a generic serif.
+ * Fraunces was here: a three-axis variable serif dialled soft and wonky. It
+ * was a good choice for a page whose job was to read warm, and the redesign
+ * changed that job. On a near-black stage the display type is the loudest
+ * thing on the screen after the paper, and warmth is not what a 84px headline
+ * over a machine readout should be doing — contrast is.
  *
- * `opsz` lets one file serve 68px and 32px without the large sizes looking
- * loose — `font-optical-sizing: auto` does the rest.
+ * Instrument Serif is high-contrast, tight, and nearly absent from this
+ * category, which is a row of geometric sans and violet gradients. It ships a
+ * single 400 and an italic, which is a real constraint and the reason
+ * `globals.css` restricts it to Display 1 and 2 and sets
+ * `font-synthesis-weight: none` — one weight cannot be asked to hold a 24px
+ * section head, and a browser asked anyway will smear it.
+ *
+ * The payload goes **down**: one static face replaces three variable axes.
  *
  * Loaded here because the CSP is `font-src 'self' data:`: `next/font`
  * self-hosts at build time, where a `<link>` to Google's CDN would be blocked
  * in production and work perfectly in development.
  */
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
   subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
+  weight: "400",
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -61,7 +68,16 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     url: "/",
   },
-  twitter: { card: "summary", title: SITE_NAME, description: SITE_DESCRIPTION },
+  /**
+   * `summary_large_image`, because there is a large image to show.
+   *
+   * `src/app/opengraph-image.tsx` draws a 1200x630 card and file-based
+   * metadata outranks anything this object says, so the image was already on
+   * every route — and `card: "summary"` was asking every scraper that honours
+   * it to crop the card down to a small square thumbnail beside the text. The
+   * asset was being drawn and then thrown away.
+   */
+  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESCRIPTION },
   /**
    * No `format-detection` for telephone numbers: iOS Safari otherwise turns
    * anything that looks like a phone number into a link, and a resume preview
@@ -79,7 +95,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
     >
       <head>
         {/*

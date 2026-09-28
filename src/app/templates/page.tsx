@@ -15,9 +15,20 @@
  * asset to fall out of date. See `components/templates/TemplateThumbnail.tsx`.
  *
  * The renders are client-side, always: **never render a resume server-side**
- * (D2, landmine 7's neighbour). Twelve of them per request would be worse
+ * (D2, landmine 7's neighbour). Two dozen of them per request would be worse
  * still. The page's own text is server-rendered and needs no JavaScript,
  * which is what a crawler reads.
+ *
+ * ## Three groups, not one wall
+ *
+ * At twelve templates a single grid was the page. At twenty-four it needed
+ * an argument for why a visitor should scroll past the first row, and the
+ * honest one is that the later rows are not more of the same: they are
+ * shaped by *where* you are applying and *what* you do. Those are the two
+ * axes on which real hiring conventions differ — Letter paper and one page
+ * in North America, A4 and two in the UK, a licence read before a job
+ * history in nursing — and they are the parts of a convention this engine
+ * can express without inventing a second layout path.
  */
 
 import type { Metadata } from "next";
@@ -25,18 +36,22 @@ import Link from "next/link";
 import { PublicTemplateGallery } from "@/components/templates/PublicTemplateGallery";
 import { AppFooter } from "@/components/shell/AppFooter";
 import { Built } from "@/components/marketing/Build";
-import { PageHeader, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
-import { TEMPLATES } from "@/lib/resume/templates";
+import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
+import { TEMPLATES, TEMPLATE_COUNT } from "@/lib/resume/templates";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { itemListJsonLd } from "@/lib/structured-data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Resume templates",
+export const metadata: Metadata = pageMetadata({
+  title: "Free resume templates",
+  // Under 160: a description that runs past it is truncated mid-sentence in
+  // the result, and the half that gets cut is always the half with the offer
+  // in it. This one ends on the word that matters.
   description:
-    "Twelve free resume templates. Every one is single-column, real text, with standard section " +
-    "headings — the structure that reads most reliably. Download as PDF, DOCX or plain text.",
-  alternates: { canonical: "/templates" },
-};
+    `${TEMPLATE_COUNT} free resume templates for the US, UK, Europe, Australia and India — ` +
+    "each a single column of real text with standard headings. No watermark, no account.",
+  path: "/templates",
+});
 
 /** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
 export const dynamic = "force-dynamic";
@@ -57,56 +72,66 @@ export default function TemplatesPage() {
           })),
         )}
       />
-      <main className="flex flex-1 flex-col">
+      {/*
+        A dark stage throughout, rather than a dark band over a light body.
+        This page is two dozen renders of white paper, and on near-black they
+        stop being thumbnails and become what they are — lit documents on a
+        workbench. `data-stage` here also carries onto `<body>` and the
+        sticky header, through the `:has()` half of the scope in `globals.css`.
+      */}
+      <main id="main-content" tabIndex={-1} data-stage="dark" className="flex flex-1 flex-col">
         <PageHeader containerClassName="max-w-6xl">
           <Built>
             <h1 className={PAGE_TITLE_CLASS}>Resume templates</h1>
           </Built>
           <Built className="mt-5">
-            <p className="text-muted max-w-prose text-sm leading-relaxed">
-              Twelve starting points. They differ in typeface, in where the header sits, in how
-              section headings are set, and in what order the sections come in.
+            <p className={PAGE_LEAD_CLASS}>
+              {TEMPLATE_COUNT} starting points, in three groups: ones to pick on looks, ones shaped
+              by where in the world you are applying, and ones shaped by the field you are in.
             </p>
           </Built>
           <Built className="mt-3">
-            <p className="text-muted max-w-prose text-sm leading-relaxed">
+            <p className="text-muted text-small max-w-measure leading-relaxed">
               They do not differ in structure. Every one is a single column of real text with
               standard section headings, because that is the arrangement software reads most
               reliably — and a template that looked more interesting by putting your job titles in a
-              table would read worse for the only audience that matters first. Pick on how it looks
-              to a person; the machine sees the same document either way.
+              table would read worse for the only audience that matters first. What changes between
+              them is the typeface, the paper size, how much fits, and the order a person meets your
+              sections in.
             </p>
           </Built>
         </PageHeader>
 
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-6 py-12">
+        <div className="py-band-tight mx-auto flex w-full max-w-6xl flex-col gap-8 px-6">
           {/*
-          The list below is server-rendered and present without JavaScript,
-          so a crawler reads all twelve names and descriptions even though the
-          thumbnails above need a browser to draw. It is visually hidden
-          rather than duplicated on screen.
-        */}
-          <ul className="sr-only">
-            {TEMPLATES.map((template) => (
-              <li key={template.id}>
-                <h2>{template.name}</h2>
-                <p>{template.forWho}</p>
-              </li>
-            ))}
-          </ul>
+            There used to be an `sr-only` <ul> here repeating every name and
+            description, on the theory that the gallery needed a text-only
+            twin for crawlers. It did not, and the fetched HTML says so:
+            `TemplateGallery` is a client component, so React renders it on
+            the server anyway, and every name, `forWho` line and card
+            `aria-label` is already in the response with JavaScript disabled.
+            `e2e/templates.spec.ts` asserts exactly that, against the real
+            markup rather than against a shadow copy of it.
 
+            Grouping is what made the duplication actually harmful rather
+            than merely wasteful. Each of those entries was an <h2>, so the
+            heading outline opened with two dozen bare template names and
+            only then reached "General purpose" — a screen-reader user
+            skimming by heading met the whole gallery twice, once with no
+            context at all, before any of it was explained.
+          */}
           <PublicTemplateGallery />
 
-          <section className="border-line flex max-w-prose flex-col gap-3 border-t pt-8">
-            <h2 className="font-display text-text text-2xl font-semibold tracking-tight">
+          <section className="border-line max-w-read flex flex-col gap-3 border-t pt-8">
+            <h2 className="text-text text-display-3 font-semibold">
               What a template does not change
             </h2>
-            <p className="text-muted text-sm leading-relaxed">
+            <p className="text-muted text-body leading-relaxed">
               Your downloads. PDF, Word and plain text are free on every template, permanently, with
               or without an account — there is no version of this where picking the good-looking one
               costs money.
             </p>
-            <p className="text-muted text-sm leading-relaxed">
+            <p className="text-muted text-body leading-relaxed">
               And it does not change what a parser reads. You can check that yourself rather than
               take our word for it:{" "}
               <Link href="/check" className="text-accent rule-grow rounded-sm">
@@ -114,7 +139,7 @@ export default function TemplatesPage() {
               </Link>{" "}
               and see the text a machine gets out of it.
             </p>
-            <p className="text-muted text-sm">
+            <p className="text-muted text-body">
               <Link href="/builder" className="text-accent rule-grow rounded-sm">
                 Start building
               </Link>

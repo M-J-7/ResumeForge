@@ -24,6 +24,8 @@
     "test:e2e": "playwright test",
     "qa:enhance": "playwright test --config playwright.measure.config.ts",
     "qa:enhance:report": "node scripts/qa-enhance-report.mjs",
+    "qa:sweep": "node scripts/qa-sweep.mjs",
+    "qa:budget": "node scripts/qa-budget.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",

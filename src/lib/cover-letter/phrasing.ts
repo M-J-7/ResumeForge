@@ -2,7 +2,10 @@
  * The phrase bank (P28-I3).
  *
  * Every string a composed letter contains that the user did not write
- * themselves is in this file. That is the whole point of it existing:
+ * themselves is in this file — with one exception, added 2026-09-10: the
+ * single requirement line quoted from the posting, which is the employer's
+ * own text and arrives at `REQUIREMENT_ECHO` as a value. That is the whole
+ * point of this file existing:
  * **D8 — no LLM, ever.** The composer assembles a letter from the user's own
  * resume text plus connective tissue from here, and "is anything invented?"
  * is answerable by reading one file.
@@ -158,6 +161,101 @@ export const OPENING_ANGLE: Record<
 };
 
 /**
+ * The opening sentence for a job title the ordinary frame cannot wrap.
+ *
+ * "the {role} role" is fine for "Marketing Manager" and broken for "Second in
+ * Department, Mathematics" — which produced, in a real measured letter, "I am
+ * writing about the Second in Department, Mathematics role at Ashfield
+ * Academy." A title carrying a comma, a slash, a bracket, or the word "role"
+ * is not a noun that can sit inside another noun phrase, so it gets a frame
+ * that puts it in apposition instead.
+ *
+ * `formal` already reads "the position of {role}" and needs no variant; it is
+ * repeated here so the lookup is total.
+ */
+export const OPENING_LEAD_COMPLEX_TITLE: Record<Tone, { full: string; withoutCompany: string }> = {
+  direct: {
+    full: "I am writing about the position of {role} at {company}.",
+    withoutCompany: "I am writing about the position of {role}.",
+  },
+  warm: {
+    full: "I am writing about the position of {role} at {company}.",
+    withoutCompany: "I am writing about the position of {role}.",
+  },
+  formal: {
+    full: "I am writing to apply for the position of {role} at {company}.",
+    withoutCompany: "I am writing to apply for the position of {role}.",
+  },
+};
+
+/**
+ * The second clause when the applicant already holds the title applied for.
+ *
+ * `OPENING_ANGLE` names the title again, which is right when it differs from
+ * the one in the first sentence and absurd when it does not:
+ *
+ * > "I am writing about the Financial Accountant role at Harbour & Vale. I am
+ * > currently Financial Accountant at Ardmore Manufacturing; the work below is
+ * > what I have to show for it."
+ *
+ * Both sentences of that are real output. These say the same thing without
+ * making the reader read the title twice in twenty words — and they still name
+ * the employer, which is the part carrying information.
+ */
+export const OPENING_ANGLE_SAME_TITLE: Record<
+  Angle,
+  Record<Tone, { full: string; withoutOrganization: string }>
+> = {
+  impact: {
+    direct: {
+      full: "I hold that title now at {organization}; the work below is what I have to show for it.",
+      withoutOrganization: "I hold that title now; the work below is what I have to show for it.",
+    },
+    warm: {
+      full: "I hold that title now at {organization}, and the work below is what has come of it.",
+      withoutOrganization: "I hold that title now, and the work below is what has come of it.",
+    },
+    formal: {
+      full: "I currently hold that same position at {organization}. The work described below reflects that experience.",
+      withoutOrganization:
+        "I currently hold that same position. The work described below reflects that experience.",
+    },
+  },
+  domain: {
+    direct: {
+      full: "I am doing that work now at {organization}, in the same field this role sits in.",
+      withoutOrganization: "I am doing that work now, in the same field this role sits in.",
+    },
+    warm: {
+      full: "I am doing that work now at {organization}, which sits in the same field as this role.",
+      withoutOrganization: "I am doing that work now, which sits in the same field as this role.",
+    },
+    formal: {
+      full: "I currently hold that same position at {organization}, within the field to which this role belongs.",
+      withoutOrganization:
+        "I currently hold that same position, within the field to which this role belongs.",
+    },
+  },
+  craft: {
+    direct: {
+      full: "I hold that title now at {organization}. How the work gets done is the part I care about.",
+      withoutOrganization:
+        "I hold that title now. How the work gets done is the part I care about.",
+    },
+    warm: {
+      full: "I hold that title now at {organization}, and how the work gets done is what I pay attention to.",
+      withoutOrganization:
+        "I hold that title now, and how the work gets done is what I pay attention to.",
+    },
+    formal: {
+      full: "I currently hold that same position at {organization}, where my focus is the practice of the work itself.",
+      withoutOrganization:
+        "I currently hold that same position, where my focus is the practice of the work itself.",
+    },
+  },
+};
+
+/**
  * Used when the resume has no experience entries to name.
  *
  * A gap left visible rather than filled. Composing against an empty resume
@@ -184,52 +282,129 @@ export const SALUTATION_WITH_NAME = "Dear {name},";
 /* -------------------------------------------------------------------------- */
 
 /**
- * The frame around a resume bullet.
+ * The frames around a resume bullet, keyed by the bullet's grammatical form.
  *
  * `{bullet}` is inserted **verbatim**, with at most its first character
- * lowercased — a transformation documented in `compose.ts` and asserted by a
+ * lowercased — a transformation documented in `bullet-case.ts` and asserted by a
  * test that searches the source resume for every sentence produced here.
  *
- * `atOrganization` is used when the bullet's entry names an employer, so the
- * claim stays attached to where it happened. `bare` is the fallback.
- * `colonForm` handles a bullet that does not begin with a word the lowercase
- * rule can safely touch — a number, an acronym, a proper noun — where
- * "At Acme, I 40 services…" would be gibberish.
+ * ## Why there is a frame per form
+ *
+ * There used to be three frames chosen by a *casing* test, and the result was
+ * "At Acme, I responsible for the regional ledger" — because "does this start
+ * with a capital letter?" is not the same question as "is this a verb?". The
+ * frames below answer the second question, and `classifyBulletForm` picks
+ * between them. Nothing here rewrites the bullet; a bullet that will not fit
+ * one frame is given another.
+ *
+ * `labelled` is the fallback and takes anything at all — a noun phrase, an
+ * acronym, a number — because a colon is well-formed in front of any fragment.
+ * Every unrecognised shape lands here, which is why a misclassification costs
+ * a flat sentence rather than a broken one.
  */
-export const EVIDENCE_FRAME: Record<
-  Tone,
-  { atOrganization: string; bare: string; colonForm: string }
-> = {
+export interface EvidenceFrameSet {
+  /** "Cut deploy time…" → "At Acme, I cut deploy time…" */
+  pastVerb: { withOrganization: string; bare: string };
+  /** "Responsible for…" → "At Acme, I was responsible for…" */
+  dutyPhrase: { withOrganization: string; bare: string };
+  /** "Managing a team…" → "At Acme, my work included managing a team…" */
+  gerund: { withOrganization: string; bare: string };
+  /** "My team shipped…" → "At Acme, my team shipped…" (no "I") */
+  ownSubject: { withOrganization: string; bare: string };
+  /** Anything else — a noun phrase, an acronym, a digit. */
+  labelled: { withOrganization: string; bare: string };
+}
+
+export const EVIDENCE_FRAME: Record<Tone, EvidenceFrameSet> = {
   direct: {
-    atOrganization: "At {organization}, I {bullet}",
-    bare: "I {bullet}",
-    colonForm: "At {organization}: {bullet}",
+    pastVerb: { withOrganization: "At {organization}, I {bullet}", bare: "I {bullet}" },
+    dutyPhrase: { withOrganization: "At {organization}, I was {bullet}", bare: "I was {bullet}" },
+    gerund: {
+      withOrganization: "At {organization}, my work included {bullet}",
+      bare: "My work has included {bullet}",
+    },
+    ownSubject: { withOrganization: "At {organization}, {bullet}", bare: "{bullet}" },
+    labelled: { withOrganization: "At {organization}: {bullet}", bare: "{bullet}" },
   },
   warm: {
-    atOrganization: "At {organization}, I {bullet}",
-    bare: "I {bullet}",
-    colonForm: "At {organization}: {bullet}",
+    pastVerb: { withOrganization: "At {organization}, I {bullet}", bare: "I {bullet}" },
+    dutyPhrase: { withOrganization: "At {organization}, I was {bullet}", bare: "I was {bullet}" },
+    gerund: {
+      withOrganization: "At {organization}, my work included {bullet}",
+      bare: "My work has included {bullet}",
+    },
+    ownSubject: { withOrganization: "At {organization}, {bullet}", bare: "{bullet}" },
+    labelled: { withOrganization: "At {organization}: {bullet}", bare: "{bullet}" },
   },
   formal: {
-    atOrganization: "During my time at {organization}, I {bullet}",
-    bare: "I {bullet}",
-    colonForm: "During my time at {organization}: {bullet}",
+    pastVerb: {
+      withOrganization: "During my time at {organization}, I {bullet}",
+      bare: "I {bullet}",
+    },
+    dutyPhrase: {
+      withOrganization: "During my time at {organization}, I was {bullet}",
+      bare: "I was {bullet}",
+    },
+    gerund: {
+      withOrganization: "During my time at {organization}, my work included {bullet}",
+      bare: "My work has included {bullet}",
+    },
+    ownSubject: {
+      withOrganization: "During my time at {organization}, {bullet}",
+      bare: "{bullet}",
+    },
+    labelled: { withOrganization: "During my time at {organization}: {bullet}", bare: "{bullet}" },
   },
 };
 
 /**
- * Joins the second piece of evidence to the first.
+ * Joins one piece of evidence to the next, asserting nothing about time.
  *
- * A fixed list indexed by position, never chosen at random — the composer is
+ * These used to lead with "More recently, " — applied **by position** to a
+ * list sorted by **relevance**. The second sentence therefore always claimed a
+ * chronology the composer had not checked, and claimed it even between two
+ * bullets from the same job, which cannot have a chronology between them at
+ * all. A letter that invents a fact about the candidate's own history is
+ * exactly what this module exists not to do, however small the fact.
+ *
+ * So the default connectives are now neutral. "More recently" still exists —
+ * see `EVIDENCE_CONNECTOR_MORE_RECENT` — but only where it can be shown true.
+ *
+ * A fixed list indexed by position, never chosen at random: the composer is
  * pure, and a random connective would make the same inputs produce different
- * letters. Index 0 is used for the second sentence, index 1 for a third, and
- * so on; the list is longer than the composer currently needs so adding a
- * fourth evidence sentence later does not require touching this file.
+ * letters.
  */
 export const EVIDENCE_CONNECTORS: Record<Tone, readonly string[]> = {
-  direct: ["More recently, ", "Separately, ", "Also, "],
-  warm: ["More recently, ", "Alongside that, ", "And ", "Separately, "],
-  formal: ["Furthermore, ", "In addition, ", "Likewise, "],
+  direct: ["Separately, ", "Also, ", "Elsewhere, "],
+  warm: ["Alongside that, ", "Separately, ", "And ", "Also, "],
+  formal: ["In addition, ", "Furthermore, ", "Likewise, "],
+};
+
+/**
+ * Joins two bullets that came from the *same* entry.
+ *
+ * "More recently" and "Separately" both misdescribe two achievements in one
+ * job: the first invents a sequence, the second implies they were unrelated.
+ * Two bullets from one role are one story, and these say so.
+ */
+export const EVIDENCE_CONNECTORS_SAME_ENTRY: Record<Tone, readonly string[]> = {
+  direct: ["In the same role, ", "Also there, "],
+  warm: ["In the same role, ", "While I was there, "],
+  formal: ["In the same position, ", "Additionally, in that role, "],
+};
+
+/**
+ * The one chronological connective, used only where the order is known.
+ *
+ * Experience entries are stored reverse-chronologically — the builder's
+ * Experience step says so and the resume reader sees it — so one bullet is
+ * genuinely more recent than another exactly when its entry sits earlier in
+ * the document. `buildEvidence` checks that before reaching for this.
+ */
+export const EVIDENCE_CONNECTOR_MORE_RECENT: Record<Tone, string> = {
+  direct: "More recently, ",
+  warm: "More recently, ",
+  formal: "More recently, ",
 };
 
 /**
@@ -327,6 +502,64 @@ export function diagnosticSkillsListOnly(skills: readonly string[]): string {
 /* -------------------------------------------------------------------------- */
 /* Alignment                                                                   */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * Quotes the posting's own words back to the employer.
+ *
+ * ## Why this is allowed, when nothing else from the posting is
+ *
+ * The rule this product holds to is that the letter may make no claim the
+ * candidate has not made. A line lifted from the posting is not a claim about
+ * the candidate at all — it is the employer's own sentence, returned to the
+ * person who wrote it. Nothing is invented, and the reader is the one witness
+ * who can check it instantly.
+ *
+ * It earns its place because it is what makes the next sentence an *argument*
+ * rather than a list: "you asked for this, and here it is" reads as a reply,
+ * where "your posting asks for Kubernetes, Terraform and Go" reads as a
+ * checklist generated from a form.
+ *
+ * ## Why the quotation marks are load-bearing
+ *
+ * They do two jobs at once. They mark the words as the employer's rather than
+ * the candidate's, which is the honesty guarantee. And they make the sentence
+ * well-formed whatever the quoted fragment turns out to be — a bullet, a
+ * sentence fragment, a clause with no verb — which is the grammar guarantee.
+ * Splicing an unknown fragment into a frame *without* quotation marks is the
+ * exact mistake that produced "At Acme, I responsible for the regional
+ * ledger", and it is not one worth making twice.
+ *
+ * `composeAlignment` sanitises the line before it reaches here and drops the
+ * sentence entirely if it will not clean up — a mangled quote is worse than
+ * no quote.
+ */
+export const REQUIREMENT_ECHO: Record<Tone, string> = {
+  direct: "You put it plainly: \u201c{quote}\u201d.",
+  warm: "You put it plainly: \u201c{quote}\u201d.",
+  formal: "The posting states the requirement directly: \u201c{quote}\u201d.",
+};
+
+/**
+ * The demonstrated sentence when `REQUIREMENT_ECHO` already said "your posting".
+ *
+ * `ALIGNMENT_FRAME` opens "Your posting asks for …", which reads as a second
+ * throat-clear immediately after the quote. These carry the same claim —
+ * nothing weaker, nothing stronger — and simply do not repeat the subject.
+ */
+export const ALIGNMENT_AFTER_ECHO: Record<Tone, { one: string; many: string }> = {
+  direct: {
+    one: "{skills} is in the work above.",
+    many: "{skills} are all in the work above.",
+  },
+  warm: {
+    one: "{skills} is what the work above is made of.",
+    many: "{skills} are what the work above is made of.",
+  },
+  formal: {
+    one: "{skills} is addressed by the experience described above.",
+    many: "{skills} are each addressed by the experience described above.",
+  },
+};
 
 /**
  * Names the skills the posting asked for that the resume *demonstrates*.
@@ -427,7 +660,16 @@ export const ALIGNMENT_WITHOUT_SKILLS = "";
 /* -------------------------------------------------------------------------- */
 
 /**
- * One clean sentence.
+ * A sentence that closes, and a sentence that asks.
+ *
+ * The second half is a **call to action**, and it was missing: every guide to
+ * cover letters says the closing should ask for the next step, and ours simply
+ * stopped. "I would be glad to talk through any of it" is a statement about
+ * the writer's willingness, not a request.
+ *
+ * Still no claim about the candidate's feelings, which is the rule the whole
+ * phrase bank obeys — asking for a conversation is a request, not an assertion
+ * of enthusiasm.
  *
  * Explicitly not "I look forward to hearing from you at your earliest
  * convenience" — the phrase is filler, every reader has seen it a thousand
@@ -435,9 +677,11 @@ export const ALIGNMENT_WITHOUT_SKILLS = "";
  * rather than written.
  */
 export const CLOSING: Record<Tone, string> = {
-  direct: "I would be glad to talk through any of it.",
-  warm: "I would be happy to talk through any of this with you.",
-  formal: "I would welcome the opportunity to discuss my application further.",
+  direct:
+    "I would be glad to talk through any of it. If you would like to arrange a conversation, my details are at the top of this letter.",
+  warm: "I would be happy to talk through any of this with you. If it would help to arrange a conversation, my details are at the top of this letter.",
+  formal:
+    "I would welcome the opportunity to discuss my application further, and would be glad to make myself available for an interview.",
 };
 
 /**

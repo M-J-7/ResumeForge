@@ -31,10 +31,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // A public tool that answers a question people search for, and the only
     // page here that is worth landing on before the builder itself (P31-A4).
     { url: siteUrl("/check"), changeFrequency: "monthly", priority: 0.9 },
-    // The gallery (P32-B3). Its thumbnails need a browser to draw, but its
-    // twelve names and descriptions are server-rendered text, which is what
-    // a crawler indexes.
+    // The gallery (P32-B3). Its thumbnails need a browser to draw, but every
+    // name and description is server-rendered text, which is what a crawler
+    // indexes.
     { url: siteUrl("/templates"), changeFrequency: "monthly", priority: 0.8 },
+    // What costs money and what never will. Worth landing on cold: "is <tool>
+    // actually free" is a real query, and this is the page that answers it.
+    { url: siteUrl("/pricing"), changeFrequency: "monthly", priority: 0.8 },
 
     /*
      * The content surface (P36). Generated from the same arrays the routes

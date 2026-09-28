@@ -18,15 +18,15 @@
  *
  * ## Client-side, always
  *
- * Never render a resume server-side. Rendering twelve of them per request
+ * Never render a resume server-side. Rendering two dozen of them per request
  * would be worse still. So this mounts, renders in the browser, and caches
  * the result — keyed by the template id, since a template's appearance
  * changes only when the code does.
  *
  * ## Rendered one at a time
  *
- * Twelve concurrent `renderPdf` calls contend for one Yoga WASM instance and
- * make the gallery slower than doing them in sequence, while also spiking
+ * Two dozen concurrent `renderPdf` calls contend for one Yoga WASM instance
+ * and make the gallery slower than doing them in sequence, while also spiking
  * memory. `useTemplateThumbnails` runs them serially and paints each as it
  * arrives, so the page fills in progressively instead of stalling and then
  * appearing all at once.
@@ -37,7 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { readCachedThumbnail, writeCachedThumbnail } from "@/lib/thumbnail/cache";
 import { renderResumeThumbnail } from "@/lib/thumbnail/render";
 import type { TemplateDefinition } from "@/lib/resume/templates";
-import type { ResumeDocument } from "@/lib/resume/schema";
+import type { ResumeDocument, Settings } from "@/lib/resume/schema";
 
 /**
  * Cache key. Bumped by hand when the emitters change what a template looks
@@ -55,11 +55,11 @@ function cacheKey(templateId: string): string {
  *
  * Serial by construction — see the module docblock. The `cancelled` flag is
  * checked after every await so navigating away mid-run stops the queue
- * rather than finishing twelve renders nobody is waiting for.
+ * rather than finishing two dozen renders nobody is waiting for.
  *
  * Both arguments must be **stable references** — module constants, which is
  * what every caller passes. A fresh object literal per render would put a
- * new identity in the dependency list and restart twelve PDF renders on
+ * new identity in the dependency list and restart every PDF render on
  * every paint.
  */
 export function useTemplateThumbnails(
@@ -117,6 +117,21 @@ function orderSections(sample: ResumeDocument, template: TemplateDefinition) {
   );
 }
 
+/**
+ * The card's aspect ratio, taken from the template's own paper size.
+ *
+ * A4 is 1:1.414 and US Letter is 1:1.294 — a 9% difference, which sounds
+ * ignorable and is not. The image is `object-cover`, so a Letter render in an
+ * A4-shaped box gets its left and right edges cropped: the picture that is
+ * supposed to prove "this is the document you will get" would be quietly
+ * showing a document with its margins shaved off. Both class strings are
+ * written out in full because Tailwind scans source for literals and would
+ * not find one that was assembled at runtime.
+ */
+function aspectClass(pageSize: Settings["pageSize"]): string {
+  return pageSize === "LETTER" ? "aspect-[1/1.294]" : "aspect-[1/1.414]";
+}
+
 export function TemplateThumbnail({
   template,
   src,
@@ -126,8 +141,10 @@ export function TemplateThumbnail({
   src: string | undefined;
   className?: string;
 }) {
+  const aspect = aspectClass(template.settings.pageSize);
+
   if (!src) {
-    return <Skeleton className={className ?? "aspect-[1/1.414] w-full rounded-md"} />;
+    return <Skeleton className={className ?? `${aspect} w-full rounded-md`} />;
   }
 
   return (
@@ -135,7 +152,7 @@ export function TemplateThumbnail({
     <img
       src={src}
       alt={`The ${template.name} template, rendered as a resume page`}
-      className={className ?? "aspect-[1/1.414] w-full rounded-md object-cover object-top"}
+      className={className ?? `${aspect} w-full rounded-md object-cover object-top`}
       loading="lazy"
     />
   );

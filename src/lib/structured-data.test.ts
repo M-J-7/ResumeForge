@@ -47,11 +47,29 @@ describe("the landing page application markup", () => {
   const data = softwareApplicationJsonLd();
 
   it("declares itself free, which is the claim worth making", () => {
-    expect(data).toMatchObject({
-      "@type": "SoftwareApplication",
-      name: PRODUCT_NAME,
-      offers: { "@type": "Offer", price: "0" },
-    });
+    expect(data).toMatchObject({ "@type": "SoftwareApplication", name: PRODUCT_NAME });
+
+    const offers = data.offers as { price: string; availability: string }[];
+    const free = offers.find((offer) => offer.price === "0");
+    expect(free, "the free offer is the one claim that must never go").toBeDefined();
+    expect(free!.availability).toBe("https://schema.org/InStock");
+  });
+
+  it("does not offer for sale a thing nobody can buy", () => {
+    /*
+     * There is no billing code in this repository. `InStock` on the Pass would
+     * be markup that does not describe the page — the machine-readable version
+     * of the buy button `/pricing` deliberately does not have.
+     *
+     * When checkout ships, this test is the thing that says so out loud.
+     */
+    const offers = data.offers as { price: string; availability: string }[];
+    for (const offer of offers) {
+      if (offer.price === "0") continue;
+      expect(offer.availability, `${offer.price} is marked available to buy`).toBe(
+        "https://schema.org/PreOrder",
+      );
+    }
   });
 
   it("claims no rating and no review count (D14)", () => {

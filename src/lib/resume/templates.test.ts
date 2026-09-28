@@ -10,13 +10,21 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { TEMPLATES, DEFAULT_TEMPLATE_ID, getTemplate, matchTemplate } from "./templates";
+import {
+  TEMPLATES,
+  TEMPLATE_COUNT,
+  TEMPLATE_GROUPS,
+  DEFAULT_TEMPLATE_ID,
+  getTemplate,
+  matchTemplate,
+} from "./templates";
 import { migrate, MIGRATIONS, safeMigrate } from "./migrate";
 import {
   CURRENT_SCHEMA_VERSION,
   DEFAULT_SETTINGS,
   HEADER_STYLES,
   HEADING_STYLES,
+  PAGE_SIZES,
   resumeDocumentSchema,
   settingsSchema,
   STANDARD_SECTION_TYPES,
@@ -131,8 +139,11 @@ describe("the v1 → v2 migration", () => {
 /* -------------------------------------------------------------------------- */
 
 describe("the template presets", () => {
-  it("ships twelve", () => {
-    expect(TEMPLATES).toHaveLength(12);
+  it("ships twenty-four, and says so in one place only", () => {
+    expect(TEMPLATES).toHaveLength(24);
+    // The copy on `/templates`, `/pricing` and the meta description all read
+    // this rather than each carrying its own number word.
+    expect(TEMPLATE_COUNT).toBe(TEMPLATES.length);
   });
 
   it("gives every template a unique id and name", () => {
@@ -191,6 +202,69 @@ describe("the template presets", () => {
         TEMPLATES.some((t) => t.settings.headingStyle === style),
         style,
       ).toBe(true);
+    }
+  });
+
+  it("puts every template in a declared group, and leaves no group empty", () => {
+    const declared = new Set(TEMPLATE_GROUPS.map((g) => g.id));
+    for (const template of TEMPLATES) {
+      expect(declared.has(template.group), `${template.id}: ${template.group}`).toBe(true);
+    }
+    for (const group of TEMPLATE_GROUPS) {
+      expect(
+        TEMPLATES.some((t) => t.group === group.id),
+        group.id,
+      ).toBe(true);
+    }
+  });
+
+  it("keeps each group contiguous in the array", () => {
+    // The gallery renders `TEMPLATES` in order and the `sr-only` list is
+    // grouped; if a group were split across the array the two would disagree
+    // about which card sits under which heading.
+    const seen: string[] = [];
+    for (const template of TEMPLATES) {
+      if (seen[seen.length - 1] !== template.group) seen.push(template.group);
+    }
+    expect(seen).toEqual([...new Set(seen)]);
+  });
+
+  it("offers both paper sizes, because the default is wrong for North America", () => {
+    // A4 is the app default and right for most of the world; the US and
+    // Canada use Letter. A gallery that could only produce A4 would be
+    // quietly handing every American user the wrong page size.
+    for (const size of PAGE_SIZES) {
+      expect(
+        TEMPLATES.some((t) => t.settings.pageSize === size),
+        size,
+      ).toBe(true);
+    }
+  });
+
+  it("varies the section order, not just the typography", () => {
+    // Six distinct orders, and the one that matters most is the check
+    // below: a template whose only difference from another is its typeface
+    // is a font picker wearing a gallery's clothes.
+    const orders = new Set(TEMPLATES.map((t) => t.sectionOrder.join(">")));
+    expect(orders.size).toBeGreaterThanOrEqual(5);
+
+    // Certifications above experience exists at all. No preset offered it
+    // before, and it is a hard requirement in licensed fields rather than a
+    // stylistic preference.
+    const credentialsFirst = TEMPLATES.filter(
+      (t) => t.sectionOrder.indexOf("certifications") < t.sectionOrder.indexOf("experience"),
+    );
+    expect(credentialsFirst.length).toBeGreaterThan(0);
+  });
+
+  it("keeps every template inside the legibility floors the fit assistant respects", () => {
+    // M4-T3 will not push a document below 10pt or under 0.6" margins,
+    // because a resume squeezed past that fits on one page and gets thrown
+    // away. A *preset* that starts below the floor would ship the outcome
+    // the floor exists to prevent.
+    for (const template of TEMPLATES) {
+      expect(template.settings.fontSizePt, template.id).toBeGreaterThanOrEqual(10);
+      expect(template.settings.margins, template.id).toBeGreaterThanOrEqual(0.6);
     }
   });
 

@@ -11,9 +11,10 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { MEASURED, REFUSED_CLAIMS, TRUST_SIGNALS } from "./trust-signals";
+import { repoFileUrl } from "./site";
 import { PRODUCT_NAME } from "./product";
 import { RULES } from "@/lib/lint/rules";
 
@@ -54,7 +55,15 @@ function countMatches(files: readonly string[], pattern: RegExp): number {
 
 describe("every claim is checkable", () => {
   it("gives each signal a claim, a detail and somewhere to verify it", () => {
-    expect(TRUST_SIGNALS.length).toBeGreaterThanOrEqual(5);
+    /*
+     * Four. It was five, when the grid carried six rows and two of them were
+     * addressed to a developer — a count of this repository's tests, and the
+     * evaluation of an AI feature. Both are still on the page, as one line
+     * under the grid; neither is a reason for a job seeker to trust a resume
+     * tool, which is what these tiles are for. The floor is here to stop the
+     * section quietly emptying out, not to pin a layout.
+     */
+    expect(TRUST_SIGNALS.length).toBeGreaterThanOrEqual(4);
     for (const signal of TRUST_SIGNALS) {
       expect(signal.claim.length, signal.claim).toBeGreaterThan(10);
       expect(signal.detail.length, signal.claim).toBeGreaterThan(30);
@@ -85,6 +94,43 @@ describe("every claim is checkable", () => {
 });
 
 describe("the measured numbers are actually measured", () => {
+  it("points every piece of evidence at something that exists", () => {
+    /*
+     * The heading over these is "Things you can check for yourself", so a row
+     * whose evidence link 404s is worse than no row at all — a stranger who
+     * takes us up on it finds nothing, on the one section of the site that
+     * cannot afford that.
+     *
+     * In-app links are checked against the route directory; repository links
+     * are checked against the working tree, which is where a renamed or
+     * deleted file actually shows up. This is also the gate that would have
+     * caught the "optional AI enhancement runs on your device" row pointing at
+     * an adapter for a feature that is switched off — not because the file was
+     * missing, but because it is the check somebody runs while reading the row
+     * again.
+     */
+    const repoPrefix = repoFileUrl("");
+    for (const signal of TRUST_SIGNALS) {
+      if (!signal.href) continue;
+
+      if (signal.href.startsWith("/")) {
+        const route = signal.href.replace(/^\//, "");
+        expect(
+          existsSync(path.join(ROOT, "src", "app", route, "page.tsx")),
+          `${signal.claim} links to /${route}, which is not a route`,
+        ).toBe(true);
+        continue;
+      }
+
+      expect(signal.href.startsWith(repoPrefix), signal.href).toBe(true);
+      const file = decodeURIComponent(signal.href.slice(repoPrefix.length));
+      expect(
+        existsSync(path.join(ROOT, file)),
+        `${signal.claim} links to ${file}, which is not in the repository`,
+      ).toBe(true);
+    }
+  });
+
   it("counts the unit tests the same way the suite does", () => {
     const files = filesUnder("src", (name) => /[.]test[.]tsx?$/.test(name));
     expect(files.length).toBeGreaterThan(20);
@@ -165,8 +211,19 @@ describe("the measured numbers are actually measured", () => {
   });
 
   it("uses a measured value in the signal that quotes one", () => {
+    /*
+     * No signal quotes a number today: the one that did ("1,951 tests, and
+     * the number is checked") moved to a line under the grid. The rule is
+     * kept rather than deleted because it is about any *future* number — a
+     * figure on this section has to be one the repository is measured
+     * against, and the way that stops being true is somebody adding a tile
+     * with a round number in it.
+     *
+     * The floor that asserted at least one such signal exists went with the
+     * tile. `counts the unit tests the same way the suite does`, above, is
+     * what keeps the figure the landing page still renders honest.
+     */
     const withNumber = TRUST_SIGNALS.filter((s) => /\d/.test(s.claim));
-    expect(withNumber.length).toBeGreaterThan(0);
     for (const signal of withNumber) {
       expect(signal.measured, signal.claim).toBeDefined();
       expect(signal.claim).toContain(MEASURED[signal.measured!].toLocaleString("en"));

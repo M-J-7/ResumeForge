@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * The band every reading page opens with.
+ * The band every reading page opens with, assembling itself.
  *
  * Before this, `/templates`, `/check`, `/examples` and `/guides` all began
  * with a 30px sans heading on the flat app ground — the same opening the
@@ -17,44 +17,42 @@
  *
  * Wrap each line in `Built` to have it arrive; anything not wrapped is simply
  * present, which is the right default for a page with one line of intro.
+ *
+ * ## The chrome is not in here
+ *
+ * `Band` holds the section, the wash and the container, and it is a **server**
+ * component. This is that plus the motion. The split exists because the root
+ * `not-found.tsx` is in the client graph of every route under the root layout
+ * — `/builder` included — so a 404 page that imported this one would put
+ * Motion's chunk on the builder's critical path, which is a hard gate. See
+ * `Band.tsx`.
  */
 
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 import { AmbientBackground } from "./AmbientBackground";
+import { Band, type BandProps } from "./Band";
 import { BuildGroup } from "./Build";
 import { MotionProvider } from "./MotionProvider";
 
-export interface PageHeaderProps {
-  children: ReactNode;
-  /** Width of the content column. Match the body below it. */
-  containerClassName?: string;
-  className?: string;
-}
+export type PageHeaderProps = BandProps & { children: ReactNode };
 
-export function PageHeader({ children, containerClassName, className }: PageHeaderProps) {
+export function PageHeader({ children, ...band }: PageHeaderProps) {
   return (
-    <section
-      className={cn("border-line relative border-b px-6 pt-12 pb-10 sm:pt-16 sm:pb-14", className)}
-    >
+    <Band {...band}>
       <MotionProvider>
         {/* The page's whole ground, mounted once. It is fixed and sits behind
             everything, so it belongs to the page rather than to this band —
             this is simply the one component every reading page already
             renders exactly once. */}
         <AmbientBackground />
-        <BuildGroup
-          trigger="load"
-          stagger={0.08}
-          className={cn("mx-auto w-full max-w-5xl", containerClassName)}
-        >
+        {/* The container is `Band`'s; this only has to be the thing the
+            stagger propagates from. */}
+        <BuildGroup trigger="load" stagger={0.08} className="w-full">
           {children}
         </BuildGroup>
       </MotionProvider>
-    </section>
+    </Band>
   );
 }
 
-/** The heading treatment the band exists for. Display face, fluid size. */
-export const PAGE_TITLE_CLASS =
-  "font-display text-text text-[clamp(2rem,4.4vw,3rem)] leading-[1.06] font-semibold tracking-tight text-balance";
+export { PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "./Band";

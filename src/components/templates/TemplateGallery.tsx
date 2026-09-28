@@ -3,18 +3,37 @@
 /**
  * The template gallery (P32-B3).
  *
- * Twelve cards, each a real render of the sample resume under that
+ * A card per template, each a real render of the sample resume under that
  * template's settings — see `TemplateThumbnail.tsx` for why they are real
  * renders and why they arrive one at a time.
+ *
+ * ## Grouped, because twenty-four cards is a wall
+ *
+ * At twelve, one grid was a gallery. At twenty-four it is a scroll — and the
+ * question a visitor is actually holding, "is one of these for my country or
+ * my field, or is none of them?", cannot be answered from a thumbnail, which
+ * differs only in typography. `TEMPLATE_GROUPS` answers it in prose above
+ * each grid.
+ *
+ * The split is a `groups` prop rather than a second component because the
+ * thumbnails have to stay **one serial queue**. Three galleries each calling
+ * `useTemplateThumbnails` would be three queues running at once, which is
+ * exactly the Yoga contention that hook exists to avoid. So it is called once
+ * here, above the split, and the grids are handed whatever has arrived.
  *
  * ## What each card says, and what it refuses to
  *
  * A name, a picture, and one line about who the template suits. No badges,
  * no "most popular", no "recruiter favourite". D14 rules out outcome claims
- * and `templates.test.ts` asserts their absence; beyond that, ranking twelve
+ * and `templates.test.ts` asserts their absence; beyond that, ranking
  * typographic choices by imagined effectiveness would be inventing
  * information we do not have. `forWho` says who it suits and why, which is a
  * claim about the reader's situation rather than about their results.
+ *
+ * The group blurbs are held to the same line. "Where you are applying"
+ * describes a paper size and a length convention — both checkable facts. It
+ * does not claim a template performs better in that market, because nobody
+ * can substantiate that.
  *
  * ## Used on two surfaces
  *
@@ -33,17 +52,11 @@
 import { Badge } from "@/components/ui/badge";
 import { CheckIcon } from "@/components/ui/icons";
 import { SAMPLE_RESUME } from "@/lib/resume/sample";
-import { TEMPLATES, type TemplateDefinition } from "@/lib/resume/templates";
+import { TEMPLATES, TEMPLATE_GROUPS, type TemplateDefinition } from "@/lib/resume/templates";
 import { cn } from "@/lib/utils";
 import { TemplateThumbnail, useTemplateThumbnails } from "./TemplateThumbnail";
 
-export function TemplateGallery({
-  selectedId,
-  onSelect,
-  href,
-  actionLabel = "Use this template",
-  className,
-}: {
+interface TemplateGalleryProps {
   /** The template the open document currently matches, if any. */
   selectedId?: string | null;
   /** Runs on activation. With `href` set it runs *before* the navigation. */
@@ -52,25 +65,100 @@ export function TemplateGallery({
   href?: string;
   actionLabel?: string;
   className?: string;
-}) {
+  /**
+   * Split the cards under the three group headings, sized for the surface.
+   * Left off, they are one flat grid.
+   */
+  groups?: "page" | "panel";
+}
+
+export function TemplateGallery({ groups, ...card }: TemplateGalleryProps) {
+  // One queue for the whole gallery, grouped or not — see the docblock.
   const thumbnails = useTemplateThumbnails(TEMPLATES, SAMPLE_RESUME);
 
+  if (!groups) {
+    return (
+      <TemplateGrid
+        {...card}
+        templates={TEMPLATES}
+        label="Resume templates"
+        thumbnails={thumbnails}
+      />
+    );
+  }
+
+  const onPage = groups === "page";
+
+  return (
+    <div className={cn("flex flex-col", onPage ? "gap-12" : "gap-6")}>
+      {TEMPLATE_GROUPS.map((group) => (
+        <section key={group.id} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            {/*
+              `h2` on the page, `h4` in the Design dialog — where the section
+              above these already spends the `h3`. A gallery that hard-coded
+              one level would skip a heading on whichever surface it was not
+              written for, and the outline a screen-reader user navigates by
+              is the entire reason these are headings and not styled
+              paragraphs.
+            */}
+            {onPage ? (
+              <h2 className="text-text text-display-3 font-semibold">{group.title}</h2>
+            ) : (
+              <h4 className="text-text text-sm font-semibold">{group.title}</h4>
+            )}
+            <p
+              className={cn(
+                "text-muted max-w-read leading-relaxed",
+                onPage ? "text-body" : "text-xs",
+              )}
+            >
+              {group.blurb}
+            </p>
+          </div>
+          <TemplateGrid
+            {...card}
+            templates={TEMPLATES.filter((template) => template.group === group.id)}
+            label={group.title}
+            thumbnails={thumbnails}
+          />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function TemplateGrid({
+  selectedId,
+  onSelect,
+  href,
+  actionLabel = "Use this template",
+  className,
+  templates,
+  label,
+  thumbnails,
+}: Omit<TemplateGalleryProps, "groups"> & {
+  templates: readonly TemplateDefinition[];
+  /** Names the list, so it is a group rather than an anonymous grid. */
+  label: string;
+  thumbnails: Record<string, string>;
+}) {
   return (
     <ul
-      // Named, so it is one identifiable list rather than an anonymous grid
-      // of twelve controls — and so a test can scope to it rather than
-      // counting every link on the page.
-      aria-label="Resume templates"
+      // Named, so a test can scope to it rather than counting every link on
+      // the page — and so the grouped form reads as three lists to a screen
+      // reader instead of one undifferentiated run of controls.
+      aria-label={label}
       className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3", className)}
     >
-      {TEMPLATES.map((template) => {
+      {templates.map((template) => {
         const selected = selectedId === template.id;
         return (
           <li key={template.id}>
             {/*
               The whole card is one target rather than a card containing a
-              button: that is what a pointer expects, and it keeps the tab
-              order to twelve stops instead of twenty-four. `aria-pressed`
+              button: that is what a pointer expects, and it halves the tab
+              stops in a gallery this size. `aria-pressed`
               carries the selected state on the button form, so it is never
               conveyed by the focus ring alone.
             */}

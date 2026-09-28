@@ -114,5 +114,12 @@ for (const theme of ["light", "dark"] as const) {
       await scan(page, "/privacy");
       await scan(page, "/terms");
     });
+
+    test("pricing has no serious or critical violations", async ({ page }) => {
+      // The newest marketing surface and the one with the most colour on it:
+      // a tinted card, a struck list and a "not yet" notice, all on the dark
+      // stage. Exactly where a contrast regression would land.
+      await scan(page, "/pricing");
+    });
   });
 }

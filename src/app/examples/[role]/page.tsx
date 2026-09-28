@@ -31,10 +31,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppFooter } from "@/components/shell/AppFooter";
+import { Built } from "@/components/marketing/Build";
+import { CtaLink } from "@/components/marketing/CtaLink";
+import { MotionProvider } from "@/components/marketing/MotionProvider";
+import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { ResumePaper } from "@/components/marketing/ResumePaper";
 import { EXAMPLE_SLUGS, getRoleExample } from "@/lib/examples/roles";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, roleExampleJsonLd } from "@/lib/structured-data";
+import { pageMetadata } from "@/lib/seo";
 import { phrasesForTitle } from "@/lib/phrases/lookup";
 import { renderText } from "@/lib/emit/text/render";
 
@@ -49,11 +54,20 @@ export async function generateMetadata({
   const example = getRoleExample(role);
   if (!example) return { title: "Example not found" };
 
-  return {
+  /*
+   * The summary carries the role-specific half, and the fixed clause carries
+   * the differentiator. Built this way round because it is the only shape
+   * that fits: the summaries run to 105 characters and the sentence this used
+   * to append ran to 80, so the longest of these descriptions reached 185 and
+   * was cut off in the result at "the plain text a parser reads f…" — losing
+   * exactly the phrase that distinguishes this page from five hundred
+   * generated ones.
+   */
+  return pageMetadata({
     title: `${example.role} resume example`,
-    description: `${example.summary} A complete ${example.role.toLowerCase()} resume, the plain text a parser reads from it, and the choices behind each line.`,
-    alternates: { canonical: `/examples/${example.slug}` },
-  };
+    description: `${example.summary} With the plain text a parser recovers from it.`,
+    path: `/examples/${example.slug}`,
+  });
 }
 
 /** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
@@ -83,111 +97,141 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
           { name: `${example.role} resume example`, path: `/examples/${example.slug}` },
         ])}
       />
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-10 px-6 py-12">
-        <header className="flex max-w-prose flex-col gap-3">
-          <p className="text-muted text-xs font-semibold tracking-wide uppercase">
-            {example.field}
-          </p>
-          <h1 className="font-display text-text text-[clamp(1.9rem,4vw,2.75rem)] leading-[1.08] font-semibold tracking-tight text-balance">
-            {example.role} resume example
-          </h1>
-          <p className="text-muted text-sm leading-relaxed">{example.summary}</p>
-          <p className="text-faint text-xs">
-            Invented for this page. The name, the employers and every number in it are made up — a
-            real resume is somebody&rsquo;s personal data and is not ours to publish.
-          </p>
-        </header>
+      {/*
+        Brought onto the system with `/guides/[slug]` — both hand-rolled a
+        heading row, a `bg-accent` anchor and an underlined link where the rest
+        of the site uses `PageHeader`, `CtaLink` and `.rule-grow`.
 
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <ResumePaper resume={example.resume} />
+        A dark stage band over a Paper & Ink body, which is also the right
+        composition for this page in particular: the masthead is the workbench
+        and the rendered resume below it is the document.
+      */}
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
+        <PageHeader stage containerClassName="max-w-5xl">
+          <Built>
+            {/* A grouping key rather than an eyebrow: it says which index this
+                page belongs to, which the heading below does not. */}
+            <p className="text-faint text-small font-semibold tracking-wide uppercase">
+              {example.field}
+            </p>
+          </Built>
+          <Built className="mt-3">
+            <h1 className={PAGE_TITLE_CLASS}>{example.role} resume example</h1>
+          </Built>
+          <Built className="mt-5">
+            <p className={PAGE_LEAD_CLASS}>{example.summary}</p>
+          </Built>
+          <Built className="mt-4">
+            <p className="text-faint text-small max-w-measure leading-relaxed">
+              Invented for this page. The name, the employers and every number in it are made up
+              &mdash; a real resume is somebody&rsquo;s personal data and is not ours to publish.
+            </p>
+          </Built>
+        </PageHeader>
 
-          <div className="flex flex-col gap-8">
-            <section className="flex flex-col gap-3">
-              <h2 className="text-text text-lg font-semibold">Why it is written this way</h2>
-              <ul className="flex flex-col gap-4">
-                {example.notes.map((note) => (
-                  <li key={note.title}>
-                    <p className="text-text text-sm font-medium">{note.title}</p>
-                    <p className="text-muted mt-1 text-sm leading-relaxed">{note.body}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
+        <div className="py-band-tight mx-auto flex w-full max-w-5xl flex-col gap-10 px-6">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <ResumePaper resume={example.resume} />
 
-            {phrases.topics.length > 0 ? (
+            <div className="flex flex-col gap-8">
               <section className="flex flex-col gap-3">
-                <h2 className="text-text text-lg font-semibold">Shapes to fill in</h2>
-                <p className="text-muted text-sm leading-relaxed">
-                  Each blank is yours to complete. These are the same scaffolds the builder offers
-                  for this occupation — none of them says anything until you fill it in, which is
-                  what keeps them useful rather than a lie somebody else wrote.
-                </p>
-                {phrases.topics.slice(0, 3).map((topic) => (
-                  <div key={topic.id}>
-                    <h3 className="text-text mt-2 text-sm font-medium">{topic.label}</h3>
-                    <ul className="mt-1 flex flex-col gap-1">
-                      {topic.scaffolds.slice(0, 4).map((scaffold) => (
-                        <li key={scaffold} className="text-muted font-mono text-xs">
-                          {scaffold}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
+                <h2 className="text-text text-title font-semibold">Why it is written this way</h2>
+                <ul className="flex flex-col gap-4">
+                  {example.notes.map((note) => (
+                    <li key={note.title}>
+                      <p className="text-text text-body font-semibold">{note.title}</p>
+                      <p className="text-muted text-small mt-1 leading-relaxed">{note.body}</p>
+                    </li>
+                  ))}
+                </ul>
               </section>
-            ) : null}
 
-            {phrases.relatedTitles.length > 0 ? (
-              <section className="flex flex-col gap-2">
-                <h2 className="text-text text-lg font-semibold">Also called</h2>
-                <p className="text-muted text-sm">
-                  {phrases.relatedTitles.slice(0, 10).join(" · ")}
-                </p>
-                <p className="text-faint text-xs">
-                  From the O*NET occupation database. Worth checking which of these a posting uses,
-                  because that is the wording its keyword search will be built on.
-                </p>
-              </section>
-            ) : null}
+              {phrases.topics.length > 0 ? (
+                <section className="flex flex-col gap-3">
+                  <h2 className="text-text text-title font-semibold">Shapes to fill in</h2>
+                  <p className="text-muted text-small leading-relaxed">
+                    Each blank is yours to complete. These are the same scaffolds the builder offers
+                    for this occupation — none of them says anything until you fill it in, which is
+                    what keeps them useful rather than a lie somebody else wrote.
+                  </p>
+                  {phrases.topics.slice(0, 3).map((topic) => (
+                    <div key={topic.id}>
+                      <h3 className="text-text text-small mt-2 font-semibold">{topic.label}</h3>
+                      <ul className="mt-1 flex flex-col gap-1">
+                        {topic.scaffolds.slice(0, 4).map((scaffold) => (
+                          <li key={scaffold} className="text-muted text-micro font-mono">
+                            {scaffold}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+
+              {phrases.relatedTitles.length > 0 ? (
+                <section className="flex flex-col gap-2">
+                  <h2 className="text-text text-title font-semibold">Also called</h2>
+                  <p className="text-muted text-small">
+                    {phrases.relatedTitles.slice(0, 10).join(" · ")}
+                  </p>
+                  <p className="text-faint text-small">
+                    From the O*NET occupation database. Worth checking which of these a posting
+                    uses, because that is the wording its keyword search will be built on.
+                  </p>
+                </section>
+              ) : null}
+            </div>
           </div>
-        </div>
 
-        {/*
+          {/*
           The whole point of the page, and the part a competitor's image
           cannot do: the text a machine gets out of this resume, published as
           text. It is the real TXT emitter's output on the same document
           rendered above, so the two cannot disagree.
         */}
-        <section className="flex flex-col gap-3">
-          <h2 className="text-text text-lg font-semibold">What a parser reads from this resume</h2>
-          <p className="text-muted max-w-prose text-sm leading-relaxed">
-            This is the actual plain-text output for the document above — the same text an applicant
-            tracking system extracts, and the same text this app hands you when you download the
-            .txt. Nothing is lost between the page and the parser, which is the whole argument for a
-            single column of real text.
-          </p>
-          <pre className="border-line bg-surface-1 text-muted overflow-x-auto rounded-lg border p-4 font-mono text-xs whitespace-pre-wrap">
-            {plainText}
-          </pre>
-        </section>
+          <section className="flex flex-col gap-3">
+            <h2 className="text-text text-title font-semibold">
+              What a parser reads from this resume
+            </h2>
+            <p className="text-muted text-body max-w-read leading-relaxed">
+              This is the actual plain-text output for the document above — the same text an
+              applicant tracking system extracts, and the same text this app hands you when you
+              download the .txt. Nothing is lost between the page and the parser, which is the whole
+              argument for a single column of real text.
+            </p>
+            <pre className="machine-panel text-muted text-micro overflow-x-auto rounded-lg border p-4 font-mono whitespace-pre-wrap">
+              {plainText}
+            </pre>
+          </section>
 
-        <section className="border-line flex flex-wrap items-center gap-4 border-t pt-8">
-          <Link
-            href="/builder"
-            className="bg-accent text-on-accent hover:bg-accent-hover rounded-md px-5 py-3 text-sm font-medium transition"
-          >
-            Write yours
-          </Link>
-          <Link href="/examples" className="text-accent text-sm underline underline-offset-2">
-            All examples
-          </Link>
-          <Link href="/templates" className="text-accent text-sm underline underline-offset-2">
-            Templates
-          </Link>
-          <Link href="/check" className="text-accent text-sm underline underline-offset-2">
-            Check a resume you already have
-          </Link>
-        </section>
+          <section className="border-line flex flex-wrap items-center gap-x-6 gap-y-4 border-t pt-8">
+            {/* `MotionProvider` because `CtaLink` is an `m.*` component and
+              `LazyMotion strict` throws outside one. The band above carries its
+              own; `domAnimation` is a module-level import either way, so the
+              second provider costs a context and nothing else. */}
+            <MotionProvider>
+              <CtaLink href="/builder" size="md">
+                Write yours
+              </CtaLink>
+            </MotionProvider>
+            <Link
+              href="/examples"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
+            >
+              All examples
+            </Link>
+            <Link
+              href="/templates"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
+            >
+              Templates
+            </Link>
+            <Link href="/check" className="text-accent rule-grow text-small rounded-sm font-medium">
+              Check a resume you already have
+            </Link>
+          </section>
+        </div>
       </main>
       <AppFooter />
     </>

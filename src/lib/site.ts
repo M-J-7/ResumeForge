@@ -58,13 +58,31 @@ export function isPublicDeployment(): boolean {
  */
 export const REPO_URL = "https://github.com/M-J-7/ResumeForge";
 
-/** A repository-relative path as a URL on the default branch. */
+/**
+ * A repository-relative path as a URL on the default branch.
+ *
+ * Segments are encoded because one of the files this links to is
+ * `docs/enhance feature.md`. A raw space in an href is not a URL; browsers
+ * mostly paper over it and link checkers do not, and the failure is the kind
+ * nobody sees until somebody reports a dead link.
+ */
 export function repoFileUrl(pathname: string): string {
-  return `${REPO_URL}/blob/master/${pathname.replace(/^\/+/, "")}`;
+  const path = pathname.replace(/^\/+/, "").split("/").map(encodeURIComponent).join("/");
+  return `${REPO_URL}/blob/master/${path}`;
 }
 
 export const SITE_NAME = PRODUCT_NAME;
 
+/**
+ * The fallback description, and the site-wide social card's.
+ *
+ * It said "PDF, DOCX, and plain text" while the landing page's format pills,
+ * the pricing tiers and the FAQ all said four. Three of those four are the
+ * formats you *send*; JSON Resume is the one you leave with, and omitting it
+ * here quietly understated the thing the whole product is positioned on.
+ * Under 160 characters, because past that a search result truncates it
+ * mid-sentence.
+ */
 export const SITE_DESCRIPTION =
-  "Build a resume that parses cleanly. PDF, DOCX, and plain text, free forever. " +
+  "Build a resume that parses cleanly. PDF, Word, plain text and JSON Resume, free permanently. " +
   "Works without an account, and nothing is uploaded unless you ask.";

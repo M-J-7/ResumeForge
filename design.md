@@ -36,6 +36,36 @@ want to trust it.
 4. Never get in the way of typing. The performance budget in §2.2 of
    `IMPLEMENTATION.md` is binding and it is stricter than the design.
 
+### Amendment (2026-09-13): the brief gained a fifth requirement
+
+The four above were written for a product that had to be _trusted_. It also has to
+_convert_, and the shipped result of the first four was a page that read as calm to
+the point of inert — honest, quiet, and the least interesting thing a visitor saw
+that day.
+
+> 5. **Look expensive.** Not loud: expensive. Depth, hierarchy and a display face
+>    that is not the category default, because a product whose argument is "we are
+>    the careful one" cannot look like a template.
+
+Requirement 2 is not withdrawn, and the two are less in tension than they look — a
+dark room with one lit object in it is calmer than a white page with six grey boxes
+on it. But two prohibitions the original brief implied are now explicitly lifted,
+with the conditions that make them safe:
+
+- **Gradients are permitted as light falling on a surface** — a wash from the top
+  edge of a band, the glow around the paper, the slate tint under machine evidence.
+  Never a brand gradient, never gradient-clipped text, and never the only ground
+  under a paragraph. Contrast is computed at the _worst_ point of a wash, which
+  `src/app/palette.test.ts` does from the stylesheet.
+- **Blur is permitted for things that genuinely float** — the sticky header, the
+  sticky call to action, dialogs, the mobile nav panel. The token behind a
+  `backdrop-filter` must be opaque enough to hold AA on its own; `.glass` is 92%,
+  and the reason is that what scrolls under the header on `/builder` is a sheet of
+  white paper.
+
+The full argument is in [docs/REDESIGN.md](docs/REDESIGN.md); what was built and what
+it cost is in [docs/REDESIGN-LOG.md](docs/REDESIGN-LOG.md).
+
 ---
 
 ## 2. What is wrong with the current UI
@@ -142,6 +172,49 @@ gives the machine its own voice:
 That turns a generic decorative habit into a semantic device: anywhere you see
 monospace in this app, you are looking at evidence rather than at our words.
 
+#### Amendment (2026-09-13): the stage
+
+The concept above was right and only half spent. "Chrome is a cool, matte workbench;
+the document is the only warm, lit object on the screen" describes a room, and the
+shipped light theme put that room in full daylight, where a lit object cannot read as
+lit. §3.2 even names the payoff — _"dark: paper stays white and now genuinely glows"_
+— and then never spends it, because the marketing surfaces followed the user's theme
+like everything else.
+
+> **The marketing surfaces are a dark stage.** `/`, `/pricing`, `/templates` and
+> `/check` are near-black in both themes; `/examples` and `/guides` open with a dark
+> masthead over a Paper & Ink reading body. The app — `/builder`, `/dashboard`,
+> `/letters`, `/signin` — is Paper & Ink throughout and follows the theme toggle.
+
+This is not a second design language. It is the same semantic tokens re-pointed at
+the dark values §3.3 already verified, through one scope in `globals.css`:
+
+```css
+[data-stage="dark"],
+body:has(> [data-stage="dark"]) {
+  /* the complete semantic set */
+}
+```
+
+`dark:` appears exactly once in the whole repository — on the Google sign-in button,
+where brand compliance requires it — so theming really is a token swap, and `Card`,
+`Button`, `Badge`, `Spotlight` and `CtaLink` all render correctly on the stage with
+no component changes at all. The `:has()` half carries the stage onto `<body>` and,
+by inheritance, onto the sticky header, which is a sibling of `<main>` and cannot
+otherwise know what route it is on. The **child** combinator is load-bearing: it is
+what lets `/examples` open with a dark band without flipping the page under it.
+
+Two exceptions are deliberate and both are about reading rather than taste. The
+article bodies of `/guides/[slug]` and `/examples/[role]` stay light-comfortable,
+because they are the pages a stranger reaches from a search and long-form reading on
+near-black is a real comprehension cost. And `--paper` stays `#ffffff` — on this
+ground its invariance stops being a technicality and becomes the entire visual idea.
+
+**Elevation follows from the same rule.** On a near-black stage a drop shadow has
+nothing to be darker than, so depth is _light_: `--elev-1` and `--elev-2` are a 1px
+inset top highlight plus a hairline. `--shadow-card` is still `none`; paper still
+carries the only real shadow in the app.
+
 ### 3.2 Color
 
 Six named values carry the system; the rest derive from them. **Every pair below was
@@ -149,16 +222,16 @@ computed, not eyeballed** — the ratios are in §3.3.
 
 **Light**
 
-| Token           | Value     | Role                                                     |
-| --------------- | --------- | -------------------------------------------------------- |
-| `--surface-1`   | `#F2F4F2` | The workbench. App ground, cool green-grey.              |
-| `--surface-0`   | `#FBFCFB` | Raised chrome: cards, inputs, header.                    |
-| `--surface-2`   | `#E7EAE7` | Recessed wells, hover, the step rail.                    |
-| `--canvas`      | `#E6E5E1` | The ground the page floats on. Warmer than chrome.       |
-| `--paper`       | `#FFFFFF` | The document. **Theme-invariant. Never changes.**        |
-| `--text`        | `#16211D` | Ink — near-black with a green cast, not a neutral black. |
-| `--accent`      | `#2F6B57` | Pine. Actions, active state, focus.                      |
-| `--machine`     | `#3B5A78` | Slate. The parser's voice: X-Ray, `/check`, recovery.    |
+| Token         | Value     | Role                                                     |
+| ------------- | --------- | -------------------------------------------------------- |
+| `--surface-1` | `#F2F4F2` | The workbench. App ground, cool green-grey.              |
+| `--surface-0` | `#FBFCFB` | Raised chrome: cards, inputs, header.                    |
+| `--surface-2` | `#E7EAE7` | Recessed wells, hover, the step rail.                    |
+| `--canvas`    | `#E6E5E1` | The ground the page floats on. Warmer than chrome.       |
+| `--paper`     | `#FFFFFF` | The document. **Theme-invariant. Never changes.**        |
+| `--text`      | `#16211D` | Ink — near-black with a green cast, not a neutral black. |
+| `--accent`    | `#2F6B57` | Pine. Actions, active state, focus.                      |
+| `--machine`   | `#3B5A78` | Slate. The parser's voice: X-Ray, `/check`, recovery.    |
 
 **Dark** — chrome drops to a deep graphite-green; paper stays white and now genuinely
 glows, which is the payoff for having kept it invariant.
@@ -178,6 +251,26 @@ place: "what a person reads" and "what a parser read" are different claims with
 different reliability, and the product's credibility depends on never letting them
 blur. They should not share a color.
 
+#### Amendment (2026-09-13): the palette did not change, three things were added
+
+The stage uses the dark values above **byte for byte**, which is what let the whole
+hybrid ship without re-verifying anything. Three additions, and one correction:
+
+| Token                                          | Light                  | Dark / stage            | Role                                     |
+| ---------------------------------------------- | ---------------------- | ----------------------- | ---------------------------------------- |
+| `--elev-1` / `--elev-2`                        | inset white 0.6 / 0.75 | inset white 0.06 / 0.09 | Elevation as light, not shadow           |
+| `--paper-glow`                                 | `--accent` at 22%      | warm white at 16%       | The light the document is lit by         |
+| `--tint-rest` / `--tint-hover` / `--tint-wash` | 7% / 12% / 8%          | 5% / 8% / 7%            | How much colour a tinted surface carries |
+
+**The correction is `--text-faint` on dark: `#8A968F` → `#909C95`.** It was 3.78:1 on
+a hovered `.card-tinted` — under the AA floor, on the exact surface the landing
+page's refusals are printed on, in the shipped build.
+
+The tint strengths are per theme because **the same percentage does very different
+things in each**: pine mixed into a near-white surface barely moves its luminance,
+mint mixed into a near-black one moves it a long way, because the accent is _lighter_
+than the ground rather than darker. One set of numbers for both was the bug.
+
 ### 3.3 Contrast, verified
 
 Computed with the WCAG relative-luminance formula against all four chrome grounds.
@@ -193,7 +286,7 @@ Worst case shown; AA body text needs 4.5, non-text boundaries need 3.0.
 | `--ok` `#1A6B4A`                 |  5.13 |   4.5 | ✓   |
 | white on `--accent` (buttons)    |  6.25 |   4.5 | ✓   |
 | `--line-strong` `#7A887F` border |  3.36 |   3.0 | ✓   |
-| dark: all foregrounds on chrome  |  4.92 |   4.5 | ✓   |
+| dark: all foregrounds on chrome  |  5.30 |   4.5 | ✓   |
 | dark: `#5E7166` border           |  3.32 |   3.0 | ✓   |
 
 Two values had to move off their first draft to get here: `--text-faint` from
@@ -204,16 +297,49 @@ most improves how finished the form looks.
 `e2e/a11y.spec.ts` runs axe in both themes on every route and blocks on serious and
 critical findings. It is the regression net for all of the above.
 
+#### Amendment (2026-09-13): this table is no longer the source of truth
+
+It went stale, which is what a hand-maintained table of nine numbers does next to a
+stylesheet declaring three palettes of twenty-odd tokens. The whole matrix is now
+computed from `globals.css` by **`src/app/palette.test.ts`**, and the table above is
+kept only as the historical record of the original pass.
+
+What the test measures, and what the table never did:
+
+- **Every** foreground against **every** ground, in all three palettes — light, dark
+  and the dark stage — rather than the nine pairs somebody thought to write down.
+- **Tinted grounds at the worst point of their wash.** It parses each
+  `background-color: color-mix(in oklab, …)` rule out of the stylesheet, resolves the
+  share (which may itself be a token), performs the mix in OKLab the way a browser
+  does, composites `backdrop-filter` surfaces over every extreme they can sit on —
+  including the white page that scrolls under the header on `/builder` — and lays the
+  strongest gradient stop over the result. A rule that paints a tinted ground and is
+  not in its list fails the test rather than shipping unmeasured.
+- **The `--*-weak` grounds**, which this table never looked at because they are not
+  chrome surfaces — but a badge is `bg-ok-weak text-ok`, a callout is
+  `bg-accent-weak`, and X-Ray's scorecard header is `bg-machine-weak`.
+- **That the dark stage is the dark palette value for value**, which is the claim the
+  whole hybrid rests on and the one that would rot first.
+
+It found two live failures on the first run, both in shipped code: `--text-faint` at
+**3.78:1** on a hovered `.card-tinted` in dark, and `--accent` at **4.47:1** on its own
+tinted card in light. Both are fixed in §3.2's amendment.
+
+The worst pair anywhere in the system is now **4.61:1** — `--accent` on a hovered
+tinted card in the light theme, which is the same surface that was 4.47:1 before the
+tint strengths became per-theme tokens. `axe` remains the regression net for whatever
+a rendered page actually composites.
+
 ### 3.4 Type
 
 **One new family.** Geist Sans and Geist Mono are already loaded and are competent;
 replacing them buys nothing. What is missing is a voice.
 
-| Face                | Role                                                       |
-| ------------------- | ---------------------------------------------------------- |
-| **Fraunces**        | Display. Marketing and reading surfaces only.               |
-| **Geist Sans**      | Every interface: forms, nav, buttons, the whole builder.    |
-| **Geist Mono**      | The machine's voice. Recovered text and parser output only. |
+| Face           | Role                                                        |
+| -------------- | ----------------------------------------------------------- |
+| **Fraunces**   | Display. Marketing and reading surfaces only.               |
+| **Geist Sans** | Every interface: forms, nav, buttons, the whole builder.    |
+| **Geist Mono** | The machine's voice. Recovered text and parser output only. |
 
 Fraunces is a variable serif with `SOFT` and `WONK` axes, set here soft and slightly
 wonky rather than tight and high-contrast — warm and humanist, not fashion-editorial.
@@ -226,19 +352,61 @@ screen.
 
 **Scale** — a major third (1.25) for interface sizes, wider jumps for display.
 
-| Step      |    Size | Line |    Face | Use                       |
-| --------- | ------: | ---: | ------: | ------------------------- |
-| Display 1 |    68px | 1.02 | Fraunces | Hero, once per site      |
-| Display 2 |    48px | 1.08 | Fraunces | Page titles              |
-| Display 3 |    32px | 1.15 | Fraunces | Section heads            |
-| Title     |    22px |  1.3 |   Geist | Card and panel titles     |
-| Body L    |    18px | 1.65 |   Geist | Lead paragraphs           |
-| Body      |    15px |  1.6 |   Geist | Default                   |
-| Small     |    13px |  1.5 |   Geist | Help text, meta           |
-| Micro     |    11px |  1.4 |    Mono | Recovered text, evidence  |
+| Step      | Size | Line |     Face | Use                      |
+| --------- | ---: | ---: | -------: | ------------------------ |
+| Display 1 | 68px | 1.02 | Fraunces | Hero, once per site      |
+| Display 2 | 48px | 1.08 | Fraunces | Page titles              |
+| Display 3 | 32px | 1.15 | Fraunces | Section heads            |
+| Title     | 22px |  1.3 |    Geist | Card and panel titles    |
+| Body L    | 18px | 1.65 |    Geist | Lead paragraphs          |
+| Body      | 15px |  1.6 |    Geist | Default                  |
+| Small     | 13px |  1.5 |    Geist | Help text, meta          |
+| Micro     | 11px |  1.4 |     Mono | Recovered text, evidence |
 
 Measure caps at **68ch** for sans body and 74ch for serif. Display sizes clamp down
 fluidly on small viewports; 68px never reaches a phone.
+
+#### Amendment (2026-09-13): Instrument Serif, and a scale that actually exists
+
+**Fraunces → Instrument Serif.** Fraunces was a good choice for a page whose job was
+to read warm, and the redesign changed that job: on a near-black stage the display
+type is the loudest thing on screen after the paper, and what an 84px headline over a
+machine readout should be doing is contrast, not warmth. Instrument Serif is
+high-contrast, tight, and nearly absent from a category split between geometric sans
+and violet gradients.
+
+It ships **one weight and an italic**, which is a real constraint and decides where it
+is allowed: Display 1 and Display 2 only. Display 3 and every section head are Geist
+at 600, because a single 400 cannot hold 24px against semibold interface type — and
+`.font-display` sets `font-synthesis-weight: none`, so a stray `font-semibold`
+degrades to 400 rather than shipping as a smeared fake bold.
+
+The payload went **down**: the preloaded woff2 set fell from 173,196 B to 83,120 B.
+
+**The more important change is that the scale above now exists as tokens.** It was
+specified here and never encoded, so the app shipped Tailwind defaults (`text-sm`
+×197, `text-xs` ×157) plus hand-written `clamp()` values in eleven files — four
+different ways of spelling "a section heading". That inconsistency, not the choice of
+family, is where the page read as unfinished.
+
+`globals.css` declares `--type-*` and exports them through `@theme inline` as the
+`--text-*` namespace, so they are real utilities — `text-display-1`, `text-body-l`,
+`text-micro` — each carrying its own line-height and tracking. A heading is one class,
+not four, and cannot drift from the scale by a hand-tuned `leading-[1.08]`.
+
+Two traps came with that, both now pinned by tests:
+
+- **`tailwind-merge` could not merge them.** It decides whether `text-foo` is a size
+  or a colour by looking the suffix up in Tailwind's default scale, so `text-title`
+  was filed as a _colour_, stopped conflicting with a component's own `text-small`,
+  and the winner became whichever Tailwind emitted last. `src/lib/utils.ts` declares
+  the scale to `extendTailwindMerge`; `utils.test.ts` holds it there.
+- **`.font-display` was beating every `tracking-*` in the app**, because an unlayered
+  rule outranks a utility. Tracking belongs to the size and the scale carries it.
+
+Also added: `--measure-sans` / `--measure-read` (as `max-w-measure` / `max-w-read`)
+and `--space-band` / `--space-band-tight` (as `py-band` / `py-band-tight`), because
+the vertical rhythm was `py-16 sm:py-24` copied from whichever band was nearest.
 
 ### 3.5 Layout
 
@@ -271,7 +439,7 @@ sit on one continuous near-white plane. They separate by depth instead:
      recessed            working                    the document
 ```
 
-**The form grid, fixed.** Label → input → help text. Help text moves *below* the
+**The form grid, fixed.** Label → input → help text. Help text moves _below_ the
 field, so every input in a row shares a baseline regardless of how long its hint is.
 This is the single highest-value layout fix in the redesign.
 
@@ -339,6 +507,38 @@ Below the hero, the card grid goes away:
   clauses — the visual form of something removed. It is the most distinctive copy on
   the site and currently the quietest thing on the page.
 
+#### Amendment (2026-09-13): the shipped structure
+
+Seven bands, on the dark stage, ordered for search intent and one dominant action:
+
+1. **Hero** — Instrument Serif at Display 1, one primary CTA, and `HeroDocument`
+   reworked so the paper reads as the lit object: `--shadow-page` plus `--paper-glow`
+   behind it, the recovered-text pane on `.machine-panel` beside it. The 900ms read
+   sweep is unchanged.
+2. **Evidence** — the ledger became a **bento**, because the claims are not equal and
+   a grid of six identical rows said they were. X-Ray leads on a tile four columns
+   wide carrying a live readout _computed from the sample this page already renders_;
+   the test count is a `stat` tile with the figure at display size; the rest are
+   standard. Still `<ul>`/`<li>`.
+3. **Promises** — unchanged in structure. Still hairline statements, still a `<dl>`.
+4. **How it works** — unchanged. Numbered, with the scroll-linked spine.
+5. **What we will not tell you** — the weight this section always wanted. The
+   refusals moved out of a sidebar card and onto their own rules across the reading
+   measure, at Title size, struck one at a time as they arrive.
+6. **FAQ** — new. Eight questions written against real search intent, rendered as
+   `<details>`/`<summary>` with the question as an `<h3>` inside the summary: no
+   client component, no hand-written ARIA, and the whole section in the HTML for a
+   crawler that runs nothing. `FAQPage` JSON-LD is emitted from the same array, so
+   the markup cannot describe answers the page does not contain.
+7. **Closing CTA** — unchanged copy, on the scale.
+
+Plus a **sticky CTA bar** after the hero leaves the viewport: one
+`IntersectionObserver` on one element, dismissible, no focus trap, respecting
+`showsPrimaryCta()`, moving on `y` and `clipPath` rather than opacity.
+
+The one thing the bento is _not_ allowed to be is decoration. It is a bento because
+the content has a hierarchy — not because bento grids are what landing pages have.
+
 ---
 
 ## 4. Pass two — critique against the brief
@@ -395,7 +595,7 @@ from `motion/react`, never from `framer-motion`.
 **This supersedes the "one orchestrated moment per page" rule below, on marketing
 surfaces only.** Phase 1 shipped that rule and it was judged running: honest, calm,
 and inert. Six bands of hairline rules on one flat ground gave the eye nothing to
-catch, and a page whose argument is *look at the evidence* cannot be the least
+catch, and a page whose argument is _look at the evidence_ cannot be the least
 interesting thing a visitor sees that day.
 
 The direction is now **live: the page builds itself.** Rules draw, statements are
@@ -410,13 +610,13 @@ Two things carry it beyond the landing page, and both are in §5.4.
 **The ground moves.** One fixed field sits behind every marketing route: a hairline
 grid that parallaxes against the scrollbar, a broad wash of light from overhead, three
 slow lights drifting on three different periods, a glow that follows the pointer, and a
-film of grain over all of it. It replaced a grid and a pair of auras *per section*,
+film of grain over all of it. It replaced a grid and a pair of auras _per section_,
 which is how a page ends up with six atmospheres instead of one.
 
 **Cards are lit rather than highlighted.** A card under the pointer gets a wash beneath
 its content and a one-pixel border lit where the pointer is near it; its neighbours are
-lit in proportion to how close the pointer is to *their* edges. Twelve independent
-hover states read as twelve buttons. One light moving across twelve cards reads as a
+lit in proportion to how close the pointer is to _their_ edges. A grid of independent
+hover states reads as a grid of buttons. One light moving across all of them reads as a
 surface, and that difference is the whole of it.
 
 Three rules keep that from becoming the usual scroll-jacked marketing page, and each
@@ -437,7 +637,7 @@ one is enforced by something other than taste:
    rendered at all, because there is nothing to replay.
 
 A fourth rule is about scripting rather than motion. Every built element starts
-clipped, and the clip is an inline style Motion writes during *server* rendering — so
+clipped, and the clip is an inline style Motion writes during _server_ rendering — so
 with scripting off the page would arrive complete in the HTML and invisible on the
 screen. A `<noscript>` rule on `[data-build]` in `page.tsx` reverses all of it. Checked
 with `javaScriptEnabled: false`: full-height headline, every section present.
@@ -451,25 +651,25 @@ The performance budget is stricter than the design and wins every disagreement:
 builder interactive under 3s on throttled 4G, preview re-render under 400ms, **typing
 never drops a frame**.
 
-| Never animated                            | Why                                          |
-| ----------------------------------------- | -------------------------------------------- |
-| Anything inside a step form               | The typing path. Non-negotiable.             |
-| The preview canvas and its scroll region  | It repaints a real PDF.                      |
-| Layout of the three builder columns       | Layout animation there thrashes on every keystroke. |
-| Opacity, on any text, anywhere            | axe scores contrast mid-flight. §5.0.        |
-| Section entrances on scroll, in the app   | Still the generic default outside marketing. |
+| Never animated                           | Why                                                 |
+| ---------------------------------------- | --------------------------------------------------- |
+| Anything inside a step form              | The typing path. Non-negotiable.                    |
+| The preview canvas and its scroll region | It repaints a real PDF.                             |
+| Layout of the three builder columns      | Layout animation there thrashes on every keystroke. |
+| Opacity, on any text, anywhere           | axe scores contrast mid-flight. §5.0.               |
+| Section entrances on scroll, in the app  | Still the generic default outside marketing.        |
 
 | Animated                          | How                                                |
 | --------------------------------- | -------------------------------------------------- |
-| Marketing sections, on scroll     | Motion, `useInView` + variants, clip and translate  |
-| The hero read-and-print           | Motion, on load and on demand, ~900ms               |
-| The hero page's tilt              | Motion values + springs, pointer only, mouse only   |
-| The "How it works" spine          | Motion `useScroll`, `scaleX`                        |
-| Scroll progress, marketing routes | Motion `useScroll` + `useSpring`, `scaleX`          |
-| Dialog and command palette        | Motion `AnimatePresence` — needs a real exit        |
-| Step-rail active indicator        | Motion `layoutId`, shell-level only                 |
-| Toasts, sync status               | Motion `AnimatePresence`                            |
-| Hover, focus, press, disclosure   | **CSS.** No library involved.                       |
+| Marketing sections, on scroll     | Motion, `useInView` + variants, clip and translate |
+| The hero read-and-print           | Motion, on load and on demand, ~900ms              |
+| The hero page's tilt              | Motion values + springs, pointer only, mouse only  |
+| The "How it works" spine          | Motion `useScroll`, `scaleX`                       |
+| Scroll progress, marketing routes | Motion `useScroll` + `useSpring`, `scaleX`         |
+| Dialog and command palette        | Motion `AnimatePresence` — needs a real exit       |
+| Step-rail active indicator        | Motion `layoutId`, shell-level only                |
+| Toasts, sync status               | Motion `AnimatePresence`                           |
+| Hover, focus, press, disclosure   | **CSS.** No library involved.                      |
 
 CSS still covers most of it. Motion is added for the things CSS genuinely cannot
 express — exit animations, scroll linkage, pointer-driven transforms and orchestrated
@@ -551,7 +751,7 @@ Two rules that only look like details:
   edge.
 - **`prefers-reduced-motion` has to be cancelled in CSS, not only in JavaScript.**
   `useReducedMotion()` cannot run on the server, so every built element is
-  *server-rendered clipped* and unclipped on hydration. For everyone else that gap is
+  _server-rendered clipped_ and unclipped on hydration. For everyone else that gap is
   the reveal; for someone who asked for less motion it is a blank page until the bundle
   lands. The media query in `globals.css` un-clips `[data-build]` a frame earlier, and
   it is the same rule the `<noscript>` block applies for the same reason.
@@ -593,11 +793,11 @@ The workspace, and the screen that matters most.
 - The paper gets the app's only real shadow and sits on the darker canvas.
 - **X-Ray** adopts `--machine` throughout: recovered text in mono, findings in slate,
   never in the accent. The scorecard keeps `section[aria-label='Field recovery
-  scorecard']` and its `<table>`.
+scorecard']` and its `<table>`.
 
 ### Dashboard
 
-Resume cards currently show a thumbnail in a bordered box. The thumbnail *is* paper —
+Resume cards currently show a thumbnail in a bordered box. The thumbnail _is_ paper —
 so it gets the paper treatment, lifted off the canvas, and the metadata sits quietly
 beneath it. Stays `<ul>`/`<li>` with headings for titles; the suite nth-indexes
 `getByRole("listitem")`.
@@ -657,77 +857,115 @@ Non-negotiable, and each one has already cost someone a debugging session.
    downloads never paywalled, no "beat the ATS" claim in any new copy.
 9. **`pnpm verify` and `e2e/a11y.spec.ts`** pass before any phase is called done.
 
+### Added 2026-09-13, each one having cost a debugging session during the redesign
+
+10. **A dark stage is dark in both themes.** `[data-stage="dark"]` declares the
+    **complete** semantic set, never a diff. A partial override leaves whatever it
+    forgot resolving from the ancestor, and what it forgot is always the token nobody
+    looked at in the other theme. `palette.test.ts` asserts the stage is the dark
+    palette value for value.
+11. **Nothing animates `opacity` on anything containing text.** `e2e/a11y.spec.ts`
+    runs axe in both themes immediately after `page.goto`, so on-load builds are
+    scored mid-flight and below-fold builds are scored in their hidden state. Reveals
+    use `clipPath`, `y` and `filter: blur()` only.
+12. **Every element that arrives hidden carries `data-build`.** Motion writes
+    `initial` as an inline style during _server_ rendering, so a built element reaches
+    the browser already clipped and two rules — the `<noscript>` block in `layout.tsx`
+    and the `prefers-reduced-motion` block in `globals.css` — are what remove it. Miss
+    the attribute and the region is simply blank, with no error.
+    `build-escape.test.ts` scans the source for it.
+13. **Motion must not enter the builder's bundle.** Next renders the root
+    `not-found.tsx` inside the root layout, which puts it in the client graph of
+    **every route under that layout** — so a 404 page importing `PageHeader` puts
+    Motion's 156 kB chunk on `/builder`'s critical path. That is why `Band` exists as
+    a server component and `PageHeader` is `Band` plus the motion. Nothing about the
+    import looks wrong; it was found by diffing the chunks the two routes request.
+14. **A component class must not outrank a utility.** Tailwind v4 declares
+    `@layer theme, base, components, utilities`, and an _unlayered_ rule beats all
+    four. `.card-tinted`, `.machine-panel` and `.glass` live in `@layer components` so
+    a caller's `border-*` or `bg-*` can win. `.font-display` learned this the hard way
+    with `letter-spacing`.
+15. **A pure helper exported from a `"use client"` module cannot be called on the
+    server.** React throws rather than warning, and the route renders its error
+    boundary — which is how `/404` came to say "Something went wrong". Styling
+    functions like `buttonClassName` live in a module with no `"use client"`.
+16. **Contrast is computed at the worst point of a wash, not its average**, and from
+    the stylesheet rather than by hand. `palette.test.ts` resolves every
+    `color-mix(in oklab, …)` ground, composites every `backdrop-filter` surface over
+    the extremes it can meet — the white page under the header on `/builder` included
+    — and lays the strongest gradient stop over the result.
+
 ---
 
 ## 8. Delivery
 
 Each phase is independently shippable and leaves the app working.
 
-| Phase | Scope                                                                                                   | State       |
-| ----- | ------------------------------------------------------------------------------------------------------- | ----------- |
-| **0** | Token layer: palette, contrast-verified pairs, `--machine`, radius and shadow scales, motion variables   | **done**    |
-| **1** | Typography (Fraunces via `next/font`), header, footer, landing page including the hero sequence          | **done**    |
-| **1b** | The live pass (§5.0), landing page: build-on-view primitives, the interactive hero, scroll spine and progress, the inverted evidence band, drawn rules, struck refusals, the closing call to action | **done** |
+| Phase  | Scope                                                                                                                                                                                                                                                                                                                    | State    |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| **0**  | Token layer: palette, contrast-verified pairs, `--machine`, radius and shadow scales, motion variables                                                                                                                                                                                                                   | **done** |
+| **1**  | Typography (Fraunces via `next/font`), header, footer, landing page including the hero sequence                                                                                                                                                                                                                          | **done** |
+| **1b** | The live pass (§5.0), landing page: build-on-view primitives, the interactive hero, scroll spine and progress, the inverted evidence band, drawn rules, struck refusals, the closing call to action                                                                                                                      | **done** |
 | **1c** | The same language on every public reading surface: one `PageHeader` band (display type, build-on-load) on `/templates`, `/check`, `/examples` and `/guides`; Fraunces on the article and policy headings; `.lift` on template, example and guide cards and on the `/check` drop zone; `.rule-grow` on their inline links | **done** |
-| **1d** | The ambient field behind every marketing route, and the pointer light on every card in every grid (§5.4). The per-section grids and auras it replaced are gone; the promises band is frosted so the field carries through it, and the evidence band is lit from its own top edge | **done** |
-| **2** | Builder shell: three grounds, step rail spine, form grid fix, inputs, `SectionManager` controls, and every remaining raw palette class onto tokens | **done** |
-| **3** | Preview: single toolbar, empty state, paper treatment, page-count plural, X-Ray on `--machine`, and the flaky "Updating…" live region | **done** |
-| **4** | Dashboard, templates gallery, `/check`                                                                   | **done**    |
-| **5** | Sign-in, letters, guides, examples                                                                       | **done**    |
-| **6** | Mobile pass: nav menu, builder tabs, touch targets; full a11y and reduced-motion sweep                   | **done**    |
+| **1d** | The ambient field behind every marketing route, and the pointer light on every card in every grid (§5.4). The per-section grids and auras it replaced are gone; the promises band is frosted so the field carries through it, and the evidence band is lit from its own top edge                                         | **done** |
+| **2**  | Builder shell: three grounds, step rail spine, form grid fix, inputs, `SectionManager` controls, and every remaining raw palette class onto tokens                                                                                                                                                                       | **done** |
+| **3**  | Preview: single toolbar, empty state, paper treatment, page-count plural, X-Ray on `--machine`, and the flaky "Updating…" live region                                                                                                                                                                                    | **done** |
+| **4**  | Dashboard, templates gallery, `/check`                                                                                                                                                                                                                                                                                   | **done** |
+| **5**  | Sign-in, letters, guides, examples                                                                                                                                                                                                                                                                                       | **done** |
+| **6**  | Mobile pass: nav menu, builder tabs, touch targets; full a11y and reduced-motion sweep                                                                                                                                                                                                                                   | **done** |
 
 Every phase is built. What follows records what each of them actually changed,
 including the three places the built thing differs from the plan above and why.
 
 ### What phases 0 and 1 shipped
 
-| Change                                                                                     | Where                                     |
-| ------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| The palette, both themes, every pair contrast-checked; `--machine`; radius and shadow scales | `src/app/globals.css`                     |
-| Fraunces on `SOFT`/`WONK`/`opsz` through `next/font`, self-hosted for the CSP                | `src/app/layout.tsx`, `globals.css`       |
+| Change                                                                                       | Where                                       |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| The palette, both themes, every pair contrast-checked; `--machine`; radius and shadow scales | `src/app/globals.css`                       |
+| Fraunces on `SOFT`/`WONK`/`opsz` through `next/font`, self-hosted for the CSP                | `src/app/layout.tsx`, `globals.css`         |
 | The hero: document and recovered text, one 900ms read-line sweep, reduced-motion aware       | `src/components/marketing/HeroDocument.tsx` |
-| Landing rebuilt — no card grid, no eyebrows, evidence at the top, the trust ledger           | `src/app/page.tsx`                        |
-| Mobile navigation that exists: a disclosure that cannot alter the header's height            | `src/components/shell/HeaderNav.tsx`      |
-| Header and footer on the new system; the wordmark yields to the controls below `sm`          | `src/components/shell/`                   |
-| Ten `text-zinc-500 dark:text-zinc-400` sites at 4.36:1 moved onto `--text-faint`             | 10 files                                  |
-| `motion` v13.1.1 added; `LazyMotion` + `m`, used on the hero only                            | `package.json`                            |
+| Landing rebuilt — no card grid, no eyebrows, evidence at the top, the trust ledger           | `src/app/page.tsx`                          |
+| Mobile navigation that exists: a disclosure that cannot alter the header's height            | `src/components/shell/HeaderNav.tsx`        |
+| Header and footer on the new system; the wordmark yields to the controls below `sm`          | `src/components/shell/`                     |
+| Ten `text-zinc-500 dark:text-zinc-400` sites at 4.36:1 moved onto `--text-faint`             | 10 files                                    |
+| `motion` v13.1.1 added; `LazyMotion` + `m`, used on the hero only                            | `package.json`                              |
 
 ### What the live pass shipped
 
-| Change                                                                                          | Where                                          |
-| ----------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| Build primitives — `BuildGroup`/`Built`/`BuiltListItem`/`DrawnRule`, on `useInView` and variants  | `src/components/marketing/Build.tsx`           |
-| The feel, in one file: `BUILD`, `SETTLE`, `GLIDE`, and the clip-not-fade variants                 | `src/components/marketing/motion-tokens.ts`    |
-| The hero: pointer tilt on springs, the two-way block↔line highlight, a replay control, a second sheet, the structural callout | `HeroDocument.tsx`, `PaperSample.tsx` |
-| Scroll progress and the "How it works" spine, both `useScroll` → `scaleX`                         | `ScrollProgress.tsx`, `ScrollSpine.tsx`        |
-| The magnetic, sheened call to action                                                              | `CtaLink.tsx`                                  |
-| The shared page-opening band                                                                      | `PageHeader.tsx`                               |
-| CSS layer: `.band-invert`, `.field-grid`, `.aura`, `.sheen`, `.lift`, `.rule-grow`, `.strike-in`, `.paper-mark`, `.machine-mark`, `--ease-press`, `--shadow-lift`, `--shadow-accent` | `src/app/globals.css` |
-| The ambient field: wash, parallaxing grid, three drifting lights, pointer glow, grain               | `AmbientBackground.tsx`, `globals.css`         |
-| The pointer light on cards, single and across a grid                                               | `Spotlight.tsx`, `globals.css`                 |
-| The `<noscript>` reveal-undo, global rather than per page                                          | `src/app/layout.tsx`                           |
-| `/privacy` and `/terms` headings off raw `zinc-*` and onto tokens                                  | two files                                      |
+| Change                                                                                                                                                                               | Where                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
+| Build primitives — `BuildGroup`/`Built`/`BuiltListItem`/`DrawnRule`, on `useInView` and variants                                                                                     | `src/components/marketing/Build.tsx`        |
+| The feel, in one file: `BUILD`, `SETTLE`, `GLIDE`, and the clip-not-fade variants                                                                                                    | `src/components/marketing/motion-tokens.ts` |
+| The hero: pointer tilt on springs, the two-way block↔line highlight, a replay control, a second sheet, the structural callout                                                        | `HeroDocument.tsx`, `PaperSample.tsx`       |
+| Scroll progress and the "How it works" spine, both `useScroll` → `scaleX`                                                                                                            | `ScrollProgress.tsx`, `ScrollSpine.tsx`     |
+| The magnetic, sheened call to action                                                                                                                                                 | `CtaLink.tsx`                               |
+| The shared page-opening band                                                                                                                                                         | `PageHeader.tsx`                            |
+| CSS layer: `.band-invert`, `.field-grid`, `.aura`, `.sheen`, `.lift`, `.rule-grow`, `.strike-in`, `.paper-mark`, `.machine-mark`, `--ease-press`, `--shadow-lift`, `--shadow-accent` | `src/app/globals.css`                       |
+| The ambient field: wash, parallaxing grid, three drifting lights, pointer glow, grain                                                                                                | `AmbientBackground.tsx`, `globals.css`      |
+| The pointer light on cards, single and across a grid                                                                                                                                 | `Spotlight.tsx`, `globals.css`              |
+| The `<noscript>` reveal-undo, global rather than per page                                                                                                                            | `src/app/layout.tsx`                        |
+| `/privacy` and `/terms` headings off raw `zinc-*` and onto tokens                                                                                                                    | two files                                   |
 
 ### What phases 2 to 6 shipped
 
-| Change                                                                                                                   | Where                                    |
-| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| **The form grid, fixed.** Hint moved below the control, so every input in a row shares a baseline whatever its hint runs to | `ui/control.tsx`                         |
-| **The step rail as a spine** — a rule down the rail filled to the completed point, a marker per step, the active one ringed | `builder/StepNav.tsx`                    |
-| **Three grounds.** The rail recedes onto `--surface-2`, sticky with its own scroll; the workspace is the page ground; the canvas is darker | `builder/BuilderShell.tsx`      |
-| **Undo and redo moved to the rail footer**, out of the step header where they competed with the title                      | `builder/BuilderShell.tsx`               |
-| **The checkbox, on palette.** `text-accent` does nothing to a native checkbox, so every visibility toggle was system blue   | `ui/control.tsx`, `globals.css`          |
-| **The experience prompt** as five equal rows rather than a three-then-two grid with a hole in it                            | `builder/ExperienceLevelPrompt.tsx`      |
-| **One preview toolbar**, not two rules across a narrow pane for six controls                                               | `preview/PreviewPane.tsx`                |
-| **A preview empty state**: a ghosted page with the block structure, not a blank rectangle with a sentence in it            | `preview/PreviewPane.tsx`                |
-| **The "Updating…" live region holds no text when idle** — the fix for the axe flake, which was scanning it mid-fade         | `preview/PreviewPane.tsx`                |
-| **`1 page` / `2 pages`**, and `0.0 pages` → `0.0 pages used`, which is what the figure has always meant                     | `preview/PreviewPane.tsx`, `layout/fit.ts` |
-| **X-Ray in the machine's voice**: recovered values slate and mono, the extracted text on `--machine-weak`, verdicts still `--ok`/`--danger` | `xray/XRayPanel.tsx`     |
-| **The dashboard thumbnail is paper** — lit on the canvas, not a picture in a bordered box                                   | `dashboard/ResumeThumbnail.tsx`          |
-| **The pointer light on every card grid in the app**: dashboard, letters, templates, examples, guides                        | `ui/Spotlight.tsx` and five call sites   |
-| **Every raw palette class onto tokens** — 178 `zinc-*`/`sky-*` plus 30 `emerald-*`/`red-*`/`amber-*`, including the two dialog backdrops, which became a `--scrim` token | 20 files |
-| **Mobile Edit/Preview**: full width, two equal halves, sticky under the header                                             | `builder/BuilderShell.tsx`               |
-| **44px touch targets under `pointer: coarse`**, so density follows the input device rather than the viewport                | `globals.css`                            |
+| Change                                                                                                                                                                   | Where                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| **The form grid, fixed.** Hint moved below the control, so every input in a row shares a baseline whatever its hint runs to                                              | `ui/control.tsx`                           |
+| **The step rail as a spine** — a rule down the rail filled to the completed point, a marker per step, the active one ringed                                              | `builder/StepNav.tsx`                      |
+| **Three grounds.** The rail recedes onto `--surface-2`, sticky with its own scroll; the workspace is the page ground; the canvas is darker                               | `builder/BuilderShell.tsx`                 |
+| **Undo and redo moved to the rail footer**, out of the step header where they competed with the title                                                                    | `builder/BuilderShell.tsx`                 |
+| **The checkbox, on palette.** `text-accent` does nothing to a native checkbox, so every visibility toggle was system blue                                                | `ui/control.tsx`, `globals.css`            |
+| **The experience prompt** as five equal rows rather than a three-then-two grid with a hole in it                                                                         | `builder/ExperienceLevelPrompt.tsx`        |
+| **One preview toolbar**, not two rules across a narrow pane for six controls                                                                                             | `preview/PreviewPane.tsx`                  |
+| **A preview empty state**: a ghosted page with the block structure, not a blank rectangle with a sentence in it                                                          | `preview/PreviewPane.tsx`                  |
+| **The "Updating…" live region holds no text when idle** — the fix for the axe flake, which was scanning it mid-fade                                                      | `preview/PreviewPane.tsx`                  |
+| **`1 page` / `2 pages`**, and `0.0 pages` → `0.0 pages used`, which is what the figure has always meant                                                                  | `preview/PreviewPane.tsx`, `layout/fit.ts` |
+| **X-Ray in the machine's voice**: recovered values slate and mono, the extracted text on `--machine-weak`, verdicts still `--ok`/`--danger`                              | `xray/XRayPanel.tsx`                       |
+| **The dashboard thumbnail is paper** — lit on the canvas, not a picture in a bordered box                                                                                | `dashboard/ResumeThumbnail.tsx`            |
+| **The pointer light on every card grid in the app**: dashboard, letters, templates, examples, guides                                                                     | `ui/Spotlight.tsx` and five call sites     |
+| **Every raw palette class onto tokens** — 178 `zinc-*`/`sky-*` plus 30 `emerald-*`/`red-*`/`amber-*`, including the two dialog backdrops, which became a `--scrim` token | 20 files                                   |
+| **Mobile Edit/Preview**: full width, two equal halves, sticky under the header                                                                                           | `builder/BuilderShell.tsx`                 |
+| **44px touch targets under `pointer: coarse`**, so density follows the input device rather than the viewport                                                             | `globals.css`                              |
 
 ### Where the built thing differs from the plan
 
@@ -739,7 +977,7 @@ builder's bundle, on the screen whose budget is the strictest in the app, for on
 moving dot. A transition on the marker's ring reads the same and costs nothing.
 
 **The experience prompt is five rows, not one row of cards.** §6 asked for "equal-height
-cards on one row at desktop". Five cards each carrying a label *and* a sentence do not
+cards on one row at desktop". Five cards each carrying a label _and_ a sentence do not
 fit one row of a column this narrow without the sentences collapsing to two words. A
 single column of equal rows is the shape the content actually has: five mutually
 exclusive answers to one question, in order.
@@ -778,9 +1016,10 @@ fixed.
   clipped — including `/examples` and `/guides`, which `e2e/content.spec.ts` requires to
   render with scripting off.
 - **`pnpm verify`** — typecheck, lint, 1,627 unit tests. Green.
-- **The template gallery's contract**, in a browser: twelve links in the named list and a
-  first thumbnail at 329×466, which is what `templates.spec.ts` asserts.
-
+- **The template gallery's contract**, in a browser: every template linked under its own
+  group heading and a first thumbnail at 329×466, which is what `templates.spec.ts`
+  asserts — counted from `TEMPLATES` rather than from a literal, so the contract survives
+  the next preset being added.
 
 ### How it was checked
 

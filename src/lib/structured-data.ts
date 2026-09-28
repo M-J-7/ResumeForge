@@ -21,7 +21,9 @@
  *
  * `offers` with `price: "0"` is the one claim worth making loudly: it is
  * true, permanently (D13), and it is the difference between this product and
- * every competitor whose paywall is at the download step.
+ * every competitor whose paywall is at the download step. The paid Pass sits
+ * beside it as a `PreOrder`, because it cannot be bought yet and saying
+ * otherwise to a crawler is the same lie as saying it to a person.
  *
  * ## Emitted as a string, not a component
  *
@@ -30,6 +32,7 @@
  * `structured-data.test.ts` assert on the shape without rendering anything.
  */
 
+import { PASS } from "./pricing";
 import { PRODUCT_NAME } from "./product";
 import { SITE_DESCRIPTION, siteUrl } from "./site";
 import type { Guide } from "./guides/guides";
@@ -68,13 +71,36 @@ export function softwareApplicationJsonLd(): JsonLd {
     // name beyond that.
     operatingSystem: "Any",
     browserRequirements: "Requires JavaScript. Requires a modern browser.",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-      // D13, in the form a crawler reads.
-      availability: "https://schema.org/InStock",
-    },
+    /*
+     * Two offers, and the difference between them is the point.
+     *
+     * The free one keeps `price: "0"` and `InStock`, because that is true
+     * today and is true permanently (D13) — it is the claim worth making
+     * loudly and the one that survives the product having a paid tier.
+     *
+     * The Pass is `PreOrder`, not `InStock`, because **there is no checkout**.
+     * Marking something available to buy when nobody can buy it is markup that
+     * does not describe the page, which is both a policy violation and the
+     * machine-readable version of the lie this whole product is positioned
+     * against. It flips when billing exists; `pricing.test.ts` holds the two
+     * in step with `/pricing`.
+     */
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Free",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+      {
+        "@type": "Offer",
+        name: "Pass",
+        price: PASS.price,
+        priceCurrency: PASS.currency,
+        availability: "https://schema.org/PreOrder",
+      },
+    ],
     featureList: [
       "ATS-safe resume builder",
       "PDF, Word, plain text and JSON Resume export",
@@ -138,6 +164,27 @@ export function guideFaqJsonLd(guide: Guide): JsonLd | null {
       "@type": "Question",
       name: section.heading,
       acceptedAnswer: { "@type": "Answer", text: section.answer },
+    })),
+  };
+}
+
+/**
+ * A page that asks and answers questions, as an `FAQPage`.
+ *
+ * The landing page's FAQ, and the general form `guideFaqJsonLd` is a special
+ * case of. The caller passes the same array it renders — not a second copy
+ * written for the crawler — because markup that describes answers the page
+ * does not contain breaks Google's structured-data policy, and the way that
+ * happens is always two lists drifting rather than anyone deciding to lie.
+ */
+export function faqPageJsonLd(items: readonly { question: string; answer: string }[]): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
 }

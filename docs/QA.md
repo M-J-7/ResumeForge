@@ -49,7 +49,7 @@ Run by `pnpm verify` and `pnpm test:e2e` on every push.
 | Ctrl+Z restores the pre-import draft                                     | `e2e/import.spec.ts`                                      |
 | `/check` issues no request carrying the file's content                   | `e2e/import.spec.ts`                                      |
 | The `/check` → builder handoff never puts a resume in a URL              | `e2e/import.spec.ts`                                      |
-| Twelve templates; a style switch cannot move the extracted text          | `src/lib/resume/templates.test.ts`                        |
+| Twenty-four templates; a style switch cannot move the extracted text     | `src/lib/resume/templates.test.ts`                        |
 | A v1 document opens with the v1 appearance after the schema bump         | `src/lib/resume/templates.test.ts`                        |
 | The whole phrase bank passes the lint engine, together and one at a time | `src/lib/phrases/phrases.test.ts`                         |
 | O\*NET attributed with version and access date                           | `src/lib/phrases/phrases.test.ts`                         |
@@ -694,6 +694,70 @@ fix does not make a listed skill count for more. It lets the letter say the
 weaker thing weakly instead of saying nothing.
 
 ---
+
+## 13. The letter did not read as English, fixed 2026-09-10
+
+### What was wrong
+
+Reported from use: "it writes the cover letter very weirdly — the grammar is
+incorrect, the sentence framing is not good." It was not one vague problem. It
+was six, and the test suite could not fail on any of them, because all four of
+the composer's guarantees are about **honesty** and none of them asks whether
+a sentence is a sentence.
+
+| #   | Defect                                                                        | Example of the real output                                                                                                                                 |
+| --- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Frame chosen by **casing**, not grammar (`startsWithCapitalisedWord`)         | "At Acme, I **responsible for** the regional ledger."                                                                                                      |
+| 2   | — same, gerunds                                                               | "At Acme, I **managing** a team of six across two sites."                                                                                                  |
+| 3   | — same, noun phrases, in our **own shipped example**                          | "At uk-retail-footfall, I **open dataset** and notebook series…"                                                                                           |
+| 4   | `"More recently,"` applied **by position** to a list ordered by **relevance** | said between two bullets from the _same job_, where no chronology exists                                                                                   |
+| 5   | Opening restates itself when applying for the title already held              | "I am writing about the Second in Department, Mathematics role at Ashfield Academy. I am currently Second in Department, Mathematics at Ashfield Academy…" |
+| 6   | An employer name containing a comma breaks the inline frame                   | "Also, at Teaching Assistant, Programming Fundamentals, I ran weekly lab sessions…"                                                                        |
+
+Defect 3 is the one worth dwelling on: it shipped on the example page this
+product uses to teach people how to write a resume.
+
+### What changed
+
+1. **`bullet-form.ts`** sorts a bullet into six grammatical shapes and each
+   shape gets a frame that is correct for it — a copula for a duty phrase
+   ("I **was** responsible for…"), a frame that takes a gerund ("my work
+   included managing…"), no "I" at all for a bullet carrying its own subject,
+   and the colon form for everything unrecognised. **The bullet is never
+   rewritten**: a third transformation would break the verbatimness proof in
+   `compose.test.ts`, which works by undoing the two permitted ones.
+2. **Unknown shapes fail safe toward the colon form**, which is well-formed in
+   front of any fragment. A misclassification costs a flat sentence, never a
+   broken one — and that asymmetry decides the lexicons: a word that is as
+   often a noun as a gerund ("engineering", "planning", "reporting") is
+   deliberately **left out**.
+3. **Connectives stopped asserting things.** Two bullets from one entry get
+   "In the same role,"; `"More recently,"` is emitted only where the entry
+   index proves it, experience being reverse-chronological.
+4. **The letter grew** from ~90 words to ~140–210: three bullets rather than
+   two, the user’s own summary as the professional introduction the opening
+   never had, and a closing that asks for the next step instead of merely
+   offering.
+5. **One requirement is quoted back** from the posting, in quotation marks —
+   see the DECISIONS amendment of the same date for why that is not a D8
+   breach, and `sanitiseQuote` for the length-of-experience line it refuses.
+
+### What holds it
+
+`src/lib/cover-letter/compose.grammar.test.ts`, 52 assertions. The load-bearing
+one is a property test: compose **every** shipped example resume across every
+tone and angle, and assert that wherever an evidence sentence says "I ⟨word⟩",
+that word is a verb. That is the assertion whose absence let all six defects
+ship, and it is written over the _output_ rather than the classifier, so a
+future frame that reintroduces the bug fails even if the classifier is right.
+
+### What is still true
+
+The letter is dense rather than long. General guidance is 250–400 words; a
+composed letter lands nearer 200, because every sentence in it carries a fact
+from the resume and there is no filler available to reach 400 honestly. Padding
+it would mean inventing content, which is the one thing this composer does not
+do.
 
 ## Known limitations, recorded deliberately
 

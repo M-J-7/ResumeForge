@@ -1,12 +1,19 @@
 /**
  * The composer (P28-I3).
  *
- * **D8 — deterministic composition.** Every sentence in a composed letter is either the
- * user's own text, copied without alteration, or a template from
- * `./phrasing.ts` that contains no claim. There is no third source. That is
- * the product position and it is also the only reason a generated cover
- * letter is defensible at all: the failure mode of every LLM cover letter
- * tool is a fluent paragraph asserting something the candidate never said.
+ * **D8 — deterministic composition.** Every sentence in a composed letter is
+ * the user's own text copied without alteration, a template from
+ * `./phrasing.ts` that contains no claim, or — in exactly one sentence, in
+ * quotation marks — a line from the posting itself. There is no fourth
+ * source, and none of the three can assert anything the candidate did not.
+ * That is the product position and it is also the only reason a generated
+ * cover letter is defensible at all: the failure mode of every LLM cover
+ * letter tool is a fluent paragraph asserting something the candidate never
+ * said.
+ *
+ * The posting quote was added 2026-09-10 and is the one thing the letter takes
+ * from the employer's own words; see `REQUIREMENT_ECHO` for why quoting is
+ * not the same as inventing, and `sanitiseQuote` for what it refuses to quote.
  *
  * ## Four guarantees, each with a test
  *
@@ -20,6 +27,9 @@
  *    character may be lowercased, and a sentence-final period may be
  *    appended. Nothing else. Both are reversible, which is how the test
  *    checks it — it undoes them and searches the resume for the result.
+ *    This is why a bullet that will not fit a frame is given a *different
+ *    frame* rather than repaired: see `bullet-form.ts`. A third
+ *    transformation would make the proof unsound.
  * 3. **No undemonstrated claim.** The alignment paragraph names only skills
  *    whose `status` is `demonstrated`. A skill that is merely listed in the
  *    resume's Skills section never appears in the letter, because the letter
@@ -41,14 +51,20 @@
 import type { MatchResult } from "@/lib/match/score";
 import type { ResumeDocument } from "@/lib/resume/schema";
 import { findEntry } from "./provenance";
+import { classifyBulletForm, readsAsProse, type BulletForm } from "./bullet-form";
+import { lowercaseLead, startsWithCapitalisedWord, terminate } from "./bullet-case";
 import {
+  ALIGNMENT_AFTER_ECHO,
   ALIGNMENT_FRAME,
   ALIGNMENT_LISTED_FRAME,
   ALIGNMENT_LISTED_ONLY_FRAME,
   AVAILABILITY_FRAME,
   CLOSING,
   EVIDENCE_CONNECTORS,
+  EVIDENCE_CONNECTORS_SAME_ENTRY,
+  EVIDENCE_CONNECTOR_MORE_RECENT,
   EVIDENCE_FRAME,
+  type EvidenceFrameSet,
   DIAGNOSTIC_NO_BULLETS,
   DIAGNOSTIC_NO_REQUIREMENT_MATCHED,
   DIAGNOSTIC_POSTING_UNRECOGNISED,
@@ -57,8 +73,11 @@ import {
   fill,
   joinList,
   OPENING_ANGLE,
+  OPENING_ANGLE_SAME_TITLE,
   OPENING_LEAD,
+  OPENING_LEAD_COMPLEX_TITLE,
   OPENING_WITHOUT_ROLE,
+  REQUIREMENT_ECHO,
   type Angle,
   type Tone,
 } from "./phrasing";
@@ -73,8 +92,16 @@ import {
   type ParagraphRole,
 } from "./schema";
 
-/** How many resume bullets the evidence paragraph draws on. */
-export const EVIDENCE_BULLET_COUNT = 2;
+export { lowercaseLead, startsWithCapitalisedWord, terminate };
+
+/**
+ * How many resume bullets the evidence paragraph draws on.
+ *
+ * Two produced a letter of about ninety words, where the guidance every
+ * careers service gives is 250–400. Three is the most `EVIDENCE_CONNECTORS`
+ * covers without repeating a connective, which is the real ceiling here.
+ */
+export const EVIDENCE_BULLET_COUNT = 3;
 
 /** How many demonstrated skills the alignment paragraph names. */
 export const ALIGNMENT_SKILL_COUNT = 3;
@@ -168,35 +195,6 @@ function organizationForEntry(resume: ResumeDocument, entryId: string | undefine
 /* -------------------------------------------------------------------------- */
 
 /**
- * True when the bullet's first word is an ordinary capitalised word.
- *
- * `"Led a team"` qualifies; `"AWS migration"` and `"40 services"` do not.
- * Lowercasing an acronym would corrupt it, and "At Acme, I 40 services" is
- * not a sentence — both fall through to the colon form instead.
- */
-export function startsWithCapitalisedWord(bullet: string): boolean {
-  const word = bullet.trim().split(/\s+/)[0] ?? "";
-  if (word.length < 2) return false;
-  const [first, ...rest] = word;
-  if (!first || !/\p{Lu}/u.test(first)) return false;
-  const tail = rest.join("");
-  // An all-caps or mixed-caps word is an acronym or a product name, not a verb.
-  return tail === tail.toLowerCase();
-}
-
-/** Transformation 1 — documented, reversible, and the only case change made. */
-export function lowercaseLead(bullet: string): string {
-  const trimmed = bullet.trim();
-  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
-}
-
-/** Transformation 2 — a sentence-final period, only where there is none. */
-export function terminate(sentence: string): string {
-  const trimmed = sentence.trimEnd();
-  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
-}
-
-/**
  * Lowercases a sentence that has been demoted to a clause by a connector.
  *
  * "More recently, At Acme, I…" is wrong; so is "More recently, i led…" and
@@ -229,6 +227,34 @@ export interface EvidenceChoice {
    * from the text.
    */
   matched: boolean;
+  /** The bullet's grammatical shape, which decides its frame. */
+  form: BulletForm;
+  /**
+   * Where the bullet's entry sits in the resume, or `Infinity` when unknown.
+   *
+   * Experience is written most-recent-first, so a *lower* index is a *more
+   * recent* entry. That is the only thing that licenses "More recently" —
+   * see `buildEvidence`.
+   */
+  entryIndex: number;
+}
+
+/**
+ * Every entry id in the resume, mapped to its position in document order.
+ *
+ * Built once per selection rather than searched per bullet, and it spans all
+ * sections so two bullets from different section types still compare.
+ */
+function entryOrder(resume: ResumeDocument): Map<string, number> {
+  const order = new Map<string, number>();
+  let index = 0;
+  for (const section of resume.sections) {
+    if (!section.visible || !("entries" in section)) continue;
+    for (const entry of section.entries) {
+      if (!order.has(entry.id)) order.set(entry.id, index++);
+    }
+  }
+  return order;
 }
 
 /**
@@ -248,6 +274,8 @@ export function selectEvidence(
   const chosen: EvidenceChoice[] = [];
   const seen = new Set<string>();
 
+  const order = entryOrder(resume);
+
   const take = (bullet: string, entryId: string | undefined, matched: boolean): void => {
     const text = bullet.trim();
     if (!text || seen.has(text)) return;
@@ -257,15 +285,30 @@ export function selectEvidence(
       organization: organizationForEntry(resume, entryId),
       entryId,
       matched,
+      form: classifyBulletForm(text),
+      entryIndex:
+        (entryId !== undefined ? order.get(entryId) : undefined) ?? Number.POSITIVE_INFINITY,
     });
   };
 
   for (const keyword of ranked) {
     if (chosen.length >= limit) break;
-    for (const evidence of keyword.resumeEvidence) {
+    /*
+     * Every bullet under one keyword carries the same `jdWeight`, so ordering
+     * them by form trades nothing away: relevance already tied. A bullet that
+     * becomes a sentence is a better thing to quote than one that becomes a
+     * label, and this is the only place that preference is cheap enough to be
+     * free.
+     */
+    const evidence = [...keyword.resumeEvidence].sort(
+      (a, b) =>
+        Number(readsAsProse(classifyBulletForm(b.text))) -
+        Number(readsAsProse(classifyBulletForm(a.text))),
+    );
+    for (const item of evidence) {
       if (chosen.length >= limit) break;
-      if (evidence.kind !== "experienceBullet" && evidence.kind !== "projectBullet") continue;
-      take(evidence.text, evidence.entryId, true);
+      if (item.kind !== "experienceBullet" && item.kind !== "projectBullet") continue;
+      take(item.text, item.entryId, true);
     }
   }
 
@@ -293,7 +336,18 @@ export function selectEvidence(
    * part that matched.
    */
   if (chosen.length < limit) {
-    for (const bullet of quotableBullets(resume)) {
+    /*
+     * Document order stays the ranking — see `quotableBullets` — but within
+     * it, a bullet that splices into a sentence comes before one that can only
+     * be labelled. A stable partition, so two bullets of the same form keep
+     * the order the resume put them in.
+     */
+    const quotable = quotableBullets(resume);
+    const ordered = [
+      ...quotable.filter((bullet) => readsAsProse(classifyBulletForm(bullet.text))),
+      ...quotable.filter((bullet) => !readsAsProse(classifyBulletForm(bullet.text))),
+    ];
+    for (const bullet of ordered) {
       if (chosen.length >= limit) break;
       take(bullet.text, bullet.entryId, false);
     }
@@ -336,12 +390,59 @@ export function selectAlignmentSkills(match: MatchResult, limit = ALIGNMENT_SKIL
 /* Paragraph builders                                                          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The first sentence of the user's summary, verbatim.
+ *
+ * The opening was two sentences — "I am writing about X" and "I currently hold
+ * Y" — neither of which says anything about the candidate. Every guide to
+ * cover letters asks the first paragraph for a short professional
+ * introduction, and the resume already contains one the user wrote themselves.
+ *
+ * ## Why only the first sentence
+ *
+ * A resume summary is written in resume register, and its opening line is the
+ * identity statement — "Backend engineer with six years on payments and data
+ * infrastructure" — which reads correctly as prose. What follows it usually
+ * does not: summaries continue in the subjectless style bullets use ("Most
+ * recently took a settlement pipeline from 40 minutes to under 6"), which is a
+ * fragment once it is standing on its own in a letter. And it is generally the
+ * *same* achievement the evidence paragraph is about to quote properly, so
+ * dropping it removes a duplication as well as a fragment.
+ *
+ * Never truncated. Cutting somebody's prose mid-clause to fit a budget would
+ * be this module editing their writing, and it does not do that — a long
+ * first sentence is used whole.
+ */
+function summarySentences(resume: ResumeDocument): string {
+  for (const section of resume.sections) {
+    if (section.type !== "summary" || !section.visible) continue;
+    const content = section.content.trim();
+    if (!content) return "";
+    return content.split(/(?<=[.!?])\s+/)[0] ?? "";
+  }
+  return "";
+}
+
+/** Punctuation and words that stop a title sitting inside "the {role} role". */
+const COMPLEX_TITLE = /[,/()]|\brole\b|\bposition\b/i;
+
+/** Case- and space-insensitive title comparison, for the restatement check. */
+function normaliseTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 function buildOpening(input: ComposeInput): CoverLetterParagraph {
   const { tone, angle } = input;
   const company = input.company.trim();
   const role = input.roleTitle.trim();
 
-  const leads = OPENING_LEAD[tone];
+  /*
+   * A title carrying a comma, a slash, a bracket, or the word "role" cannot
+   * sit inside "the {role} role" — see `OPENING_LEAD_COMPLEX_TITLE`.
+   */
+  const leads = COMPLEX_TITLE.test(role)
+    ? { ...OPENING_LEAD[tone], ...OPENING_LEAD_COMPLEX_TITLE[tone] }
+    : OPENING_LEAD[tone];
   const template =
     company && role
       ? leads.full
@@ -353,10 +454,24 @@ function buildOpening(input: ComposeInput): CoverLetterParagraph {
 
   const sentences = [fill(template, { role, company })];
 
+  // The candidate's own introduction, verbatim, between the two template
+  // sentences that carry no information about them.
+  const summary = summarySentences(input.resume);
+  if (summary) sentences.push(terminate(summary));
+
   const held = currentRole(input.resume);
   const sources: string[] = [];
   if (held) {
-    const angleTemplate = OPENING_ANGLE[angle][tone];
+    /*
+     * Naming the same title in both sentences is the commonest way this
+     * opening reads as machinery, and it happens whenever somebody applies
+     * for the job they already do — which is most internal moves and most
+     * sideways moves between employers.
+     */
+    const sameTitle = normaliseTitle(role) === normaliseTitle(held.title);
+    const angleTemplate = sameTitle
+      ? OPENING_ANGLE_SAME_TITLE[angle][tone]
+      : OPENING_ANGLE[angle][tone];
     sentences.push(
       fill(held.organization ? angleTemplate.full : angleTemplate.withoutOrganization, {
         title: held.title,
@@ -406,6 +521,57 @@ function quotableBullets(resume: ResumeDocument): { text: string; entryId: strin
   return bullets;
 }
 
+/** Which frame each grammatical form selects. Exhaustive over `BulletForm`. */
+const FRAME_FOR_FORM: Record<
+  BulletForm,
+  (frames: EvidenceFrameSet) => { withOrganization: string; bare: string }
+> = {
+  pastVerb: (frames) => frames.pastVerb,
+  dutyPhrase: (frames) => frames.dutyPhrase,
+  gerund: (frames) => frames.gerund,
+  ownSubject: (frames) => frames.ownSubject,
+  nounPhrase: (frames) => frames.labelled,
+  unsafeLead: (frames) => frames.labelled,
+};
+
+/**
+ * Which connective honestly joins this sentence to the one before it.
+ *
+ * Three cases, and the difference between them is a factual claim about the
+ * candidate's own history, so it is checked rather than assumed:
+ *
+ * 1. **Same entry** — two achievements in one job. Neither "More recently"
+ *    nor "Separately" is true of them; they are one story.
+ * 2. **A genuinely more recent entry** — experience is reverse-chronological,
+ *    so this is exactly when the new bullet's entry index is *lower*. Only
+ *    here may the letter say "More recently".
+ * 3. **Anything else** — a neutral connective asserting no order at all.
+ *
+ * Before this existed every second sentence said "More recently", because the
+ * connector list was indexed by position and the list was sorted by relevance.
+ * It said it even between two bullets from the same job.
+ */
+function connectorFor(
+  choice: EvidenceChoice,
+  previous: EvidenceChoice,
+  index: number,
+  connectors: readonly string[],
+  sameEntryConnectors: readonly string[],
+  tone: Tone,
+): string {
+  if (choice.entryId !== undefined && choice.entryId === previous.entryId) {
+    return sameEntryConnectors[(index - 1) % sameEntryConnectors.length] ?? "";
+  }
+  if (
+    Number.isFinite(choice.entryIndex) &&
+    Number.isFinite(previous.entryIndex) &&
+    choice.entryIndex < previous.entryIndex
+  ) {
+    return EVIDENCE_CONNECTOR_MORE_RECENT[tone];
+  }
+  return connectors[(index - 1) % connectors.length] ?? "";
+}
+
 function buildEvidence(input: ComposeInput): CoverLetterParagraph {
   const chosen = selectEvidence(input.resume, input.match);
   if (chosen.length === 0) {
@@ -424,43 +590,73 @@ function buildEvidence(input: ComposeInput): CoverLetterParagraph {
 
   const frames = EVIDENCE_FRAME[input.tone];
   const connectors = EVIDENCE_CONNECTORS[input.tone];
+  const sameEntryConnectors = EVIDENCE_CONNECTORS_SAME_ENTRY[input.tone];
 
   const sentences = chosen.map((choice, index) => {
-    const usable = startsWithCapitalisedWord(choice.bullet);
+    const previous = index > 0 ? chosen[index - 1] : undefined;
     /**
      * Naming the same employer twice in consecutive sentences reads as a
      * template filling a slot, which is exactly the impression this whole
      * module exists to avoid. Two bullets from one role are one story, so
      * the second one drops the lead-in and simply continues.
      */
-    const repeatsOrganization =
-      index > 0 && chosen[index - 1]?.organization === choice.organization;
+    const repeatsOrganization = Boolean(previous) && previous?.organization === choice.organization;
 
-    let sentence: string;
-    if (choice.organization && !repeatsOrganization && usable) {
-      sentence = fill(frames.atOrganization, {
-        organization: choice.organization,
-        bullet: lowercaseLead(choice.bullet),
-      });
-    } else if (choice.organization && !repeatsOrganization) {
-      sentence = fill(frames.colonForm, {
-        organization: choice.organization,
-        bullet: choice.bullet,
-      });
-    } else if (usable) {
-      sentence = fill(frames.bare, { bullet: lowercaseLead(choice.bullet) });
-    } else {
-      // No employer to attach it to and no safe lead-in: the bullet stands
-      // on its own, still untouched.
-      sentence = choice.bullet;
-    }
+    /*
+     * The frame is chosen by the bullet's grammatical form, never by its
+     * casing. Every shape the classifier could not place lands on
+     * `labelled`, so there is no input for which this finds no frame.
+     *
+     * One thing overrides the form: an organization containing its own comma
+     * cannot sit inside "At {org}, I …". The reader meets three commas
+     * before the verb and the sentence stops parsing — "Also, at Teaching
+     * Assistant, Programming Fundamentals, I ran weekly lab sessions". That
+     * name is real, because `organizationForEntry` returns a custom entry's
+     * title, which is usually a role rather than a company. The colon form
+     * takes it without ambiguity.
+     */
+    const organizationFitsInline = !/[,;:]/.test(choice.organization);
+    const frame = organizationFitsInline ? FRAME_FOR_FORM[choice.form](frames) : frames.labelled;
 
-    sentence = terminate(sentence);
+    const useOrganization = Boolean(choice.organization) && !repeatsOrganization;
+    const template = useOrganization ? frame.withOrganization : frame.bare;
+
+    /*
+     * Transformation 1 is applied only where the frame genuinely demotes the
+     * bullet to a clause inside a sentence that has already begun.
+     *
+     * Two cases must keep the user's original capital: a bare frame that *is*
+     * "{bullet}", where the bullet opens the sentence, and the labelled frame,
+     * where a colon precedes it — "At Meridian Health: AWS and Kubernetes
+     * migration" must not become "aWS".
+     */
+    const labelled =
+      choice.form === "nounPhrase" || choice.form === "unsafeLead" || !organizationFitsInline;
+    const bullet =
+      labelled || template.startsWith("{bullet}") ? choice.bullet : lowercaseLead(choice.bullet);
+
+    const sentence = terminate(fill(template, { organization: choice.organization, bullet }));
 
     // Indexed, never random — the composer is pure. Index 0 is the second
     // sentence, because the first needs no connective.
-    if (index === 0) return sentence;
-    const connector = connectors[(index - 1) % connectors.length] ?? "";
+    if (!previous) return sentence;
+
+    /*
+     * A labelled sentence takes no connective. "Also, at Ashfield Academy:
+     * Ran weekly lab sessions" demotes a colon form to a clause and then puts
+     * a colon in the middle of it; the fragment reads better standing on its
+     * own, which is what a colon form is for.
+     */
+    if (labelled) return sentence;
+
+    const connector = connectorFor(
+      choice,
+      previous,
+      index,
+      connectors,
+      sameEntryConnectors,
+      input.tone,
+    );
     return connector ? `${connector}${demoteToClause(sentence)}` : sentence;
   });
 
@@ -538,6 +734,74 @@ function alignmentSources(
   return ids;
 }
 
+/**
+ * The shortest and longest a quoted requirement may be.
+ *
+ * Under the floor it is a heading or a stray word, not a requirement. Over the
+ * ceiling it is a paragraph, and a paragraph in quotation marks in the middle
+ * of a cover letter reads as padding — which is what it would be.
+ */
+const QUOTE_MIN_LENGTH = 15;
+const QUOTE_MAX_LENGTH = 120;
+
+/**
+ * A posting line, cleaned up enough to sit inside quotation marks.
+ *
+ * Returns null rather than something imperfect. A quote is the one place the
+ * letter speaks in somebody else's voice, and a mangled one — a dangling
+ * bullet glyph, half a sentence, a nested quotation mark — is conspicuously
+ * worse than the sentence simply not being there. Every caller drops the
+ * sentence on null.
+ *
+ * Note that this trims the *employer's* text, not the user's. The verbatim
+ * guarantee in this module is about the candidate's own writing, which is
+ * never touched; the posting is quoted the way anything is quoted, with its
+ * list punctuation removed.
+ */
+function sanitiseQuote(raw: string): string | null {
+  const cleaned = raw
+    // Leading list punctuation: bullets, dashes, "1." and "1)".
+    .replace(/^[\s\u2022\u00b7*+\-\u2013\u2014]+/, "")
+    .replace(/^\d+[.)]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.;:,]+$/, "");
+
+  if (cleaned.length < QUOTE_MIN_LENGTH || cleaned.length > QUOTE_MAX_LENGTH) return null;
+  // A single word is a heading. A requirement is a phrase.
+  if (!/\s/.test(cleaned)) return null;
+  // Nested quotation marks would break the frame's own quoting.
+  if (/["\u201c\u201d]/.test(cleaned)) return null;
+  /*
+   * A length-of-experience requirement is never quoted.
+   *
+   * “You put it plainly: “5+ years with Kubernetes in production”.
+   * Kubernetes is in the work above.” The second sentence answers the skill
+   * and says nothing about the five years — but the pair reads as though it
+   * answered both, and the match engine checks only that a skill is
+   * demonstrated, never for how long. That is an implied claim the resume may
+   * not support, which is the one thing this module will not emit. The quote
+   * is dropped and the paragraph says what it can.
+   */
+  if (/\d+\s*\+?\s*(?:years?|yrs?)\b/i.test(cleaned)) return null;
+  return cleaned;
+}
+
+/**
+ * The posting line worth quoting, or null.
+ *
+ * Drawn from the highest-weighted requirement the resume **demonstrates**, so
+ * the line quoted is one the very next sentence answers. Quoting a requirement
+ * the candidate cannot meet would be this module handing the reader an
+ * objection.
+ */
+function postingQuote(match: MatchResult): string | null {
+  const strongest = [...match.keywords]
+    .filter((keyword) => keyword.status === "demonstrated")
+    .sort((a, b) => b.jdWeight - a.jdWeight)[0];
+  return strongest ? sanitiseQuote(strongest.jdQuote) : null;
+}
+
 function buildAlignment(input: ComposeInput): CoverLetterParagraph | null {
   const skills = selectAlignmentSkills(input.match);
   const listed = selectListedSkills(input.match);
@@ -555,8 +819,19 @@ function buildAlignment(input: ComposeInput): CoverLetterParagraph | null {
    */
   const sentences: string[] = [];
 
+  /*
+   * The employer's own words, first, when there are any worth quoting. It
+   * turns the sentence after it from a list into a reply — see
+   * `REQUIREMENT_ECHO` for why this is the one thing the letter takes from
+   * the posting.
+   */
+  const quote = skills.length > 0 ? postingQuote(input.match) : null;
+  if (quote) sentences.push(fill(REQUIREMENT_ECHO[input.tone], { quote }));
+
   if (skills.length > 0) {
-    const frame = ALIGNMENT_FRAME[input.tone];
+    // The echo already named the posting; repeating "Your posting asks for"
+    // straight after it reads as a second throat-clear.
+    const frame = quote ? ALIGNMENT_AFTER_ECHO[input.tone] : ALIGNMENT_FRAME[input.tone];
     sentences.push(
       fill(skills.length === 1 ? frame.one : frame.many, { skills: joinList(skills) }),
     );

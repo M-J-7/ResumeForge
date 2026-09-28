@@ -31,14 +31,22 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "border-line bg-surface-1 flex flex-col items-center gap-3 rounded-lg border border-dashed px-6 py-10 text-center",
+        "border-line bg-surface-1 flex flex-col items-center gap-4 rounded-xl border border-dashed px-6 py-12 text-center",
         className,
       )}
     >
-      {icon ? <span className="text-faint">{icon}</span> : null}
-      <div className="flex flex-col gap-1">
-        <p className="text-text text-sm font-semibold">{title}</p>
-        <p className="text-muted mx-auto max-w-prose text-sm">{body}</p>
+      {/* The icon in a lit disc rather than a grey glyph floating on a dashed
+          rectangle. An empty state is the first thing a new account sees, and
+          the difference between "unfinished" and "waiting for you" is almost
+          entirely whether anything in it looks built. */}
+      {icon ? (
+        <span className="bg-surface-0 border-line text-faint elev-1 flex h-12 w-12 items-center justify-center rounded-full border">
+          {icon}
+        </span>
+      ) : null}
+      <div className="flex flex-col gap-1.5">
+        <p className="text-text text-title font-semibold">{title}</p>
+        <p className="text-muted text-small max-w-measure mx-auto leading-relaxed">{body}</p>
       </div>
       {action}
     </div>

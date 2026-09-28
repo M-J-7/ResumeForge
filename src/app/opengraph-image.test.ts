@@ -22,11 +22,12 @@ const CSS = readFileSync(path.join(process.cwd(), "src", "app", "globals.css"), 
 /**
  * The dark palette block, and only that one.
  *
- * `:root[data-theme="dark"]` is the canonical declaration; the
- * `prefers-color-scheme` fallback repeats it verbatim, and
- * `:root[data-theme="dark"] .band-invert` redeclares several of the same
- * names with *different* values — which is why this cannot simply take the
- * last match in the file.
+ * `:root[data-theme="dark"]` is the canonical declaration, and both the
+ * `prefers-color-scheme` fallback and `[data-stage="dark"]` repeat it
+ * verbatim — `palette.test.ts` asserts the stage copy stays identical, which
+ * is what keeps this card in step with the marketing surfaces for free. It
+ * still cannot take the last match in the file: the names are declared three
+ * times and only the first is the one the card is a copy of.
  */
 const DARK_BLOCK = (() => {
   const start = CSS.indexOf(':root[data-theme="dark"] {');

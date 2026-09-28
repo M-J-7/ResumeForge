@@ -38,8 +38,8 @@ describe("::selection (§10.5)", () => {
   it("stays one rule, resolving its colours per context", () => {
     // `::selection` resolves custom properties from the element it originates
     // on, so one block covers light, `data-theme="dark"`, the
-    // `prefers-color-scheme` fallback and `.band-invert`. A per-theme copy
-    // would be four places to keep in step.
+    // `prefers-color-scheme` fallback and `[data-stage="dark"]`. A per-theme
+    // copy would be four places to keep in step.
     const selectionRules = CSS.match(/^::selection \{/gm) ?? [];
     expect(selectionRules).toHaveLength(1);
   });

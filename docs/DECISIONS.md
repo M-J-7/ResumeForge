@@ -135,3 +135,67 @@ Code references these by ID in comments (`// per D5`). Keep the IDs stable.
 | 2026-09-08 | D8         | Reversed for one constrained surface: cover letters can offer an opt-in, browser-only Enhance action. It uses the pinned Apache-2.0 `Xenova/flan-t5-small` ONNX model via Transformers.js, never calls a hosted model/API, sends no user text to a server, validates model output against cited resume evidence, and requires review before applying it. Resume writing and coaching remain model-free.                                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-09-10 | D8         | **Measured, and the exception is not exercised.** Running the model in a browser for the first time found three things: the ONNX runtime was never fully vendored (a `.mjs` loader 404ed after 96MB of weights had downloaded), the WebGPU path returned one byte-identical string for every input, and the model itself cannot rewrite a paragraph. The first two are fixed — the vendoring is asserted against the package's own file list, and the WebGPU path is removed. The third is why no deployment turns the feature on. `pnpm qa:enhance` is the pass; reading its proposals is the acceptance, because a wrong answer here is a plausible sentence rather than an exception.                                                                                                      |
 | 2026-09-10 | D8         | **Second evaluation, same answer.** Three instruction-tuned decoders were vendored and measured after the seq2seq round: `SmolLM2-360M-Instruct` echoes its input, and `Qwen2.5-0.5B-Instruct` is fluent but invented a unit ("40 minutes to 6" → "6 hours") and wrote "transformed our daily workload into a seamless, event-driven system" — which no rule can catch, because it invents no noun, number or credential. Six models, two architectures, eight prompt shapes. The binding constraint is D6's local-only requirement, not D8: a model small enough for a browser is not reliable enough for a job application. Two provider-neutral guardrail rules were merged from it (units belong to their numbers; a proposal that talks about itself is refused). The feature stays off. |
+
+## Amendment, 2026-09-10 — the letter may quote the posting; D8 is unchanged
+
+**Decision:** The alignment paragraph may quote **one** requirement line from
+the posting, in quotation marks. The previous position — stated in the UI, in
+`IMPLEMENTATION.md`, and in the composer's own header — was that no wording
+from the posting is ever copied into the letter.
+
+**Reason:** That promise was protecting the wrong thing. D8's bar is that
+nothing is **invented**: no generative model writes a claim about the candidate
+that the candidate did not make. A line lifted from the posting is not a claim
+about the candidate at all — it is the employer's own sentence, returned to the
+person who wrote it, and the reader is the one witness who can check it
+instantly. Refusing to quote it bought no honesty and cost the letter the thing
+that makes it read as a reply rather than a form: "you asked for this, and here
+it is."
+
+**What constrains it:**
+
+- The line is drawn from the highest-weighted requirement the resume
+  **demonstrates**, so the sentence after the quote answers the sentence
+  quoted. Quoting a requirement the candidate cannot meet would hand the reader
+  an objection.
+- It is wrapped in quotation marks, which do two jobs: they mark the words as
+  the employer's rather than the candidate's, and they make the sentence
+  well-formed whatever the fragment turns out to be.
+- It is **sanitised or dropped**, never mangled — list punctuation removed,
+  bounded at 15–120 characters, rejected if it carries nested quotation marks.
+- A **length-of-experience line is never quoted.** "You put it plainly: '5+
+  years with Kubernetes in production'. Kubernetes is in the work above" reads
+  as answering both halves, and the match engine checks that a skill is
+  demonstrated, never for how long. That is an implied claim the resume may not
+  support.
+
+**Rejected:** copying the posting's phrasing into the candidate's own
+sentences, unquoted. That is the failure this product exists to avoid, wearing
+a different hat.
+
+## Amendment, 2026-09-10 — the composer picks frames by grammar, not casing
+
+**Decision:** `classifyBulletForm` decides which sentence frame a resume bullet
+is spliced into. The bullet itself is still never rewritten.
+
+**Reason:** The composer chose between three frames using
+`startsWithCapitalisedWord`, which asks "capital letter, rest lowercase?" — a
+question about **casing**, where the frame `"At {org}, I {bullet}"` needs an
+answer about **syntax**. Every bullet opening with a noun, a gerund or a duty
+phrase produced broken English: "At Acme, I responsible for the regional
+ledger", "At Acme, I managing a team of six", and — in our own shipped
+data-analyst example — "At uk-retail-footfall, I open dataset and notebook
+series". Not one of the composer's four guarantees could fail on any of it,
+because all four are about honesty and none asks whether a sentence is a
+sentence.
+
+**What holds it in place:** `compose.grammar.test.ts`, which composes every
+shipped example resume across every tone and angle and asserts that wherever an
+evidence sentence says "I ⟨word⟩", that word is a verb. The fix changes frame
+*selection* only — a third transformation of the user's text would break the
+verbatimness proof in `compose.test.ts`, which works by undoing the two
+permitted ones and searching the resume for the result.
+
+**Rejected:** a local model to rewrite the paragraph into fluent prose. Already
+evaluated twice and refused — see the D8 amendments above. The grammar was
+never the model's job; it was a missing classifier.

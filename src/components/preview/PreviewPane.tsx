@@ -140,7 +140,7 @@ export function PreviewPane({
 
         {viewMode === "preview" ? (
           <>
-            <span className="text-muted text-xs tabular-nums">
+            <span className="text-machine text-micro font-mono tabular-nums">
               {fit ? fit.summary : pageCount > 0 ? pageLabel(pageCount) : "—"}
             </span>
             {/*
@@ -154,7 +154,7 @@ export function PreviewPane({
               also announces correctly — a screen reader reads the change,
               and there is nothing there to read when there is no change.
             */}
-            <span aria-live="polite" className="text-faint text-xs">
+            <span aria-live="polite" className="text-faint text-micro font-mono">
               {rendering ? "Updating…" : ""}
             </span>
 

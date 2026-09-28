@@ -15,19 +15,24 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AppFooter } from "@/components/shell/AppFooter";
 import { Built } from "@/components/marketing/Build";
-import { PageHeader, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
+import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { SpotlightGroup } from "@/components/ui/Spotlight";
 import { Card } from "@/components/ui/card";
 import { ROLE_EXAMPLES } from "@/lib/examples/roles";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { itemListJsonLd } from "@/lib/structured-data";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Resume examples",
+export const metadata: Metadata = pageMetadata({
+  title: "Resume examples by role",
+  // Trimmed under 160. The old one ran to 171 and lost "the reasoning behind
+  // every line" to the truncation — which is the only part of it a competitor
+  // with five hundred generated examples cannot also write.
   description:
-    "Complete resume examples across technology, healthcare, finance, education and sales — each with the plain text a parser reads from it and the reasoning behind every line.",
-  alternates: { canonical: "/examples" },
-};
+    "Complete resume examples across technology, healthcare, finance, education and sales — " +
+    "each with the plain text a parser reads from it, and why every line is written that way.",
+  path: "/examples",
+});
 
 /** Reads the runtime origin for its metadata — see `privacy/page.tsx`. */
 export const dynamic = "force-dynamic";
@@ -53,27 +58,37 @@ export default function ExamplesIndexPage() {
           })),
         )}
       />
-      <main className="flex flex-1 flex-col">
-        <PageHeader containerClassName="max-w-5xl">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
+        {/*
+          A dark stage *band*, over a Paper & Ink body — the deliberate
+          exception in the redesign. `/examples` and `/guides` are the pages a
+          stranger lands on from a search, and long-form reading on near-black
+          is a real comprehension cost. They get the masthead and then a
+          comfortable reading surface. `stage` on the band rather than on
+          `<main>` is what keeps the page below it light: the scope's `:has()`
+          half uses a child combinator precisely so a nested band cannot flip
+          the whole document.
+        */}
+        <PageHeader stage containerClassName="max-w-5xl">
           <Built>
             <h1 className={PAGE_TITLE_CLASS}>Resume examples</h1>
           </Built>
           <Built className="mt-5">
-            <p className="text-muted max-w-prose text-sm leading-relaxed">
+            <p className={PAGE_LEAD_CLASS}>
               Complete resumes, not fragments. Each one comes with the plain text a parser recovers
               from it and a short explanation of the choices in it — which is the part that is
               actually worth reading, and the part a generated example cannot have.
             </p>
           </Built>
           <Built className="mt-3">
-            <p className="text-faint text-xs">
+            <p className="text-faint text-small max-w-measure">
               Every example is invented. Names, employers and numbers are made up, because a real
               resume is somebody&rsquo;s personal data.
             </p>
           </Built>
         </PageHeader>
 
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-6 py-12">
+        <div className="py-band-tight mx-auto flex w-full max-w-5xl flex-col gap-10 px-6">
           {fields().map((field) => (
             <section
               key={field}
@@ -85,7 +100,7 @@ export default function ExamplesIndexPage() {
                  eyebrow above a heading that already announces itself. */
               className="grid gap-4 sm:grid-cols-[minmax(0,7rem)_minmax(0,1fr)] sm:gap-8"
             >
-              <h2 className="text-faint text-xs font-semibold tracking-wide uppercase sm:pt-1.5">
+              <h2 className="text-faint text-small font-semibold tracking-wide uppercase sm:pt-1.5">
                 {field}
               </h2>
               <SpotlightGroup>
@@ -93,7 +108,7 @@ export default function ExamplesIndexPage() {
                   {ROLE_EXAMPLES.filter((example) => example.field === field).map((example) => (
                     <li key={example.slug} className="relative">
                       <Card className="spot lift hover:border-line-strong h-full p-5">
-                        <h3 className="text-text text-base font-semibold">
+                        <h3 className="text-text text-body font-semibold">
                           <Link
                             href={`/examples/${example.slug}`}
                             /* The whole card lifts; the link inside only needs to
@@ -105,7 +120,9 @@ export default function ExamplesIndexPage() {
                             {example.role}
                           </Link>
                         </h3>
-                        <p className="text-muted mt-2 text-sm leading-relaxed">{example.summary}</p>
+                        <p className="text-muted text-small mt-2 leading-relaxed">
+                          {example.summary}
+                        </p>
                       </Card>
                     </li>
                   ))}
@@ -115,16 +132,22 @@ export default function ExamplesIndexPage() {
           ))}
 
           <section className="border-line flex flex-wrap items-center gap-5 border-t pt-8">
-            <Link href="/builder" className="text-accent rule-grow rounded-sm text-sm font-medium">
+            <Link
+              href="/builder"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
+            >
               Start building
             </Link>
             <Link
               href="/templates"
-              className="text-accent rule-grow rounded-sm text-sm font-medium"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
             >
               Templates
             </Link>
-            <Link href="/guides" className="text-accent rule-grow rounded-sm text-sm font-medium">
+            <Link
+              href="/guides"
+              className="text-accent rule-grow text-small rounded-sm font-medium"
+            >
               Guides
             </Link>
           </section>
