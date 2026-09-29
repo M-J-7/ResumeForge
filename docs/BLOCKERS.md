@@ -5,7 +5,7 @@
 > deferred decision: a deferral is a choice we made, a blocker is one we
 > cannot make yet.
 >
-> **Last updated:** 2026-09-12 · Updated in the same commit as the work that
+> **Last updated:** 2026-09-29 · Updated in the same commit as the work that
 > hits or clears a blocker.
 
 ---
@@ -27,16 +27,20 @@ switch back to A1 whenever capacity appears.
 
 | #   | Yours to do                          | Status                                                              |
 | --- | ------------------------------------ | ------------------------------------------------------------------- |
-| 1   | Merge to master                      | Done — `a985c46`. Two later branches still open, see below          |
+| 1   | Merge to master                      | Done — `a985c46`, then everything since as PR #5 (`4dbe1bb`, 2026-09-29) |
 | 2   | An Oracle Cloud account, home region | Done — `ap-hyderabad-1`                                             |
 | 3   | A domain                             | Done — `sixseconds.tech`                                            |
 | 4   | An SMTP provider                     | Brevo configured; domain authentication added 2026-09-12            |
 
-**Still open:** the branches `fix-backup-image` and `offsite-backups`. The
-second matters more than it looks — `deploy.sh` runs
-`git reset --hard origin/master`, so the Litestream configuration currently
-living only on the instance is destroyed by the next deploy, which would end
-replication with no error anywhere.
+**Closed 2026-09-29:** `fix-backup-image` and `offsite-backups` reached
+master in PR #5, so the Litestream configuration is in the repository rather
+than only on the instance, and a deploy's `git reset --hard` keeps it.
+
+**Owed: the first deploy of PR #5.** The instance still has the *old*
+`deploy.sh`, which builds on a machine that cannot build. Run the new one
+from `origin/master` once — the commands are in PR #5's description and in
+`docs/ROADMAP.md` — and `./.env` must name
+`APP_IMAGE=ghcr.io/m-j-7/resumeforge:latest`, the package CI publishes to.
 
 **Known risk, not yet a blocker.** Brevo rewrites every link in transactional
 mail through its click tracker and offers no way to disable it over SMTP. The

@@ -4,7 +4,9 @@
 >
 > Supersedes and replaces `EXECUTION_PLAN.md`, `Revised implementation.md` and `PROGRESS.md`, which were deleted after their still-binding content was folded in here. The five documents that remain beside this one each have a job this one does not: `DECISIONS.md` (locked constraints, cited from code by D-number), `RUNBOOK.md` (operations, cited from `docker-compose.yml` and `src/server/db.ts`), `QA.md` (manual checks, cited from the test suites), `ATTRIBUTION.md` (a CC BY licence condition, not a courtesy), `BLOCKERS.md` (what is stopping work, and what would clear it).
 >
-> **Last updated:** 2026-09-03 · **Owner:** solo, part-time.
+> **What to build next now lives in `ROADMAP.md`** (2026-09-28); this file stays the record of what is built and what binds new work — §2 above all.
+>
+> **Last updated:** 2026-09-29 · **Owner:** solo, part-time.
 
 ---
 
