@@ -29,6 +29,8 @@
  *   match a requirement they do not.
  */
 
+import { DOMAIN_SKILLS } from "./domain";
+
 export interface CuratedSkill {
   /** Stable slug. Never change one; it is the join key into scores. */
   readonly id: string;
@@ -84,7 +86,11 @@ export const CURATED_SKILLS: readonly CuratedSkill[] = [
   {
     id: "react-native",
     canonical: "React Native",
-    aliases: ["rn", "reactnative"],
+    // Not "rn". It was here, and it made every nursing posting list "React
+    // Native" as a requirement and every nurse's "RN" count as React Native —
+    // RN is overwhelmingly the nursing licence, and React Native postings
+    // spell the framework out. See ./domain.ts on judging from the posting.
+    aliases: ["reactnative"],
     category: "mobile",
   },
   { id: "nextjs", canonical: "Next.js", aliases: ["next js", "nextjs"], category: "frontend" },
@@ -379,4 +385,11 @@ export const CURATED_SKILLS: readonly CuratedSkill[] = [
     aliases: ["a b testing", "split testing", "experimentation"],
     category: "analytics",
   },
+
+  /* ---------------------------------------------------------------- */
+  /* Outside software — healthcare, education, office, finance, retail, */
+  /* HR, sales and the trades. Registered after the entries above, so a */
+  /* term both claim resolves to the one above. See ./domain.ts.       */
+  /* ---------------------------------------------------------------- */
+  ...DOMAIN_SKILLS,
 ];

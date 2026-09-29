@@ -179,8 +179,9 @@ export default function KeywordScannerPage() {
               resume shows it.
             </p>
             <p className="text-muted text-body leading-relaxed">
-              The vocabulary it recognises is strongest for technical and professional roles. Where
-              a posting names nothing it knows, it says so, rather than inventing a result.
+              It recognises software and engineering tools, and the terms of healthcare, teaching,
+              office, finance, retail, HR and sales work. It is not exhaustive: where a posting
+              names nothing it knows, it says so, rather than inventing a result.
             </p>
           </section>
 

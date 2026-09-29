@@ -28,6 +28,7 @@
 | F10 — spellcheck | **Done** — prose fields checked in every browser; names, emails, phones, links and skills are not |
 | F1 — Six-Second View | **Done** — a "Six seconds" tab in the builder: where the name, current and previous roles and education landed on page one of the real PDF, with an animated overlay; flags a current role pushed low or a fact off page one |
 | B8 — stale docs | **Done** — IMPLEMENTATION.md header, BLOCKERS.md after PR #5, MONETISATION.md §2b status, the memory entry |
+| F5 — vocabulary beyond tech | **Done** — ~150 owned terms (healthcare, education, office, finance, retail, HR, sales, engineering) and short product names; fixed RN resolving to React Native and canvas resolving to Canva |
 | Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
 | Everything else | Not started |
 

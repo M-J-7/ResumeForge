@@ -34,7 +34,11 @@ const CASES: ReadonlyArray<readonly [string, string]> = [
   ["Amazon Web Services", "aws"],
   ["Azure", "azure"],
   ["Microsoft Azure", "azure"],
-  ["RN", "react-native"],
+  // Was "react-native" until 2026-09-29. "RN" in a posting or a resume is the
+  // nursing licence far more often than the framework, and resolving it to
+  // React Native made every nursing posting list "React Native" as a
+  // requirement. Changed deliberately with F5 — see src/lib/skills/domain.ts.
+  ["RN", "registered-nurse"],
   ["React Native", "react-native"],
   ["ReactJS", "react"],
   ["React.js", "react"],

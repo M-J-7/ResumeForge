@@ -782,7 +782,15 @@ do.
   **Resolved in §12 below.** The third status already existed — `listed-only` —
   and the composer simply refused to use it.
 
-- **The skill vocabulary is technology-centric, so non-technical roles match
+- **~~The skill vocabulary is technology-centric~~ — widened 2026-09-29 (ROADMAP
+  F5, `src/lib/skills/domain.ts`).** About 150 owned terms across healthcare,
+  education, office, finance, retail, HR, sales and engineering, plus short
+  names for products O*NET only lists with a vendor prefix (SolidWorks,
+  QuickBooks). `domain.test.ts` holds the nurse, teacher and administrative
+  assistant examples to matching invented postings for their roles. Kept below
+  because it records what motivated the change:
+
+  **The skill vocabulary is technology-centric, so non-technical roles match
   little.** `data/skills.json` is O*NET's technology-software list and
   `curated.ts` is 90 terms we own, almost all of them engineering. Of the ten
   §11 roles, the nurse, the teacher and the administrative assistant demonstrate
