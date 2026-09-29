@@ -11,7 +11,7 @@
 | Item | State |
 |---|---|
 | A1 — commit the working tree | **Done** 2026-09-28 (`93cdbc1`). One commit: `trust-signals.test.ts` pins the suite size exactly, so any split leaves intermediate commits red |
-| A2 — merge to master and deploy | **Waiting on you.** The branch contains every open branch, and a dry-run merge with `origin/master` produces an identical tree. Needs: push, PR, merge, then `sudo ./deploy/oracle/deploy.sh` on the instance |
+| A2 — merge to master and deploy | **Merged** 2026-09-29 as PR #5 (`4dbe1bb`). **Deploy waiting on you** — run the new `deploy.sh` from `origin/master` on the instance; the steps are in PR #5 |
 | A3 — `deploy.sh` built on a box that cannot build | **Done.** Pulls the image CI published for the exact commit, before moving the checkout |
 | A4 — Brevo click tracking burns magic links | **Waiting on you** — a Resend account, then one `EMAIL_SERVER` line in `.env.production` |
 | A5 — `/pricing` stated limits nothing enforces | **Done.** The account tier says there is no limit while the Pass is not on sale; a test ties the two |
