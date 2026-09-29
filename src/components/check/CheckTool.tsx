@@ -127,16 +127,34 @@ export function CheckTool() {
           setDragging(false);
           void run(event.dataTransfer.files?.[0]);
         }}
-        className={
-          "border-line-strong spot lift hover:border-accent flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-8 text-center" +
-          (dragging ? " border-accent bg-accent-weak" : "")
-        }
+        /*
+         * The highest-value acquisition surface on the site, and it used to
+         * look like a form field: a dashed grey rectangle with an icon in it.
+         * It is now the parser's own surface — slate ground, slate border,
+         * slate light under the pointer — which is the same rule the rest of
+         * the app follows about whose voice a thing is in. `--machine` leads
+         * everywhere a machine is about to read something.
+         *
+         * `data-dragging` rather than another class in the string: one
+         * attribute, and the border, the ground and the disc all answer it.
+         */
+        data-dragging={dragging ? "" : undefined}
+        className="machine-panel spot spot-machine lift group border-machine/45 hover:border-machine data-dragging:border-machine flex flex-col items-center gap-4 rounded-xl border-2 border-dashed p-8 text-center transition-colors duration-[var(--dur)] sm:p-12"
       >
-        <FileTextIcon className="text-muted h-8 w-8" />
+        {/* The icon in a lit disc rather than floating on the ground. It is
+            what makes the zone read as a *place to put something* rather than
+            as a decorated boundary. */}
+        <span
+          aria-hidden
+          className="bg-machine-weak text-machine elev-1 border-line flex h-14 w-14 items-center justify-center rounded-full border transition-transform duration-[var(--dur)] ease-[var(--ease)] group-hover:-rotate-6"
+        >
+          <FileTextIcon className="h-6 w-6" />
+        </span>
         <div>
-          <p className="text-text text-sm font-medium">Drop a PDF or Word .docx here</p>
-          <p className="text-muted mt-1 text-xs">
-            It is read in this tab. Nothing is uploaded, and there is nothing to sign up for.
+          <p className="text-text text-title font-semibold">Drop a PDF or Word .docx here</p>
+          <p className="text-muted text-small max-w-measure mx-auto mt-2 leading-relaxed">
+            It is read in this tab. Nothing is uploaded, there is no account, and there is nothing
+            to pay for.
           </p>
         </div>
         <input
@@ -150,6 +168,11 @@ export function CheckTool() {
         <Button variant="primary" disabled={busy} onClick={() => inputRef.current?.click()}>
           {busy ? "Reading your resume…" : "Choose a file"}
         </Button>
+        {/* The formats, in the machine's face, because they are a statement
+            about what a parser here can open. */}
+        <p aria-hidden className="text-faint text-micro font-mono tracking-wider uppercase">
+          .pdf&ensp;·&ensp;.docx
+        </p>
       </div>
 
       {error ? (

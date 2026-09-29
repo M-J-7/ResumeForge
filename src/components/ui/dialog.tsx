@@ -80,19 +80,24 @@ export function Dialog({
         if (event.target === ref.current) onClose();
       }}
       className={cn(
-        "border-line bg-surface-0 text-text m-auto w-[min(32rem,calc(100vw-2rem))] rounded-lg border p-0 shadow-lg",
-        "backdrop:bg-[var(--scrim)] backdrop:backdrop-blur-[2px]",
+        // `--shadow-pop` rather than Tailwind's `shadow-lg`: a dialog is
+        // one of the two things in this app that genuinely floats, and the
+        // token is the shadow computed for that — including the dark
+        // variant, where a stock grey blur disappears entirely.
+        "border-line bg-surface-0 text-text m-auto w-[min(32rem,calc(100vw-2rem))] rounded-xl border p-0",
+        "shadow-[var(--shadow-pop)]",
+        "backdrop:bg-[var(--scrim)] backdrop:backdrop-blur-[3px]",
         "anim-pop",
         className,
       )}
     >
       <div className="border-line flex items-start justify-between gap-3 border-b px-4 py-3">
         <div>
-          <h2 id={titleId} className="text-text text-sm font-semibold">
+          <h2 id={titleId} className="text-text text-title font-semibold">
             {title}
           </h2>
           {description ? (
-            <p id={descriptionId} className="text-muted mt-0.5 text-xs">
+            <p id={descriptionId} className="text-muted text-small mt-1">
               {description}
             </p>
           ) : null}

@@ -25,7 +25,7 @@ The build is feature-complete through P37 — every package in the roadmap. **1,
 | **P36/P37** — Content and brand                                 | Eight complete example resumes, each publishing **the plain text a parser reads from it** as the page body — which is what a crawler indexes and what an image never is · four guides written to answer their question rather than to exist · trust signals that survive being checked, with the numeric ones measured against this repository by a test                                                                                                                |
 | **P34/P35** — Coach and bands                                   | A bullet decomposed into Action / What / How / Outcome, with the missing part asked about rather than written · one question on first open that reorders the rail and swaps the advice · the fresher copy that already existed now routed to the band it was written for                                                                                                                                                                                                |
 | **P33** — Phrase bank                                           | O\*NET supplies the topic index and 11,106 alternate titles; the achievement-shaped scaffolds are written here and owned · a drawer that inserts blanks, never a finished sentence (D8) · five one-click section presets · **the whole bank passes our own lint engine**, which is how two bad scaffolds were caught before anyone saw them                                                                                                                             |
-| **P32** — Templates                                             | Two style axes with a D10 migration that reproduces the v1 appearance exactly · twelve named presets, each a complete `Settings` plus a section order · thumbnails that are real renders, never a mock-up asset that can drift · a public `/templates` gallery whose text survives with JavaScript off · `applyTemplate`, so a template is one undo step                                                                                                                |
+| **P32** — Templates                                             | Two style axes with a D10 migration that reproduces the v1 appearance exactly · twenty-four named presets in three groups, each a complete `Settings` plus a section order · thumbnails that are real renders, never a mock-up asset that can drift · a public `/templates` gallery whose text survives with JavaScript off · `applyTemplate`, so a template is one undo step                                                                                           |
 
 ### Not done, and why
 
@@ -115,6 +115,9 @@ Each of these is silent. None is findable by reading the obvious file.
 22. **`extractDocxStructure` must give `<w:tab/>` a space.** An entry heading sets its date at a right tab stop, so ignoring the tab yields `"Senior Backend EngineerMar 2022 – Present"` — one unparseable string where the document has two fields. Invisible in the X-Ray suite, which only asserts on `Heading1` lines, and those are single runs.
 23. **A Word heading style is not a section boundary by itself.** Our DOCX sets sections as `Heading1` and entry headings as `Heading2`; treating any heading style as a section makes every job title start a new section. `docxHeadingLevel` plus "the shallowest level present wins" is the rule, and it also handles a foreign document that uses `Heading2` throughout.
 24. **A stale `next dev` on port 3000 silently hijacks the whole E2E run.** `playwright.config.ts` sets `reuseExistingServer: !CI`, so a dev server left running from a previous session is reused instead of the production build the command would otherwise make — and `/letters/new` 500s under it with a Jest-worker crash that has nothing to do with the code under test. If a spec fails in a way that makes no sense, check what is listening on 3000 before debugging the spec.
+25. **Nothing under `src/app/(site)` may read the session, cookies or headers on the server.** Those routes are prerendered once and served as files, which is what lets a 1/8-OCPU instance survive a shared link. One `auth()`/`cookies()` call anywhere in their tree — including a layout or a shared component — silently makes them per-request again; `next build` still succeeds and just prints `ƒ` instead of `○` beside the route. The header there is `SiteHeader`, which asks `/api/auth/session` from the browser. Application routes (`/builder`, `/dashboard`, `/letters`, `/signin`) mount `AppHeader` from their own `layout.tsx` and read it on the server.
+26. **An unknown session is not a guest session.** `<StorageOwner>` deletes every browser-local slot that belongs to neither its owner nor `guest`, so publishing `guest` for someone who is signed in deletes their own work. `src/components/shell/client-session.ts` publishes an owner only once `/api/auth/session` has actually answered; a failed request, or a user with no id, stays `unknown` and purges nothing. `client-session.test.ts` pins every case.
+27. **The prerendered pages bake the origin in at build time.** Their canonicals, `og:url` and JSON-LD are absolute, so the Dockerfile refuses to build without an `https://` `NEXT_PUBLIC_SITE_URL` build argument (CI passes it; so do both deploy scripts when building on the box). A local `pnpm build` without it produces `localhost` canonicals by design — never ship one.
 
 ### 2.5 Conventions
 
@@ -227,25 +230,38 @@ Closed the perception gap without a second rendering path. **D2 stands: one engi
 **What shipped**
 
 - `settingsSchema` gains `headerStyle` (`left` | `centered`) and `headingStyle` (`rule` | `caps` | `accent-bar`). `CURRENT_SCHEMA_VERSION` is 2, with the `v1 → v2` step in `migrate.ts` defaulting both to the v1 appearance.
-- `src/lib/resume/templates.ts` — twelve presets, each a complete `Settings` plus a section order.
+- `src/lib/resume/templates.ts` — twenty-four presets, each a complete `Settings` plus a section order, in three groups: general purpose, shaped by where you are applying, shaped by what you do.
 - `src/lib/resume/sample.ts` — the document the gallery renders. A _product_ asset, not a test fixture: the fixtures are shaped to break things, and showing a visitor a stress case invites them to conclude the product produces stress cases.
 - `src/components/templates/` — `TemplateGallery` (shared), `TemplateThumbnail` (real renders, serial, cached), `PublicTemplateGallery`.
 - `src/app/templates/page.tsx` — public and indexable, plus a sitemap entry and a header link.
 - `useResumeStore.applyTemplate` and `src/lib/resume/template-handoff.ts`.
-- `src/lib/resume/templates.test.ts` (34 tests) and `e2e/templates.spec.ts` (6).
+- `src/lib/resume/templates.test.ts` and `e2e/templates.spec.ts`. Both count from the data rather than from a literal, so a preset added and forgotten in the gallery fails rather than shipping invisible.
 
 **Where it departs from the plan as written, and why**
 
 1. **`applyTemplate`, not `setSettings` + `reorderSections`.** Each of those is its own `applyChange`, so applying one template would have cost five or six presses of Ctrl+Z. That is not undo, it is a puzzle — and "a single undo step" is the stated acceptance criterion, so the plan's own mechanism could not have met it. One store action, one history entry.
 2. **The gallery card is an `<a href>` on the public page and a `<button>` in the Design dialog.** Same component, one prop. A card that navigates and is not a link is not right-clickable, not middle-clickable, and invisible to a crawler — on the page whose entire purpose is being crawled.
-3. **The public page carries an `sr-only` list of all twelve names and descriptions.** The thumbnails need a browser to draw. The text a crawler indexes must not.
+3. **The public page carried an `sr-only` list of all twelve names and descriptions, and no longer does.** It was written to guarantee the text a crawler indexes does not need a browser. It never had to: `TemplateGallery` is a client component, so React renders it on the server anyway and every name and `forWho` line is already in the response with JavaScript off. Grouping made the duplicate actively harmful — each entry was an `<h2>`, so the heading outline opened with two dozen bare names before reaching a single group heading. `e2e/templates.spec.ts` now asserts the no-JS text against the real markup.
 
 **Two things worth keeping**
 
 - **`allCaps` in DOCX is a run property; `textTransform` in react-pdf changes the glyphs.** Both render uppercase, but only the PDF's extracted text _is_ uppercase — Word still stores `Experience`. A test asserting uppercase extraction against the DOCX asserts something untrue about how Word works.
 - **The section-heading `border` is the only thing a heading style varies.** `allCaps` is set for all three and is not negotiable: it is the property the parse argument actually rests on, so a template is not allowed to trade it away for looks.
 
-**Accepted:** twelve templates render distinguishably · applying one is a single undo step · a v1 document opens with today's appearance unchanged, asserted on the rendered artifact rather than on the settings · switching `headingStyle` leaves the extracted text byte-identical in both PDF and DOCX, and leaves the TXT output identical under either axis.
+**Accepted:** twenty-four templates render distinguishably · applying one is a single undo step · a v1 document opens with today's appearance unchanged, asserted on the rendered artifact rather than on the settings · switching `headingStyle` leaves the extracted text byte-identical in both PDF and DOCX, and leaves the TXT output identical under either axis.
+
+#### P32-B5 — the second twelve, and the three groups
+
+Twelve font-and-style permutations answered "does this look like a gallery". They did not answer the question a visitor actually arrives with, which is whether one of these is for _their_ situation — and the honest answer for a US applicant was no, because every preset shipped A4.
+
+**What the engine can and cannot express about a hiring convention.** It can express paper size, length, and section order. It cannot express a German _Lebenslauf_'s photo and date of birth, or a Japanese _rirekisho_'s fixed grid, and it should not pretend to. So the regional presets differ on the axes that are real here, and `forWho` says plainly what Hansa does not add rather than leaving a user in Berlin to discover it after applying.
+
+- **Paper size became a template axis.** `settingsSchema` already carried `pageSize` and the Design panel already exposed it; no preset had ever set it. Harbor sets `LETTER`, which is simply correct for the US and Canada and was silently wrong before.
+- **Section order carries the field-specific presets.** Three new orders: `CREDENTIALS_FIRST` (certifications above experience — a licence is a gate in nursing, allied health and aviation, not a footnote), `ACADEMIC_FIRST` (education leads, publications get room, skills last), `EDUCATION_FIRST` (the consulting and graduate-scheme shape, with experience still above projects).
+- **The duplicate-signature test is what makes this safe to keep doing.** `fontPair|headerStyle|headingStyle|density` is 60 combinations and 24 are now spent. A twenty-fifth preset that collides with an existing one fails the build instead of shipping as a preset with two names.
+- **Every preset starts inside the fit assistant's legibility floors.** M4-T3 refuses to push a document below 10pt or under 0.6" margins because a resume squeezed past that gets thrown away. A preset that _started_ below the floor would ship the outcome the floor exists to prevent, so a test asserts it of all of them.
+- **Thumbnail aspect follows the page size.** A4 is 1:1.414 and Letter is 1:1.294. The image is `object-cover`, so a Letter render in an A4-shaped box loses its left and right edges — the picture whose entire job is proving "this is the document you get" would have been showing one with its margins shaved off.
+- **One serial render queue, still.** Grouping is a prop on `TemplateGallery`, not three galleries. Three components each calling `useTemplateThumbnails` would be three queues contending for one Yoga instance, which is precisely what that hook exists to prevent.
 
 ---
 
@@ -361,12 +377,12 @@ The acquisition engine, and the only package that is growth rather than product.
 
 Deferred by explicit decision on 2026-09-02, not withdrawn. All the code and config exists; none of it has met a real host.
 
-| #       | Package             | What is actually left                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **P17** | Ship it             | **Scripted, as of 2026-09-10.** `deploy/oracle/` holds Terraform for the instance and its network, cloud-init for the base image, and `bootstrap.sh` / `deploy.sh`. Needed: an Oracle account, a hostname, and a transactional email provider (Brevo 300/day or Resend 3,000/month — both plain SMTP, so nothing in the application changes). The arm64 build is verified by the `docker-arm64` CI job on every push to master rather than by hand before provisioning. Oracle's images ship iptables rules blocking 80/443 regardless of the security list — `cloud-init.yaml` inserts the matching rules, and the comment saying why is in both files. |
-| **P18** | Off-site backups    | `litestream.yml` is written and the service is in `docker-compose.yml`. Needed: an S3-compatible bucket and OCI **Customer Secret Keys** (not API signing keys). **Acceptance is the rehearsal, not the config**: `docker kill` (never `stop` — a graceful stop lets Litestream flush, which was never the case in doubt), destroy the volume, restore, `node scripts/backup.mjs verify`, then write the measured RPO and RTO into the empty table in `RUNBOOK.md`.                                                                                                                                                                                      |
-| **P20** | Live Google sign-in | Code complete: `prompt: "select_account"`, the branded button, the token allowlist, and `pnpm auth:google` as a pre-flight. Needed: a **registrable** domain — Google rejects redirect URIs whose host is on the Public Suffix List, so `*.duckdns.org`, `*.sslip.io` and `*.nip.io` are all refused. Magic-link email covers authentication completely on its own, so this never blocks launch.                                                                                                                                                                                                                                                         |
-| **P30** | Manual QA           | Four checks in `QA.md` needing Word/LibreOffice/Google Docs, a real phone at 390px, a Google consent screen, and ten real job postings. **Do not commit the postings** — republishing someone else's copyrighted text is not acceptable and inventing them is worse. Record the tally and add a _structural_ fixture for each miss.                                                                                                                                                                                                                                                                                                                      |
+| #       | Package             | What is actually left                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P17** | Ship it             | **Scripted, as of 2026-09-10.** `deploy/oracle/` holds Terraform for the instance and its network, cloud-init fo r the base image, and `bootstrap.sh` / `deploy.sh`. Needed: an Oracle account, a hostname, and a transactional email provider (Brevo 300/day or Resend 3,000/month — both plain SMTP, so nothing in the application changes). The arm64 build is verified by the `docker-arm64` CI job on every push to master rather than by hand before provisioning. Oracle's images ship iptables rules blocking 80/443 regardless of the security list — `cloud-init.yaml` inserts the matching rules, and the comment saying why is in both files. |
+| **P18** | Off-site backups    | `litestream.yml` is written and the service is in `docker-compose.yml`. Needed: an S3-compatible bucket and OCI **Customer Secret Keys** (not API signing keys). **Acceptance is the rehearsal, not the config**: `docker kill` (never `stop` — a graceful stop lets Litestream flush, which was never the case in doubt), destroy the volume, restore, `node scripts/backup.mjs verify`, then write the measured RPO and RTO into the empty table in `RUNBOOK.md`.                                                                                                                                                                                       |
+| **P20** | Live Google sign-in | Code complete: `prompt: "select_account"`, the branded button, the token allowlist, and `pnpm auth:google` as a pre-flight. Needed: a **registrable** domain — Google rejects redirect URIs whose host is on the Public Suffix List, so `*.duckdns.org`, `*.sslip.io` and `*.nip.io` are all refused. Magic-link email covers authentication completely on its own, so this never blocks launch.                                                                                                                                                                                                                                                          |
+| **P30** | Manual QA           | Four checks in `QA.md` needing Word/LibreOffice/Google Docs, a real phone at 390px, a Google consent screen, and ten real job postings. **Do not commit the postings** — republishing someone else's copyrighted text is not acceptable and inventing them is worse. Record the tally and add a _structural_ fixture for each miss.                                                                                                                                                                                                                                                                                                                       |
 
 **The sequencing gate, restated honestly.** The original plan said ship, then listen, then decide. Everything since M0 has been built ahead of that gate because the deploy was blocked, and P31–P37 now extend that. The gate matters more, not less: this plan closes gaps identified by inspecting a competitor, not by watching a user. Treat every package here as a hypothesis until the deploy makes it testable.
 
@@ -391,7 +407,7 @@ pnpm format:check  # not in CI; the Prettier plugin sorts Tailwind classes
 | Package | Gate                                                                                                                                                |
 | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | ~~P31~~ | **Met.** Every fixture round-trips through PDF and DOCX import; `/check` issues no network request carrying file content; Ctrl+Z restores the draft |
-| ~~P32~~ | **Met.** Twelve templates render distinguishably; a v1 document opens unchanged; extracted text unaffected by a style switch                        |
+| ~~P32~~ | **Met.** Twenty-four templates render distinguishably; a v1 document opens unchanged; extracted text unaffected by a style switch                   |
 | ~~P33~~ | **Met.** The whole phrase bank lints clean under our own engine; every scaffold has a visible blank; O\*NET attributed with version and date        |
 | ~~P34~~ | **Met.** No coach message is a pasteable sentence — every question ends in "?" and no field contains a digit                                        |
 | ~~P35~~ | **Met.** The rail reorders by band; every locked empty-state string still asserts                                                                   |
@@ -870,21 +886,39 @@ then uses **exactly three things** from that result, and nothing else:
 1. **`jdWeight` decides which of your bullets get quoted.** Requirements are
    ranked by how hard the posting leans on them (a line under "Required" is
    weighted 3×, "Responsibilities" 2×, "Preferred" 1×, "Benefits"/"Legal" 0).
-   The composer walks them strongest-first and takes the top **2** matching
+   The composer walks them strongest-first and takes the top **3** matching
    bullets from your Experience or Projects.
 2. **`status === "demonstrated"` decides which skills the alignment paragraph
-   may name.** A skill merely _listed_ in your Skills section can never appear
-   — only one backed by a bullet. If nothing qualifies, the paragraph is
-   **omitted entirely** rather than faked.
-3. Nothing else. **No wording from the posting is ever copied into your
-   letter.**
+   may name.** A skill merely _listed_ in your Skills section may appear only
+   in a visibly weaker sentence ("you also ask for X, which I have worked
+   with"), never in the sentence that says the work shows it. If nothing
+   qualifies at all, the paragraph is **omitted entirely** rather than faked.
+3. **One requirement line may be quoted back, in quotation marks.** Changed
+   2026-09-10; it used to read "no wording from the posting is ever copied".
+   The line is drawn from the highest-weighted requirement your resume
+   _demonstrates_, so the sentence after it answers the sentence quoted. It is
+   dropped rather than mangled if it will not clean up, and a
+   length-of-experience line ("5+ years with Kubernetes") is never quoted,
+   because quoting it next to "Kubernetes is in the work above" implies a claim
+   about duration that nothing checked. See `REQUIREMENT_ECHO`.
 
-Every sentence is either your own resume text copied verbatim, or a fixed
-template from `src/lib/cover-letter/phrasing.ts` that contains no claim. Only
-two transformations are permitted, both reversible — lowercase the first
-character, and add a closing period — which is how `compose.test.ts` proves
-verbatimness by undoing them and finding the text in your resume. That is D8
-enforced in code, not a promise.
+Every sentence is either your own resume text copied verbatim, a quoted line
+from the posting, or a fixed template from `src/lib/cover-letter/phrasing.ts`
+that contains no claim. Only two transformations are permitted on your text,
+both reversible — lowercase the first character, and add a closing period —
+which is how `compose.test.ts` proves verbatimness by undoing them and finding
+the text in your resume. That is D8 enforced in code, not a promise.
+
+**Which frame a bullet gets is decided by its grammar, not its casing.**
+`classifyBulletForm` (`src/lib/cover-letter/bullet-form.ts`) sorts a bullet
+into one of six shapes — past-tense verb, duty phrase, gerund, its own subject,
+noun phrase, or an unsafe lead — and each shape has a frame that is grammatical
+for it. Before this existed the only test applied was "capital letter, rest
+lowercase", which is a question about casing, and the composer emitted "At
+Acme, I responsible for the regional ledger". Anything the classifier cannot
+place falls through to the colon form, which is well-formed in front of any
+fragment, so a misclassification costs a flat sentence and never a broken one.
+`compose.grammar.test.ts` asserts this over every shipped example resume.
 
 **Why it felt like the posting was being ignored:** the field has no hint
 saying any of the above, and if Company and Role title are blank the opening

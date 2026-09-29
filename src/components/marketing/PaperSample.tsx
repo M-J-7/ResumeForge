@@ -132,6 +132,51 @@ export function sampleLines(): RecoveredLine[] {
   return lines;
 }
 
+/**
+ * What X-Ray reports about the sample, counted from the sample.
+ *
+ * The evidence grid's lead tile shows a readout, and a readout of made-up
+ * numbers on a page arguing "check this for yourself" would be the single
+ * worst thing on the site. So every row here is computed from `SAMPLE` — the
+ * same object the page and the recovered-text pane are both built from — and
+ * the tile says which document it is describing.
+ *
+ * The two structural rows are true by construction rather than by counting:
+ * the sample is one column of real text with no images in it, which is the
+ * claim the whole layout exists to make and the only structural claim D14
+ * permits.
+ *
+ * ## Four rows, not seven: a readout is not an inventory
+ *
+ * It also reported `entries 3`, `bullets 3` and `text lines 14`. Those are
+ * counts of what the sample *contains*, and a reader learns nothing from
+ * them — there is no number of bullets that would be reassuring and none that
+ * would be alarming, so the rows carried no information and cost three lines
+ * of the densest panel on the page.
+ *
+ * Every row that is left says the extraction **succeeded**: one column and no
+ * images is the structure the whole product argues for, and "2 of 2
+ * recovered" and "3 parsed" are the machine reporting that it got what was
+ * there. That is the difference between a readout and a manifest.
+ */
+export function sampleReadout(): { field: string; value: string }[] {
+  // `SAMPLE` is `as const`, so each section's `entries` is its own tuple type
+  // and `flatMap` has nothing to widen them to. The narrow shape this actually
+  // needs says so, and keeps the literal types where they are useful.
+  type Counted = { readonly dates: string; readonly bullets: readonly string[] };
+  const entries: Counted[] = SAMPLE.sections.flatMap((section) => [...section.entries]);
+
+  return [
+    { field: "columns", value: "1" },
+    { field: "images", value: "0" },
+    {
+      field: "headings",
+      value: `${SAMPLE.sections.length} of ${SAMPLE.sections.length} recovered`,
+    },
+    { field: "date ranges", value: `${entries.filter((entry) => entry.dates).length} parsed` },
+  ];
+}
+
 /** The same recovery as one string. */
 export function sampleAsPlainText(): string {
   return sampleLines()

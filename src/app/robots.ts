@@ -7,6 +7,17 @@
  *   already unreachable without a cookie, so this is not a security control —
  *   it stops a crawler from filling logs and burning rate-limit budget on
  *   pages it will only ever be redirected away from.
+ * - **The application surfaces a crawler can actually reach are not.**
+ *   `/builder`, `/signin` and `/letters` were in this list, and all three are
+ *   linked from the header or the footer of every indexed page. A URL that is
+ *   linked everywhere and disallowed here is the textbook way to be listed as
+ *   a bare URL with "No information is available for this page" underneath
+ *   it: `Disallow` forbids *fetching*, not indexing, and the `noindex` that
+ *   would have kept the page out is inside a document the crawler was told
+ *   not to fetch. They carry `robots: { index: false }` through
+ *   `appPageMetadata` instead, which works precisely because they can be
+ *   read. `/dashboard` keeps the disallow — it is linked only to somebody who
+ *   is already signed in, so no crawler ever meets it.
  * - A deployment with no configured origin refuses indexing entirely. A
  *   staging copy that gets indexed competes with the real site in search
  *   results, and that is easy to do by accident and slow to undo.
@@ -37,7 +48,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/dashboard", "/builder", "/signin"],
+        disallow: ["/api/", "/dashboard"],
       },
     ],
     sitemap: siteUrl("/sitemap.xml"),

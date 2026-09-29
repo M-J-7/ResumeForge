@@ -23,11 +23,24 @@ import { notFound } from "next/navigation";
 import { BuilderShell } from "@/components/builder/BuilderShell";
 import { getSessionUser } from "@/server/auth/session";
 import { loadResume } from "@/server/resumes";
+import { appPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+/*
+ * `noindex`, and crawlable rather than blocked in `robots.txt`.
+ *
+ * This route is the header's primary action on every page of the site, so a
+ * crawler meets the link constantly. A URL that is linked everywhere and
+ * disallowed in `robots.txt` is the textbook way to end up listed as a bare
+ * URL with "No information is available for this page" under it — the
+ * directive that would have kept it out is in a file the crawler was told not
+ * to fetch. `noindex` has to be read to work, which means the page has to be
+ * reachable. See `app/robots.ts`.
+ */
+export const metadata: Metadata = appPageMetadata({
   title: "Build your resume",
   description: "Build an ATS-safe resume in your browser. Nothing is uploaded unless you save it.",
-};
+  path: "/builder",
+});
 
 /** Reads the session and possibly the database; nothing here is prerenderable. */
 export const dynamic = "force-dynamic";

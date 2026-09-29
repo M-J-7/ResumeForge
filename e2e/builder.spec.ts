@@ -308,15 +308,74 @@ test("builds absolute URLs from the runtime origin, not the build's", async ({ p
 
   expect(canonical).toContain("http://localhost:3000");
   expect(ogUrl).toContain("http://localhost:3000");
+
+  /*
+   * And both point at *this* page.
+   *
+   * This assertion used to pass for the wrong reason. Next merges `openGraph`
+   * shallowly and no page declared one, so every route inherited the root
+   * layout's `url: "/"` — which contains the origin, which is all this used to
+   * check. `/privacy` was telling every scraper it was the home page, and so
+   * were the other nineteen routes. See `src/lib/seo.ts`.
+   */
+  expect(canonical).toBe("http://localhost:3000/privacy");
+  expect(ogUrl).toBe("http://localhost:3000/privacy");
+});
+
+test("every indexed page carries its own social card", async ({ page }) => {
+  // The other half of the same bug: one inherited `openGraph` meant one card
+  // for the whole site, so a link to any of these pasted into a chat window
+  // rendered as the home page. A card with the wrong title is worse than no
+  // card, because it looks deliberate.
+  for (const [path, expected] of [
+    ["/check", "Free ATS resume checker — Six Seconds Resume"],
+    ["/templates", "Free resume templates — Six Seconds Resume"],
+    ["/pricing", "Pricing: every download is free — Six Seconds Resume"],
+  ] as const) {
+    await page.goto(path);
+    const title = await page.locator('meta[property="og:title"]').getAttribute("content");
+    expect(title, path).toBe(expected);
+
+    const url = await page.locator('meta[property="og:url"]').getAttribute("content");
+    expect(url, path).toBe(`http://localhost:3000${path}`);
+  }
+
+  // The large card, because there is a 1200x630 image to put in it.
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+    "content",
+    "summary_large_image",
+  );
+
+  /*
+   * And the image survived the fix.
+   *
+   * `opengraph-image.tsx` is file-based metadata at the root segment, and
+   * metadata merges shallowly — so giving a page its own `openGraph` for the
+   * title and URL replaced the parent's resolved object whole and took the
+   * inherited image with it. The first version of this change did exactly
+   * that, and produced a card with no picture on every page but the home
+   * page. `pageMetadata` restates the image for that reason.
+   */
+  const image = await page.locator('meta[property="og:image"]').getAttribute("content");
+  expect(image).toContain("/opengraph-image");
+  await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute("content", "1200");
 });
 
 test("titles read as a page name plus the product, exactly once", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page).toHaveTitle("Privacy — Six Seconds Resume");
 
-  // The landing page owns its title outright rather than inheriting the
-  // template, which would otherwise append the product name to a title that
-  // already carries it.
+  /*
+   * The landing page owns its title outright rather than inheriting the
+   * template, which would otherwise append the product name to a title that
+   * already carries it. Asserted as "the name appears exactly once" rather
+   * than as the literal string, so the copy can be rewritten without this
+   * test having to be — the invariant is the duplication, not the wording.
+   */
   await page.goto("/");
-  await expect(page).toHaveTitle(/^Six Seconds Resume — free downloads/);
+  const title = await page.title();
+  expect(title.split("Six Seconds Resume")).toHaveLength(2);
+  // Leads with the category, not the brand: a product nobody has searched for
+  // by name earns the name by ranking for what people do type.
+  expect(title.startsWith("Six Seconds Resume")).toBe(false);
 });

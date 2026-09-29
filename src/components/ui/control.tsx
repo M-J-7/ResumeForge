@@ -19,20 +19,31 @@
 
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { buttonClassName, focusRing, type ButtonSize, type ButtonVariant } from "./button-style";
 
-/**
- * Colours come from the tokens in `globals.css`, not from Tailwind's palette.
+/*
+ * The button's styling lives in `button-style.ts`, which is **not** a client
+ * module, and is re-exported here so the existing imports keep working.
  *
- * The values behind them are the same zinc-and-sky the app already used, so
- * nothing changed visually when this was repointed — what changed is that the
- * accent is now one line in one file rather than forty-odd literals, and the
- * dark variants follow the theme toggle instead of only the OS.
+ * That split is not tidiness. `buttonClassName` is a pure string function, and
+ * a server component that calls one exported from a client module does not get
+ * a warning — React throws, and the route renders its error boundary. `/404`
+ * did exactly that, showing "Something went wrong" on the page whose entire
+ * job is to say calmly that a link was wrong.
  */
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1";
+export { buttonClassName, focusRing, type ButtonSize, type ButtonVariant } from "./button-style";
 
+/*
+ * Field depth, from the token rather than from Tailwind's `shadow-sm`.
+ *
+ * `shadow-sm` is a raw grey blur from outside the palette. On the light
+ * theme it read as a slightly dirty edge; on dark it did nothing at all,
+ * because there is nothing for a grey blur to be darker than. `--elev-2`
+ * is the inset top highlight plus a hairline, which is what a recessed
+ * input actually looks like under a light — and it is defined per theme.
+ */
 const fieldBase = cn(
-  "border-line-strong bg-surface-0 text-text w-full rounded-md border px-3 py-2 text-sm shadow-sm",
+  "border-line-strong bg-surface-0 text-text text-body w-full rounded-md border px-3 py-2 shadow-[var(--elev-2)]",
   "transition-[border-color,box-shadow,background-color] duration-[var(--dur-fast)] ease-[var(--ease)]",
   // A boundary that answers the pointer before it is clicked. The border is
   // already at 3.36:1 for WCAG 1.4.11; this is the affordance on top of it.
@@ -42,55 +53,53 @@ const fieldBase = cn(
   focusRing,
 );
 
-export function Input({ className, ...props }: ComponentProps<"input">) {
-  return <input className={cn(fieldBase, className)} {...props} />;
+/**
+ * Whether an input holds an identifier rather than prose — a name, an
+ * address, a number, a link — where a spell checker only underlines things
+ * that are correct.
+ */
+export function isIdentifierInput(props: ComponentProps<"input">): boolean {
+  const { type, inputMode, autoComplete } = props;
+  return (
+    ["email", "tel", "url", "search", "number", "password"].includes(type ?? "") ||
+    ["email", "tel", "url", "numeric", "decimal"].includes(inputMode ?? "") ||
+    ["name", "given-name", "family-name", "email", "tel", "url"].includes(autoComplete ?? "")
+  );
 }
 
-export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
-  return <textarea className={cn(fieldBase, "min-h-24 resize-y", className)} {...props} />;
+/**
+ * A text input, spell-checked when it holds prose (ROADMAP F10).
+ *
+ * Browsers disagree on the default. Firefox checks only multi-line fields, so
+ * a job title or an employer typed into a single-line box was never checked
+ * there — on the one document where a typo costs the most. Chrome checks
+ * single-line fields and so underlined every name, address and URL in red.
+ * Stating it explicitly makes both behave: prose is checked everywhere, and
+ * identifiers (`isIdentifierInput`) are not. A caller can still say either.
+ */
+export function Input({ className, spellCheck, ...props }: ComponentProps<"input">) {
+  return (
+    <input
+      className={cn(fieldBase, className)}
+      spellCheck={spellCheck ?? !isIdentifierInput(props)}
+      {...props}
+    />
+  );
+}
+
+/** Multi-line text is always prose here — a summary, a bullet — so it is checked. */
+export function Textarea({ className, spellCheck = true, ...props }: ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={cn(fieldBase, "min-h-24 resize-y", className)}
+      spellCheck={spellCheck}
+      {...props}
+    />
+  );
 }
 
 export function Select({ className, ...props }: ComponentProps<"select">) {
   return <select className={cn(fieldBase, "pr-8", className)} {...props} />;
-}
-
-const buttonVariants = {
-  primary: "bg-accent text-on-accent hover:bg-accent-hover disabled:hover:bg-accent",
-  secondary: "border-line-strong bg-surface-0 text-text hover:bg-surface-2 border",
-  ghost: "text-muted hover:bg-surface-2 hover:text-text",
-  danger: "border-danger/40 bg-surface-0 text-danger hover:bg-danger-weak border",
-} as const;
-
-const buttonSizes = {
-  sm: "h-8 px-2.5 text-xs",
-  md: "px-3 py-2 text-sm",
-} as const;
-
-export type ButtonVariant = keyof typeof buttonVariants;
-export type ButtonSize = keyof typeof buttonSizes;
-
-/**
- * The button's classes, without the button.
- *
- * A link that navigates is an `<a>`, not a `<button>` with a router call —
- * landmine 9, and the reason `useRouter()` is avoided for cross-route links.
- * But a link that *looks* like a button should not re-type the classes,
- * because then the two drift. `Button` below is this function plus an
- * element.
- */
-export function buttonClassName({
-  variant = "secondary",
-  size = "md",
-  className,
-}: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {}): string {
-  return cn(
-    "inline-flex items-center justify-center gap-2 rounded-md font-medium transition",
-    "disabled:cursor-not-allowed disabled:opacity-50",
-    focusRing,
-    buttonSizes[size],
-    buttonVariants[variant],
-    className,
-  );
 }
 
 export function Button({

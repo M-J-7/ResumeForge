@@ -9,6 +9,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { buttonClassName } from "@/components/ui/button-style";
 import { requireSessionUser } from "@/server/auth/session";
 import { listResumes } from "@/server/resumes";
 import { countCoverLettersByResume } from "@/server/cover-letters";
@@ -17,11 +18,13 @@ import { DeleteAccount } from "@/components/dashboard/DeleteAccount";
 import { ResumeList, type ResumeRow } from "@/components/dashboard/ResumeList";
 import { NewResumeButton } from "@/components/dashboard/NewResumeButton";
 import { ChevronDownIcon } from "@/components/ui/icons";
+import { appPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = appPageMetadata({
   title: "Your resumes",
   description: "Resumes saved to your account.",
-};
+  path: "/dashboard",
+});
 
 /** Reads the session and the database; there is nothing here to prerender. */
 export const dynamic = "force-dynamic";
@@ -47,7 +50,11 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="py-band-tight mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6"
+    >
       {/*
         Sign-out lives in `AppHeader` now, on every page rather than only this
         one. Keeping a second copy here would be two controls doing one thing —
@@ -56,8 +63,8 @@ export default async function DashboardPage() {
       */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-text text-2xl font-semibold">Your resumes</h1>
-          <p className="text-muted mt-1 text-sm">Signed in as {user.email}</p>
+          <h1 className="text-text text-display-3 font-semibold">Your resumes</h1>
+          <p className="text-muted text-small mt-1">Signed in as {user.email}</p>
         </div>
         {/*
           Both links stay, deliberately. "Open the builder" is the one
@@ -68,10 +75,7 @@ export default async function DashboardPage() {
           one opens whatever the guest draft holds.
         */}
         <div className="flex items-center gap-2">
-          <Link
-            href="/builder"
-            className="border-line-strong text-text hover:bg-surface-2 focus-visible:ring-accent inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-          >
+          <Link href="/builder" className={buttonClassName()}>
             Open the builder
           </Link>
           <NewResumeButton />
@@ -94,32 +98,28 @@ export default async function DashboardPage() {
         there for anyone who wants a tidier page.
       */}
       <details open className="border-line group rounded-lg border">
-        <summary className="text-text focus-visible:ring-accent flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-semibold select-none focus-visible:ring-2 focus-visible:outline-none">
+        <summary className="text-text text-body focus-visible:ring-accent flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 font-semibold select-none focus-visible:ring-2 focus-visible:outline-none">
           Account
           <ChevronDownIcon className="h-4 w-4 transition group-open:rotate-180" />
         </summary>
         <div className="border-line flex flex-col gap-6 border-t px-4 py-4">
           <section className="flex flex-col gap-2">
-            <h2 className="text-text text-sm font-semibold">Take your data with you</h2>
-            <p className="text-muted text-sm">
+            <h2 className="text-text text-body font-semibold">Take your data with you</h2>
+            <p className="text-muted text-small">
               Every resume on this account, in the open{" "}
               <a
                 href="https://jsonresume.org"
-                className="text-accent underline underline-offset-2"
+                className="text-accent rule-grow rounded-sm"
                 rel="noreferrer noopener"
                 target="_blank"
               >
                 JSON Resume
               </a>{" "}
-              format — the whole content, not a summary of it. Other tools read it, and so does
-              the import button in the builder.
+              format — the whole content, not a summary of it. Other tools read it, and so does the
+              import button in the builder.
             </p>
             <p>
-              <a
-                href="/api/account/export"
-                download
-                className="border-line-strong text-text hover:bg-surface-2 focus-visible:ring-accent inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
-              >
+              <a href="/api/account/export" download className={buttonClassName()}>
                 Download everything
               </a>
             </p>

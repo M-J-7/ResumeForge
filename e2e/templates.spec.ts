@@ -10,6 +10,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { TEMPLATES, TEMPLATE_GROUPS } from "../src/lib/resume/templates";
 
 async function openDesignPanel(page: Page) {
   await page.goto("/builder");
@@ -18,17 +19,25 @@ async function openDesignPanel(page: Page) {
 }
 
 test("the public gallery renders every template as a real page image", async ({ page }) => {
-  // Twelve PDF renders, run one at a time in a real browser. The default
-  // 30s test timeout is a budget for a page load, not for that.
-  test.setTimeout(120_000);
+  // One PDF render per template, serially, in a real browser. The default 30s
+  // test timeout is a budget for a page load, not for two dozen of those —
+  // and the budget scales with the gallery rather than being a number that
+  // silently stops being enough the next time presets are added.
+  test.setTimeout(20_000 + TEMPLATES.length * 10_000);
 
   await page.goto("/templates");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Resume templates");
 
-  // Twelve cards. Scoped to the named list, because the page also carries an
-  // `sr-only` copy of the same twelve names for crawlers.
-  const gallery = page.getByRole("list", { name: "Resume templates" });
-  await expect(gallery.getByRole("link")).toHaveCount(12);
+  // Every template has a card, and every card is under the heading for its
+  // own group — counted from the data, so a preset added to `TEMPLATES` and
+  // forgotten in the gallery fails here rather than shipping invisible.
+  for (const group of TEMPLATE_GROUPS) {
+    const expected = TEMPLATES.filter((template) => template.group === group.id).length;
+    expect(expected, `${group.id} has no templates`).toBeGreaterThan(0);
+    await expect(page.getByRole("list", { name: group.title }).getByRole("link")).toHaveCount(
+      expected,
+    );
+  }
 
   // A real raster, not a zero-sized placeholder — which is the only way to
   // tell "the PDF pipeline ran in this browser" from "a skeleton is showing".
@@ -40,16 +49,25 @@ test("the public gallery renders every template as a real page image", async ({ 
 });
 
 test("the gallery's text is present without JavaScript", async ({ browser }) => {
-  // What a crawler reads. The thumbnails need a browser; the twelve names and
+  // What a crawler reads. The thumbnails need a browser; the names and the
   // descriptions must not.
+  //
+  // This used to be satisfied by an `sr-only` list in `templates/page.tsx`
+  // duplicating all of it. That list is gone, so this now asserts the real
+  // gallery markup — which is the thing that has to hold, and which React
+  // renders on the server despite the component being `"use client"`.
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto("/templates");
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Resume templates");
   const body = (await page.locator("body").textContent()) ?? "";
-  for (const name of ["Atlas", "Chancery", "Campus", "Workbench", "Meridian", "Beacon"]) {
-    expect(body).toContain(name);
+  for (const template of TEMPLATES) {
+    expect(body, template.id).toContain(template.name);
+    expect(body, template.id).toContain(template.forWho);
+  }
+  for (const group of TEMPLATE_GROUPS) {
+    expect(body, group.id).toContain(group.title);
   }
   await context.close();
 });

@@ -160,8 +160,11 @@ export function Tab({
       tabIndex={selected ? 0 : -1}
       onClick={() => tabs.onValueChange(value)}
       className={cn(
-        "focus-visible:ring-accent rounded-[6px] px-3 py-1.5 text-sm font-medium transition focus-visible:ring-2 focus-visible:outline-none",
-        selected ? "bg-surface-0 text-text shadow-sm" : "text-muted hover:text-text",
+        "focus-visible:ring-accent text-small rounded-[6px] px-3 py-1.5 font-medium transition focus-visible:ring-2 focus-visible:outline-none",
+        // `--elev-1` rather than Tailwind's `shadow-sm`, which is a raw grey
+        // blur from outside the token system and invisible on a dark ground —
+        // the one place a selected tab most needs to read as raised.
+        selected ? "bg-surface-0 text-text shadow-[var(--elev-1)]" : "text-muted hover:text-text",
         className,
       )}
       {...props}

@@ -203,7 +203,42 @@ export function importKindFromFilename(name: string): ImportKind | null {
 /* Format-specific: lines in, `SourceLine[]` out                               */
 /* -------------------------------------------------------------------------- */
 
-const PDF_BULLET = /^\s*[•·▪◦‣*]\s+/;
+/**
+ * A list marker at the start of an extracted line, followed by a space.
+ *
+ * It was `[•·▪◦‣*]`, and every marker it missed cost the entry its first
+ * bullet: an unmarked line under a role is read as the role's meta line —
+ * employer, location — and the next unmarked line after it starts the
+ * bullets. So a Google Docs export, whose bullets extract as "●", lost the
+ * first bullet of every role, silently, and so did plain text written with
+ * "-". Found by the keyword scanner reporting "Python — missing" for a resume
+ * whose first bullet named it (2026-09-28).
+ *
+ * Added: the circles, squares and arrows word processors use, a check mark,
+ * and an ASCII hyphen. **Not** the en or em dash: a date range that wraps
+ * extracts as "Jan 2022" then "– Present", and reading that continuation as a
+ * bullet would take the role's end date with it. Pasted text has no wrapped
+ * dates, so `parseResumeText` accepts dashes there.
+ */
+const PDF_BULLET = /^\s*[•·▪◦‣*●○■□►▸➢➤✓✔-]\s+/;
+
+/**
+ * Markers a person types that a PDF never produces unambiguously: a dash, or
+ * a number. Rewritten to "•" before parsing pasted text — see `PDF_BULLET`
+ * for why the dashes are not accepted in extracted lines.
+ */
+const TYPED_MARKER = /^\s*(?:[–—]|\(?\d{1,2}[.)])\s+/;
+
+/**
+ * A resume pasted as plain text — the keyword scanner's input.
+ *
+ * The same parse a file gets, with the typed list markers normalised first.
+ */
+export function parseResumeText(text: string): ImportResult {
+  return parseResumeLines(
+    text.split(/\r?\n/).map((line) => (TYPED_MARKER.test(line) ? line.replace(TYPED_MARKER, "• ") : line)),
+  );
+}
 
 function pdfSourceLines(lines: readonly string[]): SourceLine[] {
   return lines.map((line) => {

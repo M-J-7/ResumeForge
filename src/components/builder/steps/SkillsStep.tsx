@@ -75,6 +75,9 @@ export function SkillsStep() {
                         aria-describedby={describedBy}
                         value={group.skills.join(", ")}
                         placeholder="Go, TypeScript, PostgreSQL"
+                        // Mostly product and tool names, which a spell checker
+                        // only underlines: "PostgreSQL" is spelled correctly.
+                        spellCheck={false}
                         onChange={(e) =>
                           update(
                             {

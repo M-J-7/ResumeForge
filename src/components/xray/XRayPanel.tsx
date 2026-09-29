@@ -85,8 +85,8 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
   return (
     <div className="flex flex-col gap-6 overflow-y-auto p-4">
       <header>
-        <h2 className="text-text text-base font-semibold">What the machine actually read</h2>
-        <p className="text-muted mt-1 text-sm">
+        <h2 className="text-text text-title font-semibold">What the machine actually read</h2>
+        <p className="text-muted text-small mt-1">
           Every other builder tells you a resume is ATS-friendly. This re-reads the file you are
           about to send, and checks it against what you typed.
         </p>
@@ -110,9 +110,9 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
           </span>
         </div>
 
-        <div className="border-line overflow-x-auto rounded-md border">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-surface-1">
+        <div className="machine-panel overflow-x-auto rounded-md border">
+          <table className="text-small w-full text-left">
+            <thead className="bg-machine-weak">
               <tr>
                 <th scope="col" className="px-3 py-2 font-semibold">
                   Field
@@ -158,7 +158,7 @@ export function XRayPanel({ bytes, active }: { bytes: Uint8Array | null; active:
 
       {/* Layer 3 — where the two reads diverge. */}
       <section aria-label="Parser disagreements" className="flex flex-col gap-2">
-        <h3 className="text-text text-sm font-semibold">Where parsers may differ</h3>
+        <h3 className="text-text text-body font-semibold">Where parsers may differ</h3>
         {disagreements.length === 0 ? (
           <p className="text-muted text-sm">
             Both a naive reader and a careful one recover your resume in the same order. That is the

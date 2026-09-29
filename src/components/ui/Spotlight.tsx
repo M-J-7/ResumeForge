@@ -10,8 +10,8 @@
  * `SpotlightGroup` wraps a grid and lights **every** card in it from a single
  * moving source: the card under the pointer is at full strength, its
  * neighbours are lit in proportion to how close the pointer is to their edge,
- * and the rest are dark. Twelve independent hover states read as twelve
- * buttons; one light moving across twelve cards reads as a surface. That is
+ * and the rest are dark. A grid of independent hover states reads as a grid
+ * of buttons; one light moving across all of them reads as a surface. That is
  * the effect worth having, and it is the one that costs a little thought.
  *
  * ## What is actually written

@@ -12,6 +12,9 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/Band";
+import { appPageMetadata } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import { auth } from "@/server/auth";
 import { googleCredentials } from "@/server/auth/config";
@@ -21,10 +24,11 @@ import { Card } from "@/components/ui/card";
 import { AppFooter } from "@/components/shell/AppFooter";
 import { SignInForm } from "./SignInForm";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = appPageMetadata({
   title: "Sign in",
   description: "Sign in with an email link or Google. There is no password, by design.",
-};
+  path: "/signin",
+});
 
 /** Reads the session, so the page cannot be prerendered. */
 export const dynamic = "force-dynamic";
@@ -71,51 +75,71 @@ export default async function SignInPage({ searchParams }: PageProps<"/signin">)
   const googleEnabled = googleCredentials() !== null;
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-16">
-      <div>
-        <h1 className="font-display text-text text-[2rem] leading-[1.1] font-semibold tracking-tight">
-          Sign in
-        </h1>
-        <p className="text-muted mt-2 text-sm leading-relaxed">
-          An account keeps your resumes on our server so they follow you between devices. You do not
-          need one &mdash;{" "}
-          <Link href="/builder" className="text-accent rule-grow rounded-sm">
-            the builder works without signing in
+    <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
+      {/*
+        The one pair of routes that keep a centred column instead of the shared
+        band, and the reason is not taste.
+
+        `Band` is a masthead: it is for a page you *read*. These are the only
+        routes in the app that are a single task with no content — one field,
+        one button — and putting a full-width masthead and a hairline above
+        that pushes the action down the page on the surface where account
+        creation happens, which `docs/MONETISATION.md` names as the only
+        conversion event this product currently has. It was built both ways and
+        the band version is visibly worse.
+
+        What the redesign actually asked for here was to stop hand-rolling the
+        header treatment, and that is done: `PAGE_TITLE_CLASS` and
+        `PAGE_LEAD_CLASS` are the same classes `Band` sets, so the heading
+        cannot drift from the rest of the site — only its container differs.
+      */}
+      <div className="py-band-tight mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-6">
+        <div>
+          <h1 className={PAGE_TITLE_CLASS}>Sign in</h1>
+          <p className={cn(PAGE_LEAD_CLASS, "mt-4")}>
+            An account keeps your resumes on our server so they follow you between devices. You do
+            not need one &mdash;{" "}
+            <Link href="/builder" className="text-accent rule-grow rounded-sm">
+              the builder works without signing in
+            </Link>{" "}
+            and always will.
+          </p>
+        </div>
+
+        <Card className="p-5">
+          <SignInForm googleEnabled={googleEnabled} initialError={initialError} />
+        </Card>
+
+        <p className="text-muted text-small leading-relaxed">
+          There is no password on this account, ever. Nothing to reuse, nothing to breach, nothing
+          to reset. See the{" "}
+          <Link href="/privacy" className="text-accent rule-grow rounded-sm">
+            privacy policy
           </Link>{" "}
-          and always will.
+          for what an account stores.
         </p>
+
+        {outbox ? (
+          <p className="border-line text-muted text-small rounded-md border border-dashed px-3 py-2">
+            Development build: sign-in emails are written to <code>{outbox}</code> instead of being
+            sent.
+          </p>
+        ) : null}
+
+        {developmentGoogleHint(googleEnabled) ? (
+          <p className="border-line text-muted text-small rounded-md border border-dashed px-3 py-2 leading-relaxed">
+            Development build: the &ldquo;Continue with Google&rdquo; button is hidden because{" "}
+            <code>AUTH_GOOGLE_ID</code> and <code>AUTH_GOOGLE_SECRET</code> are not set. Set both in{" "}
+            <code>.env</code> and restart. The authorized redirect URI to register with Google is{" "}
+            <code>&lt;origin&gt;/api/auth/callback/google</code>.
+          </p>
+        ) : null}
+
+        {/* The legal row alone. A three-column sitemap under a one-field form
+          would outweigh the form; `px-0` because this column already has the
+          padding. */}
+        <AppFooter variant="minimal" className="px-0" />
       </div>
-
-      <Card className="p-5">
-        <SignInForm googleEnabled={googleEnabled} initialError={initialError} />
-      </Card>
-
-      <p className="text-muted text-xs leading-relaxed">
-        There is no password on this account, ever. Nothing to reuse, nothing to breach, nothing to
-        reset. See the{" "}
-        <Link href="/privacy" className="underline underline-offset-2">
-          privacy policy
-        </Link>{" "}
-        for what an account stores.
-      </p>
-
-      {outbox ? (
-        <p className="border-line text-muted rounded-md border border-dashed px-3 py-2 text-xs">
-          Development build: sign-in emails are written to <code>{outbox}</code> instead of being
-          sent.
-        </p>
-      ) : null}
-
-      {developmentGoogleHint(googleEnabled) ? (
-        <p className="border-line text-muted rounded-md border border-dashed px-3 py-2 text-xs leading-relaxed">
-          Development build: the &ldquo;Continue with Google&rdquo; button is hidden because{" "}
-          <code>AUTH_GOOGLE_ID</code> and <code>AUTH_GOOGLE_SECRET</code> are not set. Set both in{" "}
-          <code>.env</code> and restart. The authorized redirect URI to register with Google is{" "}
-          <code>&lt;origin&gt;/api/auth/callback/google</code>.
-        </p>
-      ) : null}
-
-      <AppFooter className="border-0 px-0 py-0" />
     </main>
   );
 }

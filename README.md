@@ -19,10 +19,13 @@ and no signup wall: the text a parser recovers, the fields it finds, and the lin
 different parsers would disagree about reading order. It describes what was recovered and never
 claims what an employer's system will do with it, because nobody can know that.
 
-**Twelve templates, and none of them changes what a parser reads.** They differ in typeface, header
-placement, heading style and section order. Every one stays a single column of real text with
-standard headings, and a test asserts that switching between them leaves the extracted text
-byte-identical — `/templates` shows them as real rendered pages.
+**Twenty-four templates, and none of them changes what a parser reads.** They differ in typeface,
+header placement, heading style, paper size, density and section order — including presets shaped by
+where you are applying (Letter and one page for the US and Canada, A4 and two for the UK, room for
+three in Australia) and by what you do (a licence read before a job history in nursing, a
+publication list that is the work rather than a footnote in research). Every one stays a single
+column of real text with standard headings, and a test asserts that switching between them leaves
+the extracted text byte-identical — `/templates` shows them as real rendered pages.
 
 **A phrase library and a bullet coach, with no model anywhere.** The library inserts shapes with the
 blanks still in them (`Cut ___ from ___ to ___`), so nothing it gives you is a claim you did not

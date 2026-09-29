@@ -21,14 +21,29 @@
 
 import { useInView } from "motion/react";
 import { useRef } from "react";
+import { cn } from "@/lib/utils";
 import { IN_VIEW } from "./motion-tokens";
 
-export function RefusalList({ claims }: { claims: readonly string[] }) {
+export interface RefusalListProps {
+  claims: readonly string[];
+  className?: string;
+  /**
+   * The size these are set at.
+   *
+   * This list is the most distinctive copy on the site and no competitor has
+   * anything like it, so the landing page sets it as a statement rather than
+   * as the fine print of a card. Small stays for anywhere it is supporting
+   * material.
+   */
+  itemClassName?: string;
+}
+
+export function RefusalList({ claims, className, itemClassName }: RefusalListProps) {
   const ref = useRef<HTMLUListElement>(null);
   const struck = useInView(ref, IN_VIEW);
 
   return (
-    <ul ref={ref} className="mt-4 flex flex-col gap-3">
+    <ul ref={ref} className={cn("mt-4 flex flex-col gap-3", className)}>
       {claims.map((claim, index) => (
         <li
           key={claim}
@@ -40,7 +55,7 @@ export function RefusalList({ claims }: { claims: readonly string[] }) {
           /* Struck in `--line-strong`, not in the danger colour. Red reads as
              "something went wrong"; these are things we chose not to say,
              which is a calm statement rather than an error. */
-          className="strike-in text-muted text-sm leading-relaxed"
+          className={cn("strike-in text-muted text-small leading-relaxed", itemClassName)}
         >
           {claim}
         </li>

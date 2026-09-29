@@ -56,7 +56,14 @@ services:
     # substitution, which is a different file from the `.env.production` below
     # that is handed to the container.
     image: ${APP_IMAGE:-six-seconds-resume:local}
-    build: .
+    # Only used when building here rather than pulling. The Dockerfile refuses
+    # to build without the public origin, because the content pages bake it
+    # into their canonical links at build time; bootstrap.sh and deploy.sh
+    # export it from AUTH_URL before they build.
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
     restart: unless-stopped
     # No `ports:` on purpose. The app is reachable only on the compose network,
     # as `app`, and only Caddy talks to it. Publishing 3000 as well would leave
@@ -93,8 +100,29 @@ services:
   # It does **not** recover from losing the volume — that is what the
   # Litestream service below is for, and the two are not substitutes.
   backup:
-    build: .
+    # The same image as `app`, with a different entrypoint. The runtime stage
+    # already carries scripts/backup.mjs and src/server/backup.ts precisely so
+    # this service needs nothing of its own.
+    #
+    # Without `image:` here, Compose has a `build:` and no tag to look for, so
+    # `up` builds the entire application from the Dockerfile in order to run a
+    # shell loop — on the deployed instance that means building on 1 GB of RAM
+    # and an eighth of an OCPU, which is the one thing this arrangement exists
+    # to avoid. `app` pulled correctly and `backup` built anyway, which put the
+    # load average above 5 before anything had started.
+    image: ${APP_IMAGE:-six-seconds-resume:local}
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
     restart: unless-stopped
+    # Disabled, not overridden. The healthcheck baked into the image probes
+    # localhost:3000, and this container runs a backup loop rather than the
+    # server — so it reports "unhealthy" forever while working perfectly. A
+    # column that is always red is a column nobody reads on the day it means
+    # something.
+    healthcheck:
+      disable: true
     entrypoint:
       - /bin/sh
       - -c
@@ -107,29 +135,28 @@ services:
     depends_on:
       - app
 
-  # Off-site, continuous replication (D9, M2-T5).
+  # Off-site, continuous replication (D9, M2-T5). Live since 2026-09-12, and
+  # rehearsed — see the measured row in docs/RUNBOOK.md.
   #
-  # `litestream.yml` now exists in the repository as a template. Fill in its
-  # four placeholders, put the two credentials in .env.production, uncomment
-  # this block — and then run the restore rehearsal in docs/RUNBOOK.md before
-  # relying on it. An untested backup is not a backup.
-  #
-  # It stays commented until then on purpose: uncommented against an unfilled
-  # template, Litestream restart-loops against a bucket that does not exist,
-  # which is noise on the one deploy where you most need the logs readable.
-  #
-  # litestream:
-  #   image: litestream/litestream:0.3
-  #   restart: unless-stopped
-  #   command: replicate
-  #   environment:
-  #     LITESTREAM_ACCESS_KEY_ID: "${LITESTREAM_ACCESS_KEY_ID}"
-  #     LITESTREAM_SECRET_ACCESS_KEY: "${LITESTREAM_SECRET_ACCESS_KEY}"
-  #   volumes:
-  #     - data:/data
-  #     - ./litestream.yml:/etc/litestream.yml:ro
-  #   depends_on:
-  #     - app
+  # This closes the gap the `backup` service above cannot: those snapshots sit
+  # on the same volume as the database, so they survive a bad migration and
+  # nothing that takes the disk with it.
+  litestream:
+    image: litestream/litestream:0.3
+    restart: unless-stopped
+    command: replicate
+    # `env_file`, not `environment:` with ${...}. Compose substitutes those
+    # from ./.env, while the credentials live in .env.production alongside
+    # every other secret — so the template's version handed Litestream two
+    # empty strings and failed with SignatureDoesNotMatch, which reads like a
+    # wrong key rather than an absent one.
+    env_file:
+      - .env.production
+    volumes:
+      - data:/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+    depends_on:
+      - app
 
 volumes:
   data:

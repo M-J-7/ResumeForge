@@ -11,6 +11,8 @@
  *      later "because the competitors have them".
  */
 
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { GUIDES, type Guide } from "./guides/guides";
 import { ROLE_EXAMPLES } from "./examples/roles";
@@ -22,8 +24,11 @@ import {
   guideFaqJsonLd,
   itemListJsonLd,
   jsonLdScript,
+  LOGO_PATH,
+  organizationJsonLd,
   roleExampleJsonLd,
   softwareApplicationJsonLd,
+  websiteJsonLd,
 } from "./structured-data";
 
 describe("jsonLdScript", () => {
@@ -47,11 +52,29 @@ describe("the landing page application markup", () => {
   const data = softwareApplicationJsonLd();
 
   it("declares itself free, which is the claim worth making", () => {
-    expect(data).toMatchObject({
-      "@type": "SoftwareApplication",
-      name: PRODUCT_NAME,
-      offers: { "@type": "Offer", price: "0" },
-    });
+    expect(data).toMatchObject({ "@type": "SoftwareApplication", name: PRODUCT_NAME });
+
+    const offers = data.offers as { price: string; availability: string }[];
+    const free = offers.find((offer) => offer.price === "0");
+    expect(free, "the free offer is the one claim that must never go").toBeDefined();
+    expect(free!.availability).toBe("https://schema.org/InStock");
+  });
+
+  it("does not offer for sale a thing nobody can buy", () => {
+    /*
+     * There is no billing code in this repository. `InStock` on the Pass would
+     * be markup that does not describe the page — the machine-readable version
+     * of the buy button `/pricing` deliberately does not have.
+     *
+     * When checkout ships, this test is the thing that says so out loud.
+     */
+    const offers = data.offers as { price: string; availability: string }[];
+    for (const offer of offers) {
+      if (offer.price === "0") continue;
+      expect(offer.availability, `${offer.price} is marked available to buy`).toBe(
+        "https://schema.org/PreOrder",
+      );
+    }
   });
 
   it("claims no rating and no review count (D14)", () => {
@@ -66,6 +89,32 @@ describe("the landing page application markup", () => {
   it("does not hardcode the product name (P37)", () => {
     // Choosing a name has to stay the one-line change `product.ts` promises.
     expect(data.name).toBe(PRODUCT_NAME);
+  });
+});
+
+describe("the site's identity", () => {
+  it("names the site and its publisher in full, never as the bare phrase", () => {
+    // "Six Seconds" alone is 6seconds.org's name, and that site owns the
+    // result for it. The name a search engine prints above ours has to be
+    // the whole one.
+    for (const data of [websiteJsonLd(), organizationJsonLd()]) {
+      expect(data.name).toBe(PRODUCT_NAME);
+      expect(String(data.name).split(/\s+/).length).toBeGreaterThan(2);
+    }
+    expect(websiteJsonLd()["@type"]).toBe("WebSite");
+  });
+
+  it("points the logo at a file that is actually served", () => {
+    // Markup describing an image that 404s is markup that does not describe
+    // the page. `scripts/build-icons.mjs` writes the file; this is what
+    // notices if somebody moves it.
+    expect(String(organizationJsonLd().logo).endsWith(LOGO_PATH)).toBe(true);
+    expect(existsSync(path.join(process.cwd(), "public", LOGO_PATH))).toBe(true);
+
+    for (const guide of GUIDES) {
+      const publisher = guideArticleJsonLd(guide).publisher as { logo: { url: string } };
+      expect(publisher.logo.url.endsWith(LOGO_PATH)).toBe(true);
+    }
   });
 });
 

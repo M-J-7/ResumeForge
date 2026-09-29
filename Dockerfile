@@ -48,6 +48,24 @@ COPY . .
 # migrating something it should not. The runtime value is set in the runner
 # stage below and points at the mounted volume.
 ENV DATABASE_URL="file:/tmp/build-only.db"
+
+# The public origin, required. The content pages under src/app/(site) are
+# prerendered here, at build time, and their canonical links, Open Graph URLs
+# and JSON-LD are absolute — so whatever origin this build sees is the one
+# every indexed page will claim, permanently, until the next image.
+#
+# That is why those pages used to render per request: an image built in CI
+# "has no idea what host it will be run on". It does now, because it is told,
+# and a build that is not told refuses rather than shipping pages whose
+# canonicals all say localhost — a failure with no error anywhere, noticed
+# only when search traffic never arrives. CI passes it; so do
+# docker-compose.yml and both deploy scripts when building on the instance.
+ARG NEXT_PUBLIC_SITE_URL
+RUN case "$NEXT_PUBLIC_SITE_URL" in \
+      https://*) ;; \
+      *) echo "NEXT_PUBLIC_SITE_URL must be the public https origin (got '$NEXT_PUBLIC_SITE_URL'). Pass it with --build-arg." >&2; exit 1 ;; \
+    esac
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 RUN pnpm build
 
 # ---- runtime ----------------------------------------------------------------

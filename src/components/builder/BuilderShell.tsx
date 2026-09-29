@@ -21,6 +21,7 @@ import { PreviewPane } from "@/components/preview/PreviewPane";
 import { ImportResumeFile } from "./ImportResumeFile";
 import { ResumeTitleEditor, SaveAsNewResumeButton } from "./ResumeTitleEditor";
 import { SyncStatus } from "./SyncStatus";
+import { MAIN_CONTENT_ID } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { configureRemoteSync, installAutosaveFlush, useResumeStore } from "@/store/resume";
 import { createDraftStore, idbBackend } from "@/store/persistence";
@@ -262,7 +263,7 @@ export function BuilderShell({
           component: it sticks inside the builder's own column, below a header
           that is `position: sticky` in its own right.
         */}
-        <div className="border-line bg-surface-1/85 sticky top-14 z-20 border-b px-4 py-2 backdrop-blur-md xl:hidden">
+        <div className="border-line glass sticky top-14 z-20 border-b px-4 py-2 xl:hidden">
           <Tabs value={mobileView} onValueChange={(v) => setMobileView(v as MobileView)}>
             <TabList label="Editor or preview" className="flex w-full">
               <Tab value="edit" className="flex-1">
@@ -295,7 +296,7 @@ export function BuilderShell({
           <aside
             className={cn(
               "flex shrink-0 flex-col gap-5",
-              "lg:border-line lg:bg-surface-2 lg:sticky lg:top-0 lg:w-64 lg:self-start",
+              "lg:border-line lg:bg-surface-2 lg:sticky lg:top-0 lg:w-64 lg:self-start lg:shadow-[var(--elev-1)]",
               "lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain",
               "lg:rounded-xl lg:border lg:p-4",
             )}
@@ -355,7 +356,11 @@ export function BuilderShell({
             </div>
           </aside>
 
-          <main className="min-w-0 flex-1">
+          {/* `id`/`tabIndex` are the header's skip-link target. This is the
+              only `<main>` that is not written in a route file, and leaving
+              it out would make the builder the one page where "Skip to
+              content" does nothing. */}
+          <main id={MAIN_CONTENT_ID} tabIndex={-1} className="min-w-0 flex-1">
             {loadError ? (
               <div
                 role="alert"

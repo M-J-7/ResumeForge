@@ -45,11 +45,19 @@ export interface Guide {
   /** Roughly how long it takes to read, so the reader can decide. */
   readonly minutes: number;
   readonly sections: readonly GuideSection[];
+  /**
+   * When what this page says last changed, as YYYY-MM-DD. It is the sitemap's
+   * `lastmod`, the Article's `dateModified` and the "Updated" line on the
+   * page. `content-dates.test.ts` pins a hash of the content beside it, so the
+   * content cannot change without somebody deciding what this should say.
+   */
+  readonly updated: string;
 }
 
 export const GUIDES: readonly Guide[] = [
   {
     slug: "what-an-ats-actually-does",
+    updated: "2026-09-10",
     title: "What an applicant tracking system actually does",
     summary:
       "What the software does, what it does not do, and which of the advice you have read is folklore.",
@@ -109,6 +117,7 @@ export const GUIDES: readonly Guide[] = [
 
   {
     slug: "resume-with-no-experience",
+    updated: "2026-09-10",
     title: "Writing a resume when you have no work experience",
     summary:
       "The evidence is almost always there. The problem is that it has not been counted as work.",
@@ -166,6 +175,7 @@ export const GUIDES: readonly Guide[] = [
 
   {
     slug: "how-to-quantify-a-bullet",
+    updated: "2026-09-10",
     title: "How to put a number on a bullet when you do not have one",
     summary:
       "The advice is always “quantify your achievements”. Here is what to do when the number is not written down anywhere.",
@@ -251,6 +261,7 @@ export const GUIDES: readonly Guide[] = [
 
   {
     slug: "resume-file-format",
+    updated: "2026-09-10",
     title: "PDF, Word, or plain text: which file to send",
     summary: "Three formats, three different situations, and one rule that covers most of them.",
     minutes: 4,

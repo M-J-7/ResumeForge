@@ -37,14 +37,24 @@
 # Any S3-compatible bucket works — Cloudflare R2, Backblaze B2, Tigris, AWS.
 # Only `endpoint` and `region` change.
 
+# Filled in 2026-09-12 for the ap-hyderabad-1 deployment. These three values are
+# identifiers, not secrets — `terraform output` prints them, and the credentials
+# they are used with live in .env.production. Committed rather than left as
+# placeholders because `deploy/oracle/deploy.sh` runs `git reset --hard
+# origin/master`: anything edited only on the instance is destroyed by the next
+# deploy, which would silently end replication.
 dbs:
   - path: /data/app.db
     replicas:
       - type: s3
-        bucket: REPLACE_ME_BUCKET
+        bucket: resume-builder-backups
         path: app.db
-        endpoint: https://REPLACE_ME_NAMESPACE.compat.objectstorage.REPLACE_ME_REGION.oraclecloud.com
-        region: REPLACE_ME_REGION
+        endpoint: https://axzrdanzo4yr.compat.objectstorage.ap-hyderabad-1.oraclecloud.com
+        region: ap-hyderabad-1
+
+        # Oracle's S3 compatibility API serves buckets as a path under the
+        # namespace host and does not support virtual-host addressing.
+        force-path-style: true
 
         # One second of acknowledged writes is the most this can lose. The
         # cost is a PUT per second only while something is actually being

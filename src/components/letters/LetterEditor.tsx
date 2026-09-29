@@ -1237,10 +1237,17 @@ export function LetterEditor({
             /*
               The field had no hint at all, which is most of why the posting
               felt ignored: nothing said what it decides, and nothing said
-              what it does not do. Both halves matter — the second is the
-              product's whole position (D8).
+              what it does not do. Both halves still matter — the second is
+              the product's whole position (D8).
+
+              The second half used to read "No wording from the posting is
+              ever copied into your letter", and that stopped being true when
+              the alignment paragraph began quoting one requirement back. The
+              claim that matters was never "we copy nothing" — it is that
+              nothing is *invented*, and a line shown in quotation marks is
+              the employer's own sentence returned to them.
             */
-            hint="It decides which of your bullets get quoted and which skills the letter may name. No wording from the posting is ever copied into your letter."
+            hint="It decides which of your bullets get quoted and which skills the letter may name. One requirement may be quoted back in quotation marks; nothing about you is ever written for you."
           >
             {({ id, describedBy }) => (
               <>

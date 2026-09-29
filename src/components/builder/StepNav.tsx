@@ -72,8 +72,8 @@ export function StepNav({
     <nav aria-label="Resume sections" className="flex flex-col gap-3">
       <div>
         <div className="flex items-baseline justify-between">
-          <h2 className="text-faint text-xs font-semibold tracking-wide uppercase">Sections</h2>
-          <span className="text-muted text-xs tabular-nums">
+          <h2 className="text-faint text-micro font-semibold tracking-wide uppercase">Sections</h2>
+          <span className="text-machine text-micro font-mono tabular-nums">
             {done} of {total}
           </span>
         </div>

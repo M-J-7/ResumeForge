@@ -21,7 +21,9 @@
  *
  * `offers` with `price: "0"` is the one claim worth making loudly: it is
  * true, permanently (D13), and it is the difference between this product and
- * every competitor whose paywall is at the download step.
+ * every competitor whose paywall is at the download step. The paid Pass sits
+ * beside it as a `PreOrder`, because it cannot be bought yet and saying
+ * otherwise to a crawler is the same lie as saying it to a person.
  *
  * ## Emitted as a string, not a component
  *
@@ -30,8 +32,9 @@
  * `structured-data.test.ts` assert on the shape without rendering anything.
  */
 
+import { PASS } from "./pricing";
 import { PRODUCT_NAME } from "./product";
-import { SITE_DESCRIPTION, siteUrl } from "./site";
+import { REPO_URL, SITE_DESCRIPTION, siteOrigin, siteUrl } from "./site";
 import type { Guide } from "./guides/guides";
 import type { RoleExample } from "./examples/roles";
 
@@ -48,6 +51,65 @@ export type JsonLd = Record<string, unknown>;
  */
 export function jsonLdScript(data: JsonLd): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+/**
+ * The mark at a stable URL, rendered from `src/app/icon.svg` by
+ * `scripts/build-icons.mjs`. Not the hashed `/icon.svg` Next serves: a logo
+ * in structured data is cached by whoever reads it, so its URL must not change
+ * with every build.
+ */
+export const LOGO_PATH = "/logo.png";
+
+/**
+ * Who publishes this site, as one entity every other block can point at.
+ *
+ * The name is the whole three-word name, never "Six Seconds" alone: the bare
+ * phrase already belongs to an emotional-intelligence nonprofit
+ * (6seconds.org) that owns that search result, and a result reading "Six
+ * Seconds" beside our favicon would be indistinguishable from theirs.
+ *
+ * `sameAs` is the public repository, the one other place that is
+ * authoritatively this product. There are no social profiles to list, and
+ * listing ones that do not exist is the decorative untruth this file refuses.
+ */
+export function organizationJsonLd(): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: PRODUCT_NAME,
+    url: siteUrl("/"),
+    logo: siteUrl(LOGO_PATH),
+    sameAs: [REPO_URL],
+  };
+}
+
+/**
+ * The site, for the name a search engine prints above a result.
+ *
+ * Google reads the site name from `WebSite` markup on the home page; without
+ * it the name is guessed from the title and headings, and ours share a phrase
+ * with a much older, much larger site. `alternateName` is the hostname, which
+ * is the other thing a person types to find it.
+ */
+export function websiteJsonLd(): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: PRODUCT_NAME,
+    alternateName: new URL(siteOrigin()).hostname,
+    url: siteUrl("/"),
+  };
+}
+
+/** The publisher on every `Article`: the organization above, with its logo. */
+function publisher(): JsonLd {
+  return {
+    "@type": "Organization",
+    name: PRODUCT_NAME,
+    url: siteUrl("/"),
+    logo: { "@type": "ImageObject", url: siteUrl(LOGO_PATH) },
+  };
 }
 
 /**
@@ -68,13 +130,36 @@ export function softwareApplicationJsonLd(): JsonLd {
     // name beyond that.
     operatingSystem: "Any",
     browserRequirements: "Requires JavaScript. Requires a modern browser.",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-      // D13, in the form a crawler reads.
-      availability: "https://schema.org/InStock",
-    },
+    /*
+     * Two offers, and the difference between them is the point.
+     *
+     * The free one keeps `price: "0"` and `InStock`, because that is true
+     * today and is true permanently (D13) — it is the claim worth making
+     * loudly and the one that survives the product having a paid tier.
+     *
+     * The Pass is `PreOrder`, not `InStock`, because **there is no checkout**.
+     * Marking something available to buy when nobody can buy it is markup that
+     * does not describe the page, which is both a policy violation and the
+     * machine-readable version of the lie this whole product is positioned
+     * against. It flips when billing exists; `pricing.test.ts` holds the two
+     * in step with `/pricing`.
+     */
+    offers: [
+      {
+        "@type": "Offer",
+        name: "Free",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+      {
+        "@type": "Offer",
+        name: "Pass",
+        price: PASS.price,
+        priceCurrency: PASS.currency,
+        availability: "https://schema.org/PreOrder",
+      },
+    ],
     featureList: [
       "ATS-safe resume builder",
       "PDF, Word, plain text and JSON Resume export",
@@ -114,9 +199,12 @@ export function guideArticleJsonLd(guide: Guide): JsonLd {
     description: guide.summary,
     url: siteUrl(`/guides/${guide.slug}`),
     mainEntityOfPage: siteUrl(`/guides/${guide.slug}`),
-    publisher: { "@type": "Organization", name: PRODUCT_NAME, url: siteUrl("/") },
+    publisher: publisher(),
     // Roughly, and the page says the same number to the reader.
     timeRequired: `PT${guide.minutes}M`,
+    // The date the page shows as "Updated". No `datePublished`: when each
+    // guide was first written is not recorded, and a guess would be a claim.
+    dateModified: guide.updated,
   };
 }
 
@@ -138,6 +226,27 @@ export function guideFaqJsonLd(guide: Guide): JsonLd | null {
       "@type": "Question",
       name: section.heading,
       acceptedAnswer: { "@type": "Answer", text: section.answer },
+    })),
+  };
+}
+
+/**
+ * A page that asks and answers questions, as an `FAQPage`.
+ *
+ * The landing page's FAQ, and the general form `guideFaqJsonLd` is a special
+ * case of. The caller passes the same array it renders — not a second copy
+ * written for the crawler — because markup that describes answers the page
+ * does not contain breaks Google's structured-data policy, and the way that
+ * happens is always two lists drifting rather than anyone deciding to lie.
+ */
+export function faqPageJsonLd(items: readonly { question: string; answer: string }[]): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: { "@type": "Answer", text: item.answer },
     })),
   };
 }
@@ -170,6 +279,56 @@ export function faqSections(guide: Guide): { heading: string; answer: string }[]
   return found;
 }
 
+/**
+ * A reference page that is neither a guide nor an example — the action-verbs
+ * page. Same shape as a guide's `Article`, and the same refusal to name an
+ * author nobody credited.
+ */
+export function referenceArticleJsonLd(page: {
+  headline: string;
+  description: string;
+  path: string;
+  dateModified: string;
+}): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: page.headline,
+    description: page.description,
+    url: siteUrl(page.path),
+    mainEntityOfPage: siteUrl(page.path),
+    publisher: publisher(),
+    dateModified: page.dateModified,
+  };
+}
+
+/**
+ * A free tool that runs in the browser — the bullet checker.
+ *
+ * `WebApplication` with a free `Offer`, which is true permanently for the same
+ * reason the landing page's is. No rating, for the same reason there is none
+ * anywhere: nobody has rated it.
+ */
+export function webApplicationJsonLd(tool: {
+  name: string;
+  description: string;
+  path: string;
+}): JsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: tool.name,
+    description: tool.description,
+    url: siteUrl(tool.path),
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Any",
+    browserRequirements: "Requires JavaScript.",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    publisher: publisher(),
+  };
+}
+
 /** `/examples` and `/templates`: a list, with each item's own URL. */
 export function itemListJsonLd(
   name: string,
@@ -198,7 +357,8 @@ export function roleExampleJsonLd(example: RoleExample): JsonLd {
     description: example.summary,
     url: siteUrl(`/examples/${example.slug}`),
     mainEntityOfPage: siteUrl(`/examples/${example.slug}`),
-    publisher: { "@type": "Organization", name: PRODUCT_NAME, url: siteUrl("/") },
+    publisher: publisher(),
     about: example.occupationTitle,
+    dateModified: example.updated,
   };
 }

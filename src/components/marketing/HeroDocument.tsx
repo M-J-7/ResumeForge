@@ -50,6 +50,7 @@
 import { m, useMotionValue, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { useState, type PointerEvent } from "react";
 import { cn } from "@/lib/utils";
+import { Eyebrow } from "./Eyebrow";
 import { PaperSample, sampleLines, type BlockId } from "./PaperSample";
 import { GLIDE, dropPaper } from "./motion-tokens";
 
@@ -119,13 +120,19 @@ export function HeroDocument({ className }: { className?: string }) {
             drifts on its own clock and cannot be relied on to be *here*; this
             one is anchored to the document, which is the object the whole
             composition is about.
+
+            `--paper-glow` rather than a literal, and that token is what the
+            dark stage spends. On a light ground it is the accent, faintly —
+            a white halo around the brightest thing on the screen is
+            invisible. On near-black it is white, and the page stops being a
+            white rectangle and becomes the one lit object in the room, which
+            is what `design.md` §3.2 promised dark mode would pay for.
           */}
           <div
             aria-hidden
             className="pointer-events-none absolute -inset-8 -z-20 rounded-full opacity-70 blur-3xl"
             style={{
-              background:
-                "radial-gradient(closest-side, color-mix(in oklab, var(--accent) 22%, transparent), transparent)",
+              background: "radial-gradient(closest-side, var(--paper-glow), transparent)",
             }}
           />
           {/*
@@ -157,6 +164,7 @@ export function HeroDocument({ className }: { className?: string }) {
               <m.div
                 key={run}
                 aria-hidden
+                data-build=""
                 initial={{ y: "-100%", opacity: 1 }}
                 animate={{ y: "0%", opacity: 0 }}
                 transition={{
@@ -198,19 +206,22 @@ export function HeroDocument({ className }: { className?: string }) {
         </m.div>
 
         {/* What the parser got back. Mono, because in this app monospace
-            means "a machine recovered this" and never anything else. */}
+            means "a machine recovered this" and never anything else — and
+            `.machine-panel` now says the same thing with the ground, so the
+            pane reads as the parser's surface rather than as a second card
+            that happens to contain code. */}
         <m.div
           data-build=""
           variants={dropPaper}
-          className="border-line bg-surface-0 w-full rounded-lg border"
+          className="machine-panel w-full rounded-lg border"
         >
           <div className="border-line flex items-center justify-between gap-3 border-b px-3.5 py-2">
-            <span className="text-machine font-mono text-[11px] tracking-wide">recovered text</span>
+            <Eyebrow>recovered text</Eyebrow>
             {reduced ? null : (
               <button
                 type="button"
                 onClick={() => setRun((value) => value + 1)}
-                className="text-faint hover:text-text hover:border-line-strong focus-visible:ring-accent rounded-sm border border-transparent px-2 py-0.5 text-[11px] font-medium transition-colors duration-[var(--dur-fast)] focus-visible:ring-2 focus-visible:outline-none"
+                className="text-faint hover:text-text hover:border-line-strong focus-visible:ring-accent text-micro rounded-sm border border-transparent px-2 py-0.5 font-medium transition-colors duration-[var(--dur-fast)] focus-visible:ring-2 focus-visible:outline-none"
               >
                 Read it again
               </button>
@@ -219,11 +230,23 @@ export function HeroDocument({ className }: { className?: string }) {
 
           <pre
             onPointerLeave={() => setActive(null)}
-            className="text-muted overflow-hidden px-3.5 py-3 font-mono text-[10.5px] leading-[1.55] whitespace-pre-wrap"
+            className="text-muted text-micro overflow-hidden px-3.5 py-3 font-mono leading-[1.55] whitespace-pre-wrap"
           >
             {lines.map((line, index) => (
               <m.span
                 key={`${run}-${index}`}
+                /*
+                 * `data-build` is not decoration here, it is the escape hatch.
+                 * `initial` is an inline style Motion writes during *server*
+                 * rendering, so every one of these lines arrives in the HTML
+                 * clipped to nothing — and with scripting off there is no
+                 * hydration to unclip them. The `<noscript>` rule in
+                 * `layout.tsx` and the `prefers-reduced-motion` block in
+                 * `globals.css` both key off this attribute, and without it
+                 * the parser's pane is a blank rectangle for anyone who has
+                 * either.
+                 */
+                data-build=""
                 onPointerEnter={() => setActive(line.id)}
                 className={cn(
                   "block min-h-[1em] rounded-[2px]",
@@ -250,7 +273,7 @@ export function HeroDocument({ className }: { className?: string }) {
         </m.div>
       </div>
 
-      <figcaption className="text-faint mt-4 text-sm leading-relaxed">
+      <figcaption className="text-faint text-small max-w-read mt-4 leading-relaxed">
         The same resume twice: the page a person reads, and the plain text a parser recovers from
         it. Point at either side to see which part of one became which part of the other. An
         illustration of the structure, not a claim about any particular employer&rsquo;s software.

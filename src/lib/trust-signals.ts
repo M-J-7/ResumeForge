@@ -70,6 +70,18 @@ export interface TrustSignal {
   href?: string;
   /** Set when the claim is a number this repository can be measured against. */
   measured?: "unitTests" | "e2eTests" | "lintRules" | "skillTerms";
+  /**
+   * How much of the evidence grid this claim is worth.
+   *
+   * `lead` is the one the whole product turns on — we re-read our own output
+   * and show you the result — and it takes the full width with room for the
+   * readout beside it. Everything else is a standard tile.
+   *
+   * There was a third kind, `stat`, for a claim that *is* a number: "1,951
+   * tests, and the number is checked", set at the size a number deserves. It
+   * is gone with the claim it was for. See the note on `TRUST_SIGNALS`.
+   */
+  tile?: "lead";
 }
 
 /**
@@ -83,7 +95,7 @@ export interface TrustSignal {
  */
 export const MEASURED = {
   /** What `pnpm test` prints — cases, not declarations. See the test. */
-  unitTests: 1816,
+  unitTests: 2074,
   /**
    * Test *declarations* under `src`, pinned exactly.
    *
@@ -94,25 +106,48 @@ export const MEASURED = {
    * of whoever made the change — which is what stops half the tests being
    * deleted while the landing page goes on claiming the old total.
    */
-  testDeclarations: 967,
-  e2eTests: 85,
+  testDeclarations: 1071,
+  e2eTests: 103,
   lintRules: 14,
   skillTerms: 7432,
 } as const;
 
+/**
+ * ## Four, not six: who this section is addressed to
+ *
+ * It had six rows and two of them were written for the wrong reader.
+ *
+ * "We built an on-device AI rewriter, measured it, and switched it off" —
+ * with a detail about a six-minute pipeline becoming a six-hour one and
+ * "passing the guardrail because both digits were in the evidence" — is an
+ * engineering write-up. "1,951 tests, and the number is checked", over "clone
+ * the repository and run `pnpm verify`", is a credential addressed to a
+ * developer and an instruction almost nobody arriving here can carry out.
+ *
+ * Both are true and neither was the problem. The problem is that this is the
+ * slot where somebody deciding whether to trust a resume tool looks, and a
+ * job seeker has no idea whether 1,951 tests is a lot. Two of six tiles spent
+ * on facts about the authors is two-thirds of the reader's attention spent on
+ * the wrong argument — and it made the section long enough that the four
+ * tiles that *are* for them got skimmed.
+ *
+ * Nothing was thrown away: both facts are a line under the grid on the
+ * landing page, where a developer will find them and nobody else has to read
+ * past them. `MEASURED` is still measured, and still rendered, so the
+ * tripwire below keeps working.
+ *
+ * What is left is the four things a person actually wants to know before
+ * typing their employment history into a website: does it work, is it
+ * private, what does it cost, and can I get my work back out.
+ */
 export const TRUST_SIGNALS: readonly TrustSignal[] = [
-  /*
-   * Ordered by what it costs the reader to check, cheapest first. The three
-   * that need nothing but this browser lead; the two that need a checkout
-   * follow. That is not a ranking of how strong the claims are — it is a
-   * ranking of how quickly the heading above them can be taken up on.
-   */
   {
     claim: "We re-read the file we just made you, and show you the result",
     detail:
       "Not a claim that a resume is ATS-friendly — a measurement. The extraction runs on the actual PDF and grades what came back against what you typed.",
     evidence: "Open the X-Ray tab in the builder",
     href: "/builder",
+    tile: "lead",
   },
   {
     claim: "Your resume never reaches our server unless you ask",
@@ -122,13 +157,6 @@ export const TRUST_SIGNALS: readonly TrustSignal[] = [
     href: "/check",
   },
   {
-    claim: "You can take everything with you",
-    detail:
-      "Export the whole account as JSON Resume, import it anywhere that reads the format, and delete the account with one confirmation — every row, immediately, with no copy kept.",
-    evidence: "Both controls are on your dashboard",
-    href: "/dashboard",
-  },
-  {
     claim: "Every download is free, permanently",
     detail:
       "PDF, Word, plain text and JSON Resume. No paywall at the last step, no watermark, and no account needed to get your own work back out.",
@@ -136,21 +164,11 @@ export const TRUST_SIGNALS: readonly TrustSignal[] = [
     href: repoFileUrl("docs/DECISIONS.md"),
   },
   {
-    claim: "Optional AI enhancement runs on your device",
+    claim: "You can take everything with you",
     detail:
-      "Cover-letter Enhance downloads a small model once, then processes the selected paragraph in the browser. Your resume and letter text are not sent to a model API, and every suggestion needs your review before it changes the letter.",
-    evidence: "Read the adapter that loads the model",
-    href: repoFileUrl("src/lib/cover-letter/enhance.browser.ts"),
-  },
-  {
-    claim: `${MEASURED.unitTests.toLocaleString("en")} tests, and the number is checked`,
-    detail:
-      "Including a test that fails if this sentence goes stale. Every emitter is pinned by golden extracted-text snapshots, so a change to the machine-readable output cannot pass unnoticed.",
-    // No `href`: this one needs the repository, Node and pnpm, and is the one
-    // row in the list that is honestly for a developer. Saying "clone it and
-    // run this" is more useful than a link to a file that only restates it.
-    evidence: "Clone the repository and run `pnpm verify`",
-    measured: "unitTests",
+      "Export the whole account as JSON Resume, import it anywhere that reads the format, and delete the account with one confirmation — every row, immediately, with no copy kept.",
+    evidence: "Both controls are on your dashboard",
+    href: "/dashboard",
   },
 ];
 

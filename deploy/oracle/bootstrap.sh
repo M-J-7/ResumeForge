@@ -215,6 +215,10 @@ if [[ -f .env ]] && grep -q '^APP_IMAGE=' .env; then
   docker compose pull app
 else
   say "Building the image (this takes a while on a small instance)"
+  # The Dockerfile refuses to build without the public origin: the content
+  # pages are prerendered and bake it into their canonical links. AUTH_URL is
+  # that origin, and is already in the environment from .env.production.
+  export NEXT_PUBLIC_SITE_URL="${NEXT_PUBLIC_SITE_URL:-$AUTH_URL}"
   docker compose build
 fi
 

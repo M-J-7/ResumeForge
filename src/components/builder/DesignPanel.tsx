@@ -96,28 +96,34 @@ export function DesignPanel({ open, onClose }: { open: boolean; onClose: () => v
           Templates first, above the individual controls. Choosing a starting
           point and then adjusting it is the order people actually work in,
           and it is the order that makes the five font pairs legible as
-          twelve documents rather than as five dropdown entries.
+          two dozen documents rather than as five dropdown entries.
         */}
         <section className="flex flex-col gap-2">
           <h3 className="text-muted text-xs font-semibold tracking-wide uppercase">Templates</h3>
           <p className="text-muted text-xs">
             Every one is single-column, real text, with standard section headings — the structure
-            that reads most reliably. They differ in typography and order, never in that.
+            that reads most reliably. They differ in typography, paper size and order, never in
+            that.
           </p>
           {/*
             Mounted only while the dialog is open, and that is not a
             micro-optimisation. A closed `<dialog>` still has its children in
-            the DOM, so an unconditional gallery would run twelve PDF renders
-            on every single builder page load — against a §2.2 budget of
-            three seconds to interactive on throttled 4G, for a panel most
-            sessions never open. It also put twelve more controls in the
-            accessibility tree of a page they are not part of, which is how
-            this was found: `getByLabel("Phone")` on the builder started
-            matching a template card whose description ends "…read on a
-            phone".
+            the DOM, so an unconditional gallery would run every template's
+            PDF render on every single builder page load — against a §2.2
+            budget of three seconds to interactive on throttled 4G, for a
+            panel most sessions never open. It also put two dozen more
+            controls in the accessibility tree of a page they are not part
+            of, which is how this was found: `getByLabel("Phone")` on the
+            builder started matching a template card whose description ends
+            "…read on a phone".
+
+            `groups="panel"` for the same reason the public page groups: this
+            is a list long enough to need saying what the later part of it is
+            for.
           */}
           {open ? (
             <TemplateGallery
+              groups="panel"
               selectedId={activeTemplate?.id ?? null}
               onSelect={(template) => applyTemplate(template.settings, template.sectionOrder)}
               className="lg:grid-cols-3"
