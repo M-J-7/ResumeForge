@@ -29,7 +29,7 @@
 | F1 — Six-Second View | **Done** — a "Six seconds" tab in the builder: where the name, current and previous roles and education landed on page one of the real PDF, with an animated overlay; flags a current role pushed low or a fact off page one |
 | B8 — stale docs | **Done** — IMPLEMENTATION.md header, BLOCKERS.md after PR #5, MONETISATION.md §2b status, the memory entry |
 | F5 — vocabulary beyond tech | **Done** — ~150 owned terms (healthcare, education, office, finance, retail, HR, sales, engineering) and short product names; fixed RN resolving to React Native and canvas resolving to Canva |
-| Phase 3 — India examples, batch 1 | **Done** — Software Engineer (Fresher), B.Com Fresher, MBA Fresher, BPO Customer Support Executive; 16 → 20 examples. Next: the first US batch |
+| Phase 3 — examples, first batches | **Done** — India: Software Engineer (Fresher), B.Com Fresher, MBA Fresher, BPO Customer Support Executive. US: Cashier, Medical Assistant, Warehouse Associate, Certified Nursing Assistant. 16 → 24 examples; target 60 |
 | Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
 | Everything else | Not started |
 

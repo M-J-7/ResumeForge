@@ -32,6 +32,10 @@ function contentHash(entry: { updated: string }): string {
 
 /** `slug` → `updated@hash`, true when written. */
 const PINNED: Readonly<Record<string, string>> = {
+  cashier: "2026-09-29@009c19066838",
+  "medical-assistant": "2026-09-29@7dc4d23ae958",
+  "warehouse-associate": "2026-09-29@d4270f4e611d",
+  "certified-nursing-assistant": "2026-09-29@b8339e99e5a1",
   "software-engineer-fresher": "2026-09-29@03f169c8d40c",
   "bcom-fresher": "2026-09-29@93d214d393ac",
   "mba-fresher": "2026-09-29@3db031ff5434",

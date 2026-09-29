@@ -1795,6 +1795,329 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
       ],
     }),
   },
+
+  /* --------------------------------------------------------------------- */
+  /* Written for applications in the United States (2026-09-29).            */
+  /*                                                                        */
+  /* The first US batch: hourly and certified roles with enormous search    */
+  /* demand and a sea of thin answers. US conventions throughout — Letter,  */
+  /* city and state only, the reserved 555-01xx numbers, certifications     */
+  /* named with their issuing body or state.                                */
+  /* --------------------------------------------------------------------- */
+
+  {
+    slug: "cashier",
+    updated: "2026-09-29",
+    market: "US",
+    role: "Cashier",
+    occupationTitle: "Cashiers",
+    field: "Retail and hospitality",
+    summary:
+      "A cashier's resume with the numbers a store manager actually checks — drawers, speed, voids — and a promotion to head cashier that the layout makes visible.",
+    notes: [
+      {
+        title: "A cashier's numbers are drawers, speed and voids",
+        body: "Balanced drawers, items a minute and mis-scans are what a front-end manager is measured on, so they are what a hiring manager scans for. “Friendly and reliable” is on every other application in the pile.",
+      },
+      {
+        title: "Head cashier is a promotion, so it is its own role",
+        body: "Two entries at one store, each with its own dates, show the step up. Folding them together would hide the most persuasive fact on the page.",
+      },
+      {
+        title: "Bilingual is a skill, listed where it can be found",
+        body: "Spanish goes in its own line under Languages. Stores that need it search for it, and a sentence in the summary is easier to miss.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth — US employers do not expect them, and many prefer not to see them. The page is Letter-sized, which is what an American printer and ATS assume.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "cashier",
+      contact: contact({
+        fullName: "Maria Delgado",
+        email: "maria@example.com",
+        phone: "(614) 555-0142",
+        location: "Columbus, OH",
+      }),
+      summary:
+        "Cashier with three years at a high-volume grocery store, promoted to head cashier and trusted with opening and closing the front end. Bilingual in English and Spanish.",
+      experience: [
+        role({
+          id: "csh-r1",
+          title: "Head Cashier",
+          organization: "Fairway Fresh Market",
+          location: "Columbus, OH",
+          from: "2024-03",
+          bullets: [
+            "Balanced 9 registers at close with zero variance on 212 of 220 shifts in 2025 by recounting drawers at shift change.",
+            "Trained 11 new cashiers on the POS system with a one-page checklist, halving their first-week voids.",
+          ],
+        }),
+        role({
+          id: "csh-r2",
+          title: "Cashier",
+          organization: "Fairway Fresh Market",
+          location: "Columbus, OH",
+          from: "2023-01",
+          to: "2024-02",
+          bullets: [
+            "Scanned 28 items a minute at peak with mis-scans under 1% on monthly audits.",
+            "Raised loyalty-card sign-ups at one register from 12 to 37 a week by offering the card at every checkout.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "csh-edu",
+          institution: "Westland High School",
+          credential: "High School Diploma",
+          location: "Columbus, OH",
+          from: "2018-08",
+          to: "2022-05",
+        }),
+      ],
+      skillGroups: [
+        skills("csh-sk-1", "Register", [
+          "Cash handling",
+          "POS systems",
+          "Returns and exchanges",
+          "Opening and closing",
+        ]),
+        skills("csh-sk-2", "Languages", ["English", "Spanish"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "medical-assistant",
+    updated: "2026-09-29",
+    market: "US",
+    role: "Medical Assistant",
+    occupationTitle: "Medical Assistants",
+    field: "Healthcare",
+    summary:
+      "A certified medical assistant two years into a busy family practice — patient volume, lab quality and a referral backlog cleared, with the credential stated first.",
+    notes: [
+      {
+        title: "The certification is named with its body",
+        body: "“CMA (AAMA)” and “BLS (American Heart Association)” are what a practice manager checks before anything else. Naming the issuing body answers the next question before it is asked.",
+      },
+      {
+        title: "Patient volume gives the work its scale",
+        body: "Thirty patients a day across three providers says what kind of clinic this was. A bullet that only lists duties — rooming, vitals, injections — says what every medical assistant does.",
+      },
+      {
+        title: "The externship is experience",
+        body: "It had a supervisor, a scope and a result — 160 venipunctures at 92% first-stick — so it goes under Experience, where it counts, rather than under Education.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "medical-assistant",
+      contact: contact({
+        fullName: "Jasmine Carter",
+        email: "jasmine@example.com",
+        phone: "(404) 555-0117",
+        location: "Atlanta, GA",
+      }),
+      summary:
+        "Certified Medical Assistant (CMA) with two years in a busy family practice, rooming 30 patients a day and handling phlebotomy, vital signs and EHR charting.",
+      experience: [
+        role({
+          id: "mda-r1",
+          title: "Medical Assistant",
+          organization: "Peachtree Family Medicine",
+          location: "Atlanta, GA",
+          from: "2024-06",
+          bullets: [
+            "Roomed 30 patients a day across three providers by preparing charts in athenaOne the evening before.",
+            "Cut the clinic's lab redraw rate from 6% to 2% with a tube-labeling check at the draw station.",
+            "Scheduled 140 referrals a month through the insurance portal, clearing a three-week backlog in 10 days.",
+          ],
+        }),
+        role({
+          id: "mda-r2",
+          title: "Medical Assistant Extern",
+          organization: "Midtown Community Clinic",
+          location: "Atlanta, GA",
+          from: "2024-02",
+          to: "2024-05",
+          bullets: [
+            "Performed 160 venipunctures under supervision with a first-stick success rate of 92%.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "mda-edu",
+          institution: "Metro Atlanta Career Institute",
+          credential: "Medical Assisting Diploma",
+          location: "Atlanta, GA",
+          from: "2023-08",
+          to: "2024-05",
+        }),
+      ],
+      skillGroups: [
+        skills("mda-sk-1", "Certifications", ["CMA (AAMA)", "BLS (American Heart Association)"]),
+        skills("mda-sk-2", "Clinical", ["Phlebotomy", "Vital signs", "EKG", "Injections"]),
+        skills("mda-sk-3", "Systems", ["athenaOne", "Electronic health records"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "warehouse-associate",
+    updated: "2026-09-29",
+    market: "US",
+    role: "Warehouse Associate",
+    occupationTitle: "Laborers and Freight, Stock, and Material Movers, Hand",
+    field: "Logistics",
+    summary:
+      "Four years in a distribution center, written the way a warehouse manager reads — pick rate against target, accuracy, and certifications named with the equipment.",
+    notes: [
+      {
+        title: "Rate is the number that matters, so it leads",
+        body: "185 units an hour against a target of 150 is the first thing a shift supervisor wants to know. Put it in the first bullet, with the target, so the number means something.",
+      },
+      {
+        title: "Certifications are named with the equipment",
+        body: "“Forklift certified” leaves the obvious question open. Sit-down or stand-up reach truck is what decides which job you can do on day one.",
+      },
+      {
+        title: "Safety is shown, not claimed",
+        body: "Training eight new hires and adding a scan-to-verify step are safety and quality work with a result. “Safety-conscious” is a claim every applicant makes.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "warehouse-associate",
+      contact: contact({
+        fullName: "Tyler Brooks",
+        email: "tyler@example.com",
+        phone: "(901) 555-0163",
+        location: "Memphis, TN",
+      }),
+      summary:
+        "Warehouse associate with four years in a regional distribution center, certified on sit-down forklifts and stand-up reach trucks. Consistently above rate on picking.",
+      experience: [
+        role({
+          id: "wha-r1",
+          title: "Warehouse Associate II",
+          organization: "Riverbend Distribution",
+          location: "Memphis, TN",
+          from: "2023-04",
+          bullets: [
+            "Picked 185 units an hour against a 150 target through 2025 by batching orders by aisle on the RF scanner.",
+            "Cut mis-ships on the pack-out line from 1.2% to 0.3% by adding a scan-to-verify step.",
+            "Trained 8 new hires on forklift safety with a walk-through the site now uses for every start.",
+          ],
+        }),
+        role({
+          id: "wha-r2",
+          title: "Warehouse Associate",
+          organization: "Riverbend Distribution",
+          location: "Memphis, TN",
+          from: "2021-06",
+          to: "2023-03",
+          bullets: [
+            "Unloaded 14 trailers a shift with the dock team, keeping trailer dwell time under 40 minutes.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "wha-edu",
+          institution: "Southside High School",
+          credential: "High School Diploma",
+          location: "Memphis, TN",
+          from: "2017-08",
+          to: "2021-05",
+        }),
+      ],
+      skillGroups: [
+        skills("wha-sk-1", "Equipment", [
+          "Sit-down forklift (certified)",
+          "Stand-up reach truck (certified)",
+          "RF scanner",
+          "Pallet jack",
+        ]),
+        skills("wha-sk-2", "Safety", ["OSHA 10", "Lockout/tagout"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "certified-nursing-assistant",
+    updated: "2026-09-29",
+    market: "US",
+    role: "Certified Nursing Assistant",
+    occupationTitle: "Nursing Assistants",
+    field: "Healthcare",
+    summary:
+      "A CNA on a long-term care unit, with resident load, charting quality and a falls reduction — the state certification stated with the state.",
+    notes: [
+      {
+        title: "The certification is stated with the state",
+        body: "CNA certification is issued by a state, and a facility checks its own state's registry. “CNA (Michigan)” answers that; “Certified Nursing Assistant” alone does not.",
+      },
+      {
+        title: "Resident load gives the shift its size",
+        body: "Twelve residents a shift on a 40-bed unit tells a director of nursing what you are used to. It is the CNA equivalent of a nurse's patient ratio.",
+      },
+      {
+        title: "A short career still gets numbers",
+        body: "Under two years in, there is still a falls count, an audit result and an injury rate to point to. Care work is measured; say how.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "certified-nursing-assistant",
+      contact: contact({
+        fullName: "Aaliyah Johnson",
+        email: "aaliyah@example.com",
+        phone: "(313) 555-0138",
+        location: "Detroit, MI",
+      }),
+      summary:
+        "Certified Nursing Assistant on a 40-bed long-term care unit, caring for 12 residents a shift on days. Michigan-certified, with BLS current.",
+      experience: [
+        role({
+          id: "cna-r1",
+          title: "Certified Nursing Assistant",
+          organization: "Maple Grove Care Center",
+          location: "Detroit, MI",
+          from: "2024-01",
+          bullets: [
+            "Cared for 12 residents a shift with bathing, feeding and mobility support, with no pressure injuries on the unit for 14 months.",
+            "Charted vital signs for 24 residents twice a shift in PointClickCare with no late entries on quarterly audits.",
+            "Reduced day-shift resident falls from five a month to one by adding a bed-alarm check to every round.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "cna-edu",
+          institution: "Detroit Health Careers Institute",
+          credential: "Nurse Aide Training Program",
+          location: "Detroit, MI",
+          from: "2023-09",
+          to: "2023-12",
+        }),
+      ],
+      skillGroups: [
+        skills("cna-sk-1", "Certifications", ["CNA (Michigan)", "BLS"]),
+        skills("cna-sk-2", "Care", [
+          "Activities of daily living",
+          "Vital signs",
+          "Infection control",
+          "Dementia care",
+        ]),
+        skills("cna-sk-3", "Systems", ["PointClickCare"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
 ];
 
 export function getRoleExample(slug: string): RoleExample | null {

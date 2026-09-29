@@ -95,7 +95,7 @@ export interface TrustSignal {
  */
 export const MEASURED = {
   /** What `pnpm test` prints — cases, not declarations. See the test. */
-  unitTests: 2101,
+  unitTests: 2121,
   /**
    * Test *declarations* under `src`, pinned exactly.
    *
