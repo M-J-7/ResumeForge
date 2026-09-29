@@ -63,7 +63,13 @@ export function relatedExamples(example: RoleExample, limit = 3): RoleExample[] 
   // nurse page points onward from the nurse, not always at the first entries.
   const rotated = [...ROLE_EXAMPLES.slice(index + 1), ...ROLE_EXAMPLES.slice(0, index)];
 
-  const sameField = rotated.filter((candidate) => candidate.field === example.field);
+  // At most two from the same field, then the rest from elsewhere. Same
+  // field first is what a reader wants; *only* the same field is what
+  // stranded a page — once "Early career" and "Operations" had four and six
+  // examples, their pages linked only to each other and the marketing
+  // manager was linked from nowhere (2026-09-29). `related.test.ts` asserts
+  // every example is linked from another.
+  const sameField = rotated.filter((candidate) => candidate.field === example.field).slice(0, 2);
   const others = rotated.filter((candidate) => candidate.field !== example.field);
   return [...sameField, ...others].slice(0, limit);
 }

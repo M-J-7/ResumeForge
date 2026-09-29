@@ -51,6 +51,14 @@ export interface RoleExample {
   readonly summary: string;
   /** Three or four observations about this specific resume. */
   readonly notes: readonly { readonly title: string; readonly body: string }[];
+  /**
+   * The hiring market whose conventions it follows, when it follows one:
+   * `IN` for CGPA and percentages, amounts in lakh and A4; `US` for Letter
+   * and US titles. Absent for the examples that suit either. Shown on the
+   * page, because a reader applying elsewhere should know which choices to
+   * translate.
+   */
+  readonly market?: "IN" | "US";
   readonly resume: ResumeDocument;
   /**
    * When what this page says last changed, as YYYY-MM-DD. It is the sitemap's
@@ -1421,6 +1429,369 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
           "Visual merchandising",
         ]),
         skills("rsm-sk-2", "Systems", ["Retail Express", "Deputy", "Excel"]),
+      ],
+    }),
+  },
+
+  /* --------------------------------------------------------------------- */
+  /* Written for applications in India (ROADMAP Phase 3, 2026-09-29).       */
+  /*                                                                        */
+  /* The first India batch: the searches with the most demand and the least */
+  /* useful answers — a fresher engineer, a commerce graduate, an MBA       */
+  /* fresher and a BPO support executive. Each follows the conventions an   */
+  /* Indian recruiter expects (CGPA or percentage on the degree line,       */
+  /* amounts in lakh, A4) and says so, and each note says what to change    */
+  /* for an application abroad. Held to the same bar as every example.      */
+  /* --------------------------------------------------------------------- */
+
+  {
+    slug: "software-engineer-fresher",
+    updated: "2026-09-29",
+    market: "IN",
+    role: "Software Engineer (Fresher)",
+    occupationTitle: "Software Developers",
+    field: "Early career",
+    summary:
+      "A final-year engineering student with one internship and two projects people use — the most common first resume in India, written to be read.",
+    notes: [
+      {
+        title: "One internship is enough to lead with",
+        body: "Two months at a payments start-up, with a failure rate it moved and tests that caught real bugs, says more than a list of courses. It goes first because it is the closest thing to the job.",
+      },
+      {
+        title: "CGPA is on the degree line, once",
+        body: "Campus recruiters often filter on 10th and 12th marks too. If a company's form asks for them, add one line under education; otherwise the degree result is the one that matters, and repeating school marks spends a line on the least recent thing you have done.",
+      },
+      {
+        title: "No photo, date of birth or declaration",
+        body: "Most private employers in India no longer expect them, and none of them says anything about the work. Government and PSU applications that want a declaration or a date of birth ask for it on their own form — fill it there.",
+      },
+      {
+        title: "Projects carry users and numbers",
+        body: "“Used by 1,200 residents” and “national finals” are scale. A project described only by its tech stack reads as a tutorial followed to the end.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "software-engineer-fresher",
+      contact: contact({
+        fullName: "Ananya Iyer",
+        email: "ananya@example.com",
+        phone: "+91 80 5555 0142",
+        location: "Bengaluru, India",
+      }),
+      summary:
+        "Final-year BTech computer science student with a backend internship at a payments start-up and two deployed projects. Looking for a first software engineering role on a product team.",
+      experience: [
+        role({
+          id: "sef-r1",
+          title: "Software Engineering Intern",
+          organization: "Finvo Payments",
+          location: "Bengaluru, India",
+          from: "2025-05",
+          to: "2025-07",
+          bullets: [
+            "Cut failed UPI payout retries from 4.1% to 0.6% by adding idempotency keys to the settlement service.",
+            "Wrote 38 integration tests with Jest that caught two reconciliation bugs before the August release.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "sef-edu",
+          institution: "Nandi Institute of Technology",
+          credential: "BTech",
+          field: "Computer Science and Engineering",
+          location: "Bengaluru, India",
+          from: "2022-08",
+          to: "2026-05",
+          result: "8.4 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("sef-sk-1", "Languages", ["Java", "Python", "JavaScript", "SQL"]),
+        skills("sef-sk-2", "Tools", ["Spring Boot", "React", "PostgreSQL", "Git", "Docker"]),
+      ],
+      projects: [
+        project({
+          id: "sef-p1",
+          name: "Hostel Mess Feedback App",
+          role: "Solo developer",
+          from: "2024-08",
+          to: "2024-11",
+          bullets: [
+            "Built a feedback app with React Native and Firebase used by 1,200 residents across four hostels, raising weekly responses from 40 to 310.",
+          ],
+        }),
+        project({
+          id: "sef-p2",
+          name: "Smart India Hackathon",
+          role: "Machine learning",
+          from: "2024-12",
+          to: "2024-12",
+          bullets: [
+            "Reached the national finals with a crop-disease classifier trained on 18,000 labelled leaf images.",
+          ],
+        }),
+      ],
+      settings: { headerStyle: "centered", headingStyle: "accent-bar" },
+    }),
+  },
+
+  {
+    slug: "bcom-fresher",
+    updated: "2026-09-29",
+    market: "IN",
+    role: "B.Com Fresher",
+    occupationTitle: "Bookkeeping, Accounting, and Auditing Clerks",
+    field: "Early career",
+    summary:
+      "A commerce graduate's first resume, built on a six-month internship at a CA firm — GST returns, reconciliations and month-end work, each with a number.",
+    notes: [
+      {
+        title: "The internship reads like a job, because it was one",
+        body: "Twenty-two clients' GST returns filed on time is a workload, and it is written as one. An internship described as “assisted with accounts” would say nothing an employer can use.",
+      },
+      {
+        title: "Tally and GST are in the bullets, not only the skills list",
+        body: "A skills line is a claim; a bullet that files returns in Tally Prime is evidence. The keyword scanner here marks exactly that difference — “demonstrated” against “listed only”.",
+      },
+      {
+        title: "Use the result your university issues",
+        body: "Percentage or CGPA, whichever is on your marksheet, stated once on the degree line. Converting one into the other invites a question you do not need.",
+      },
+      {
+        title: "Amounts in lakh are right for an Indian employer",
+        body: "“₹4.2 lakh” is how a finance team here talks. For an application abroad, write the same figure in thousands in the local currency, or drop the amount and keep the count.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "bcom-fresher",
+      contact: contact({
+        fullName: "Karan Mehta",
+        email: "karan@example.com",
+        phone: "+91 22 5555 0197",
+        location: "Mumbai, India",
+      }),
+      summary:
+        "Commerce graduate with a six-month internship at a chartered accountancy firm, preparing GST returns and bank reconciliations for small businesses. Works in Tally Prime and Excel every day.",
+      experience: [
+        role({
+          id: "bcf-r1",
+          title: "Accounts Intern",
+          organization: "Shah & Rao Associates",
+          location: "Mumbai, India",
+          from: "2025-06",
+          to: "2025-12",
+          bullets: [
+            "Prepared monthly GST returns for 22 small-business clients with Tally Prime, filing every return before the 20th.",
+            "Reconciled 14 months of bank statements for a textile trader by matching 3,100 entries, clearing a ₹4.2 lakh difference.",
+            "Cut month-end closing for three retail clients from nine days to five by building an accruals template in Excel.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "bcf-edu",
+          institution: "Ghatkopar College of Commerce",
+          credential: "BCom",
+          field: "Accounting and Finance",
+          location: "Mumbai, India",
+          from: "2022-06",
+          to: "2025-05",
+          result: "72%",
+        }),
+      ],
+      skillGroups: [
+        skills("bcf-sk-1", "Accounting", [
+          "GST returns",
+          "TDS",
+          "Bank reconciliation",
+          "Accounts payable",
+        ]),
+        skills("bcf-sk-2", "Tools", ["Tally Prime", "Excel (pivot tables, XLOOKUP)", "Zoho Books"]),
+      ],
+      settings: { fontPair: "classic", headingStyle: "rule" },
+    }),
+  },
+
+  {
+    slug: "mba-fresher",
+    updated: "2026-09-29",
+    market: "IN",
+    role: "MBA Fresher",
+    occupationTitle: "Sales Managers",
+    field: "Early career",
+    summary:
+      "An MBA graduate with two years of bank operations before business school and a rural-sales internship — the pre-MBA work is the strongest thing on the page.",
+    notes: [
+      {
+        title: "Pre-MBA work goes in Experience, with numbers",
+        body: "Two years of cutting account-opening time at a bank is real management evidence. Freshers with work before their MBA often bury it under the degree; it belongs where a recruiter looks for work.",
+      },
+      {
+        title: "The internship is described by what changed",
+        body: "Mapping 180 outlets and lifting a pilot cluster's orders by 23% is a result a sales head can picture. “Worked on a rural distribution project” is not.",
+      },
+      {
+        title: "Two degrees, one page",
+        body: "The MBA and the undergraduate degree each get one line with a result. Specialisation goes in brackets rather than a separate section.",
+      },
+      {
+        title: "The target role is in the summary, once",
+        body: "“Brand or sales-management trainee” tells a campus recruiter which shortlist to put this on. Saying it once is enough; a cover letter can say why.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "mba-fresher",
+      contact: contact({
+        fullName: "Sneha Kulkarni",
+        email: "sneha@example.com",
+        phone: "+91 20 5555 0163",
+        location: "Pune, India",
+      }),
+      summary:
+        "MBA (Marketing) graduate with two years in a co-operative bank's branch operations and a summer internship in consumer-goods rural sales. Looking for a brand or sales-management trainee role.",
+      experience: [
+        role({
+          id: "mbf-r1",
+          title: "Summer Intern, Rural Sales",
+          organization: "Sundar Consumer Products",
+          location: "Nashik, India",
+          from: "2024-04",
+          to: "2024-06",
+          bullets: [
+            "Mapped 180 retail outlets across 11 villages with a field survey, finding 46 that stocked no company product.",
+            "Lifted weekly orders from the pilot cluster by 23% in six weeks by bundling slow-moving SKUs with the two best sellers.",
+          ],
+        }),
+        role({
+          id: "mbf-r2",
+          title: "Operations Officer",
+          organization: "Deccan Co-operative Bank",
+          location: "Pune, India",
+          from: "2021-07",
+          to: "2023-05",
+          bullets: [
+            "Reduced account-opening turnaround from five days to two by moving KYC checks to the branch counter.",
+            "Trained 9 new joiners on the core banking system with a checklist the region later adopted for 30 branches.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "mbf-edu-1",
+          institution: "Pune Institute of Management Studies",
+          credential: "MBA",
+          field: "Marketing",
+          location: "Pune, India",
+          from: "2023-06",
+          to: "2025-04",
+          result: "7.9 CGPA",
+        }),
+        study({
+          id: "mbf-edu-2",
+          institution: "Fergusson Valley College",
+          credential: "BBA",
+          location: "Pune, India",
+          from: "2018-06",
+          to: "2021-05",
+          result: "74%",
+        }),
+      ],
+      skillGroups: [
+        skills("mbf-sk-1", "Marketing and sales", [
+          "Market research",
+          "Distribution planning",
+          "Trade promotions",
+        ]),
+        skills("mbf-sk-2", "Tools", ["Excel", "Power BI"]),
+        skills("mbf-sk-3", "Languages", ["English", "Marathi", "Hindi"]),
+      ],
+    }),
+  },
+
+  {
+    slug: "bpo-customer-support",
+    updated: "2026-09-29",
+    market: "IN",
+    role: "BPO Customer Support Executive",
+    occupationTitle: "Customer Service Representatives",
+    field: "Operations",
+    summary:
+      "Three years on an international voice process, a promotion, and the metrics that decide every BPO shortlist — quality score, handle time, first-call resolution.",
+    notes: [
+      {
+        title: "Metrics are the job, so they are the bullets",
+        body: "Quality score, average handle time and first-call resolution are what a team leader is measured on and what an operations manager scans for. Each bullet here carries one.",
+      },
+      {
+        title: "Process and shift are stated plainly",
+        body: "“International voice process” and night-shift availability are real filters in BPO hiring. Saying them in the summary saves a recruiter a phone call to ask.",
+      },
+      {
+        title: "The promotion shows as two roles at one employer",
+        body: "Executive, then senior executive, each with its own dates. A single entry would hide the step up, which is the most persuasive fact on the page.",
+      },
+      {
+        title: "Languages are listed as languages",
+        body: "English, Hindi and Urdu, in their own group. For support roles they are skills an employer pays for, not a personal detail.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "bpo-customer-support",
+      contact: contact({
+        fullName: "Imran Shaikh",
+        email: "imran@example.com",
+        phone: "+91 40 5555 0128",
+        location: "Hyderabad, India",
+      }),
+      summary:
+        "Customer support executive with three years on an international voice process for a US telecom client, promoted to senior executive in 2024. Available for night shifts.",
+      experience: [
+        role({
+          id: "bpo-r1",
+          title: "Senior Customer Support Executive",
+          organization: "Charminar Global Services",
+          location: "Hyderabad, India",
+          from: "2024-01",
+          bullets: [
+            "Held a 94% quality score across 1,100 audited calls in 2025 by rewriting the billing queue's call checklist.",
+            "Cut average handle time from 7.8 to 6.1 minutes with a shortcut sheet the team of 14 now uses.",
+          ],
+        }),
+        role({
+          id: "bpo-r2",
+          title: "Customer Support Executive",
+          organization: "Charminar Global Services",
+          location: "Hyderabad, India",
+          from: "2022-06",
+          to: "2023-12",
+          bullets: [
+            "Resolved 62% of billing disputes on the first call by learning the client's refund rules ahead of the training schedule.",
+            "Retained 38 customers who asked to cancel in one quarter through plan downgrades rather than credits.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "bpo-edu",
+          institution: "Osmania University",
+          credential: "BCom",
+          location: "Hyderabad, India",
+          from: "2019-06",
+          to: "2022-05",
+          result: "68%",
+        }),
+      ],
+      skillGroups: [
+        skills("bpo-sk-1", "Support", [
+          "Voice process",
+          "Billing disputes",
+          "De-escalation",
+          "Retention offers",
+        ]),
+        skills("bpo-sk-2", "Tools", ["Salesforce Service Cloud", "Zendesk", "Excel"]),
+        skills("bpo-sk-3", "Languages", ["English (fluent)", "Hindi", "Urdu"]),
       ],
     }),
   },

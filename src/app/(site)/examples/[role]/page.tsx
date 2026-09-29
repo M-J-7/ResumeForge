@@ -47,6 +47,12 @@ import { formatContentDate } from "@/lib/content-dates";
 import { Breadcrumbs } from "@/components/marketing/Breadcrumbs";
 import { RelatedLinks } from "@/components/marketing/RelatedLinks";
 
+/** One line on whose conventions an example follows. */
+const MARKET_LINE = {
+  IN: "Written for applications in India. The notes say what to change when applying abroad.",
+  US: "Written for applications in the United States. The notes say what to change elsewhere.",
+} as const;
+
 export function generateStaticParams() {
   return EXAMPLE_SLUGS.map((role) => ({ role }));
 }
@@ -128,6 +134,15 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
               &mdash; a real resume is somebody&rsquo;s personal data and is not ours to publish.
             </p>
           </Built>
+          {example.market ? (
+            <Built className="mt-3">
+              {/* Said plainly, because a reader applying elsewhere needs to know
+                  which of the choices below to translate — see the notes. */}
+              <p className="text-muted text-small max-w-measure leading-relaxed">
+                {MARKET_LINE[example.market]}
+              </p>
+            </Built>
+          ) : null}
           <Built className="mt-3">
             {/* Mono, like a guide's reading time: a fact about the page. */}
             <p className="text-faint text-micro font-mono">

@@ -120,6 +120,11 @@ export default function ExamplesIndexPage() {
                         <p className="text-muted text-small mt-2 leading-relaxed">
                           {example.summary}
                         </p>
+                        {example.market === "IN" ? (
+                          <p className="text-faint text-micro mt-3 font-mono">For India</p>
+                        ) : example.market === "US" ? (
+                          <p className="text-faint text-micro mt-3 font-mono">For the US</p>
+                        ) : null}
                       </Card>
                     </li>
                   ))}
