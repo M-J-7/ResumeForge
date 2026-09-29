@@ -27,6 +27,7 @@
 | Phase 3 — `/resume-keyword-scanner` | **Done** — the builder's match engine and report on a pasted posting and resume; hands the resume to the builder. Found and fixed an importer bug that dropped the first bullet of every role for `●` and `-` markers |
 | F10 — spellcheck | **Done** — prose fields checked in every browser; names, emails, phones, links and skills are not |
 | F1 — Six-Second View | **Done** — a "Six seconds" tab in the builder: where the name, current and previous roles and education landed on page one of the real PDF, with an animated overlay; flags a current role pushed low or a fact off page one |
+| B8 — stale docs | **Done** — IMPLEMENTATION.md header, BLOCKERS.md after PR #5, MONETISATION.md §2b status, the memory entry |
 | Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
 | Everything else | Not started |
 

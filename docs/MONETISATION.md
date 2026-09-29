@@ -148,6 +148,8 @@ snapshot mechanism in [src/store/resume.ts](src/store/resume.ts)), and a text di
 `ScoreCheck` and `ParseCheck` are equally unused — writing `ParseCheck` gives you "your parse
 recovery over time," which is a Pass feature no competitor can copy.
 
+> **Status, 2026-09-28:** the four defects below were fixed in code on 2026-09-09 (IMPLEMENTATION.md §10, Tier 1 and 2). What remains is Tier 3 — persisting tone, angle and availability with the letter (schema v2) — tracked as F11 in `ROADMAP.md`.
+
 **2b. Fix the cover-letter flow before charging for it.** [docs/IMPLEMENTATION.md](docs/IMPLEMENTATION.md) §10
 records four known defects on exactly the flow D13 names as the monetisation candidate:
 reopening a saved letter drops tone/angle/recipient; `?job=` does not prefill company/role;
