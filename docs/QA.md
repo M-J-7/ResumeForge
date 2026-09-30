@@ -337,7 +337,17 @@ suite deliberately does not run against.
 - [ ] Select text over the rendered resume page in dark mode, where the paper
       stays white whatever the theme.
 
-**Result:** _not yet run._
+**Result: run 2026-09-30. Passes.**
+
+- `next dev` on `/`, `/builder`, `/letters`, `/signin` and `/check`: no issues
+  badge in the dev overlay and no console errors on any of them.
+- The served CSP, dev against the live site, differs in exactly one token,
+  `'unsafe-eval'`, present only in dev.
+- Selection, screenshotted: the landing page (a dark stage in both themes, by
+  design), the builder in light and dark, and a resume paper on an example page
+  in dark mode. The highlight is obvious and the text readable in every case —
+  light green under dark text on dark grounds, dark green under white text on
+  light ones and on the paper.
 
 ### 11. The local enhancement model, measured on real hardware
 
