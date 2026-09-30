@@ -43,7 +43,7 @@ import { itemListJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Free resume templates for Word and PDF",
+  title: "Free resume templates",
   // Under 160: a description that runs past it is truncated mid-sentence in
   // the result, and the half that gets cut is always the half with the offer
   // in it. This one ends on the word that matters.
