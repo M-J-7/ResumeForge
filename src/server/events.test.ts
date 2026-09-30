@@ -36,9 +36,9 @@ function counterAt(clock: { now: number }, options: { cap?: number } = {}) {
 }
 
 async function rows(): Promise<{ name: string; day: string; count: number }[]> {
-  const found = await client.$queryRawUnsafe<{ name: string; day: string; count: number | bigint }[]>(
-    `SELECT "name", "day", "count" FROM "EventCount" ORDER BY "day", "name"`,
-  );
+  const found = await client.$queryRawUnsafe<
+    { name: string; day: string; count: number | bigint }[]
+  >(`SELECT "name", "day", "count" FROM "EventCount" ORDER BY "day", "name"`);
   return found.map((row) => ({ ...row, count: Number(row.count) }));
 }
 

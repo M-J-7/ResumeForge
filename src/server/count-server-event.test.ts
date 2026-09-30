@@ -18,7 +18,8 @@ vi.mock("next/headers", () => ({
 const { countServerEvent } = await import("./count-server-event");
 const { eventCounter } = await import("./events");
 
-const BROWSER = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/129.0 Safari/537.36";
+const BROWSER =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/129.0 Safari/537.36";
 
 let record: ReturnType<typeof vi.spyOn>;
 

@@ -33,7 +33,9 @@ function watchEvents(page: Page): Seen {
 }
 
 function namesOf(seen: Seen): string[] {
-  return seen.requests.map((request) => (JSON.parse(request.postData() ?? "{}") as { e: string }).e);
+  return seen.requests.map(
+    (request) => (JSON.parse(request.postData() ?? "{}") as { e: string }).e,
+  );
 }
 
 function countIn(name: string): number {

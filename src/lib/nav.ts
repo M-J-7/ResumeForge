@@ -105,6 +105,7 @@ export const FOOTER_SECTIONS: readonly { title: string; links: readonly NavLink[
     title: "About",
     links: [
       PRICING,
+      { href: "/changelog", label: "What changed" },
       { href: "/privacy", label: "Privacy" },
       { href: "/terms", label: "Terms" },
       { href: REPO_URL, label: "Source code", external: true },

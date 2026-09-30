@@ -144,7 +144,7 @@ export const MAX_EVENT_NAME_LENGTH = 96;
  */
 const COUNTED_SHAPES: readonly RegExp[] = [
   /^\/$/,
-  /^\/(check|templates|pricing|privacy|terms|examples|guides|builder|dashboard|letters|match|signin)$/,
+  /^\/(check|templates|pricing|privacy|terms|changelog|examples|guides|builder|dashboard|letters|match|signin)$/,
   /^\/(resume-action-verbs|bullet-point-checker|resume-keyword-scanner)$/,
   /^\/(examples|guides)\/[a-z0-9-]{1,80}$/,
 ];

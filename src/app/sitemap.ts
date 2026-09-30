@@ -14,6 +14,7 @@ import { ROLE_EXAMPLES } from "@/lib/examples/roles";
 import { GUIDES } from "@/lib/guides/guides";
 import { latestUpdate } from "@/lib/content-dates";
 import { ACTION_VERBS_PATH, ACTION_VERBS_UPDATED } from "@/lib/verbs/action-verbs";
+import { CHANGELOG_UPDATED } from "@/lib/changelog";
 
 /*
  * Prerendered, as a file — since 2026-09-30, for the reasons in `robots.ts`:
@@ -86,6 +87,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: ACTION_VERBS_UPDATED,
       changeFrequency: "monthly",
       priority: 0.7,
+    },
+
+    // Dated by its newest entry, which is the one thing on it that changes.
+    {
+      url: siteUrl("/changelog"),
+      lastModified: CHANGELOG_UPDATED,
+      changeFrequency: "weekly",
+      priority: 0.4,
     },
 
     { url: siteUrl("/privacy"), changeFrequency: "yearly", priority: 0.3 },

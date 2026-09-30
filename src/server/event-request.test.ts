@@ -36,9 +36,9 @@ describe("judgeEventRequest", () => {
   });
 
   it("refuses another origin, and a request that names none", async () => {
-    expect(await judge(post('{"e":"export:pdf"}', { origin: "https://elsewhere.example" }))).toEqual(
-      { status: 403 },
-    );
+    expect(
+      await judge(post('{"e":"export:pdf"}', { origin: "https://elsewhere.example" })),
+    ).toEqual({ status: 403 });
     const anonymous = new Request(`${ORIGIN}/api/e`, {
       method: "POST",
       body: '{"e":"export:pdf"}',
@@ -48,9 +48,9 @@ describe("judgeEventRequest", () => {
   });
 
   it("refuses an event that arrives with a cookie, so none is ever beside a session", async () => {
-    expect(
-      await judge(post('{"e":"export:pdf"}', { cookie: "authjs.session-token=abc" })),
-    ).toEqual({ status: 400 });
+    expect(await judge(post('{"e":"export:pdf"}', { cookie: "authjs.session-token=abc" }))).toEqual(
+      { status: 400 },
+    );
   });
 
   it("refuses anything but JSON — the type no cross-site form or beacon can send", async () => {
@@ -82,7 +82,13 @@ describe("judgeEventRequest", () => {
   });
 
   it("refuses names that are not on the list, and the ones only the server writes", async () => {
-    for (const name of ["export:png", "meter:dropped", "view:/nope", "view:/letters/abc", "src:x.com"]) {
+    for (const name of [
+      "export:png",
+      "meter:dropped",
+      "view:/nope",
+      "view:/letters/abc",
+      "src:x.com",
+    ]) {
       expect(await judge(post(JSON.stringify({ e: name }))), name).toEqual({ status: 400 });
     }
   });
