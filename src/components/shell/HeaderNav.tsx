@@ -181,7 +181,14 @@ export function HeaderNav({ links, showCta = true }: HeaderNavProps) {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "group focus-visible:ring-accent relative block rounded-md px-3 py-2 text-sm font-medium",
-                    "whitespace-nowrap transition-colors duration-[var(--dur-fast)]",
+                    // The colour eases in on hover and nowhere else. A plain
+                    // `transition-colors` also eased the palette swap when a
+                    // link left the dark landing stage for a light page, and
+                    // for those 120ms the links were light grey on white —
+                    // which is exactly when axe scans (`changelog.spec.ts`,
+                    // 2026-09-30). A transition declared only in the hover
+                    // state runs on the way in and never on a page change.
+                    "whitespace-nowrap hover:transition-colors hover:duration-[var(--dur-fast)]",
                     "focus-visible:ring-2 focus-visible:outline-none",
                     "lg:flex lg:h-full lg:items-center lg:rounded-none lg:px-3 lg:py-0",
                     active
