@@ -24,6 +24,7 @@
  */
 
 import { z } from "zod";
+import "@/lib/zod-browser";
 import { FONT_PAIR_IDS, DEFAULT_FONT_PAIR_ID } from "@/lib/fonts/pairs";
 import { isValidRange } from "./dates";
 

@@ -181,7 +181,7 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
                       <h3 className="text-text text-small mt-2 font-semibold">{topic.label}</h3>
                       <ul className="mt-1 flex flex-col gap-1">
                         {topic.scaffolds.slice(0, 4).map((scaffold) => (
-                          <li key={scaffold} className="text-muted text-micro font-mono">
+                          <li key={scaffold} className="text-muted text-small font-mono">
                             {scaffold}
                           </li>
                         ))}
@@ -222,7 +222,11 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
               download the .txt. Nothing is lost between the page and the parser, which is the whole
               argument for a single column of real text.
             </p>
-            <pre className="machine-panel text-muted text-micro overflow-x-auto rounded-lg border p-4 font-mono whitespace-pre-wrap">
+            {/* `text-small`, not `text-micro`: this is the text the page
+                exists to publish, and at 11px it was most of the words on
+                the page set below what a phone can comfortably read —
+                Lighthouse's legibility audit flagged 60% of the page for it. */}
+            <pre className="machine-panel text-muted text-small overflow-x-auto rounded-lg border p-4 font-mono whitespace-pre-wrap">
               {plainText}
             </pre>
           </section>
