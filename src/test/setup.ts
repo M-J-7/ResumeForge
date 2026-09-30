@@ -58,3 +58,28 @@ if (typeof URL.createObjectURL === "undefined") {
   URL.createObjectURL = () => "blob:stub";
   URL.revokeObjectURL = () => {};
 }
+
+// jsdom has no Worker, so the preview fell back to rendering on the main
+// thread — and in jsdom that render always fails: the browser font resolver
+// hands react-pdf `/fonts/…` URLs, which under Node are paths to nowhere. The
+// failure arrived as the preview's `role="alert"` whenever a render happened
+// to finish mid-test, which is a question of how fast the machine was:
+// `BuilderShell.test.tsx`'s malformed-email test types past the 400ms
+// debounce under a loaded suite and then found two alerts where it expects
+// one (every full run of 2026-09-30, and at 5d02a33 in isolation too).
+//
+// A worker that never answers is the honest stand-in. The preview posts its
+// job and waits, which is what it does in a browser for as long as a render
+// takes; nothing here renders, and nothing fails. Rendering is covered by the
+// emitter suites in plain Node, against real bytes and real fonts, per the
+// principle above.
+if (typeof globalThis.Worker === "undefined") {
+  globalThis.Worker = class {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    postMessage(): void {}
+    terminate(): void {}
+    addEventListener(): void {}
+    removeEventListener(): void {}
+  } as unknown as typeof Worker;
+}
