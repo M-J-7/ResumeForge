@@ -5,7 +5,7 @@
  *
  * A card per template, each a real render of the sample resume under that
  * template's settings — see `TemplateThumbnail.tsx` for why they are real
- * renders and why they arrive one at a time.
+ * renders and why they are files rather than rendered here.
  *
  * ## Grouped, because twenty-four cards is a wall
  *
@@ -15,11 +15,9 @@
  * differs only in typography. `TEMPLATE_GROUPS` answers it in prose above
  * each grid.
  *
- * The split is a `groups` prop rather than a second component because the
- * thumbnails have to stay **one serial queue**. Three galleries each calling
- * `useTemplateThumbnails` would be three queues running at once, which is
- * exactly the Yoga contention that hook exists to avoid. So it is called once
- * here, above the split, and the grids are handed whatever has arrived.
+ * The split is a `groups` prop rather than a second component so the cards
+ * keep one numbering across the groups: the first row of the whole gallery
+ * is fetched on arrival, whichever group it sits in.
  *
  * ## What each card says, and what it refuses to
  *
@@ -51,10 +49,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { CheckIcon } from "@/components/ui/icons";
-import { SAMPLE_RESUME } from "@/lib/resume/sample";
 import { TEMPLATES, TEMPLATE_GROUPS, type TemplateDefinition } from "@/lib/resume/templates";
 import { cn } from "@/lib/utils";
-import { TemplateThumbnail, useTemplateThumbnails } from "./TemplateThumbnail";
+import { TemplateThumbnail } from "./TemplateThumbnail";
 
 interface TemplateGalleryProps {
   /** The template the open document currently matches, if any. */
@@ -73,18 +70,8 @@ interface TemplateGalleryProps {
 }
 
 export function TemplateGallery({ groups, ...card }: TemplateGalleryProps) {
-  // One queue for the whole gallery, grouped or not — see the docblock.
-  const thumbnails = useTemplateThumbnails(TEMPLATES, SAMPLE_RESUME);
-
   if (!groups) {
-    return (
-      <TemplateGrid
-        {...card}
-        templates={TEMPLATES}
-        label="Resume templates"
-        thumbnails={thumbnails}
-      />
-    );
+    return <TemplateGrid {...card} templates={TEMPLATES} label="Resume templates" />;
   }
 
   const onPage = groups === "page";
@@ -120,7 +107,6 @@ export function TemplateGallery({ groups, ...card }: TemplateGalleryProps) {
             {...card}
             templates={TEMPLATES.filter((template) => template.group === group.id)}
             label={group.title}
-            thumbnails={thumbnails}
           />
         </section>
       ))}
@@ -136,12 +122,10 @@ function TemplateGrid({
   className,
   templates,
   label,
-  thumbnails,
 }: Omit<TemplateGalleryProps, "groups"> & {
   templates: readonly TemplateDefinition[];
   /** Names the list, so it is a group rather than an anonymous grid. */
   label: string;
-  thumbnails: Record<string, string>;
 }) {
   return (
     <ul
@@ -169,7 +153,7 @@ function TemplateGrid({
               label={`${template.name} — ${template.forWho}`}
             >
               <div className="bg-surface-2 border-line overflow-hidden rounded-md border">
-                <TemplateThumbnail template={template} src={thumbnails[template.id]} />
+                <TemplateThumbnail template={template} position={TEMPLATES.indexOf(template)} />
               </div>
 
               <div className="flex flex-1 flex-col gap-1.5">

@@ -46,11 +46,13 @@ function thumbnailStore(): UseStore {
  * sign out, so it carries an owner like every other local slot and
  * `purgeForeignThumbnails` clears the rest.
  *
- * Template thumbnails deliberately do not use this. They are renders of the
- * committed sample resume in `src/lib/resume/sample.ts` — the same picture
- * for every visitor, personal to nobody — so they keep their own
- * `template:` prefix, stay shared across identities, and survive the purge
- * rather than being re-rasterized through Yoga on every sign-in.
+ * Template thumbnails no longer pass through here at all: since 2026-09-30
+ * they are committed image files (`src/lib/thumbnail/template-images.ts`).
+ * Browsers that visited the gallery before then may still hold `template:`
+ * entries in this store. They are the committed sample resume, personal to
+ * nobody, a few hundred kilobytes at most, and nothing reads them — so they
+ * are left to the browser's own eviction rather than opening this database
+ * for every visitor to look for them.
  */
 export const RESUME_THUMBNAIL_BASE = "resume-thumbnail";
 

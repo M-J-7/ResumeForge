@@ -132,6 +132,7 @@ Each of these is silent. None is findable by reading the obvious file.
 - Component tests opt into jsdom with `// @vitest-environment jsdom` on line 1. `src/test/setup.ts` stubs `showModal`/`close`, `ResizeObserver`, `URL.createObjectURL`.
 - Fixtures in `src/test/fixtures/resumes.ts` use **hardcoded ids and literal dates** — `createId()` is nondeterministic and would break the determinism tests.
 - The golden snapshots in `src/lib/emit/pdf/__snapshots__/` are the extracted-text contract. A diff means the machine-readable output changed — a product change, not a test annoyance.
+- The template gallery's pictures are committed files pinned to the emitter. When `template-images.test.ts` names stale templates — after a change to a preset, the sample resume or anything the PDF emitter draws — run `pnpm thumbnails:build` and commit `public/template-images/` with the manifest. It re-renders through the real emitter and draws with pdfjs in Chromium; it takes about ten seconds.
 - `public/fonts/`, `public/pdf.worker.min.mjs` and `src/generated/` are generated and gitignored. After a fresh clone: `pnpm fonts:sync && pnpm db:generate`.
 - When reality contradicts an estimate, report the new estimate. Do not silently absorb overrun.
 
@@ -235,7 +236,7 @@ Closed the perception gap without a second rendering path. **D2 stands: one engi
 - `settingsSchema` gains `headerStyle` (`left` | `centered`) and `headingStyle` (`rule` | `caps` | `accent-bar`). `CURRENT_SCHEMA_VERSION` is 2, with the `v1 → v2` step in `migrate.ts` defaulting both to the v1 appearance.
 - `src/lib/resume/templates.ts` — twenty-four presets, each a complete `Settings` plus a section order, in three groups: general purpose, shaped by where you are applying, shaped by what you do.
 - `src/lib/resume/sample.ts` — the document the gallery renders. A _product_ asset, not a test fixture: the fixtures are shaped to break things, and showing a visitor a stress case invites them to conclude the product produces stress cases.
-- `src/components/templates/` — `TemplateGallery` (shared), `TemplateThumbnail` (real renders, serial, cached), `PublicTemplateGallery`.
+- `src/components/templates/` — `TemplateGallery` (shared), `TemplateThumbnail` (real renders — since 2026-09-30 committed WebP files drawn by `pnpm thumbnails:build` and pinned to the emitter by `template-images.test.ts`), `PublicTemplateGallery`.
 - `src/app/templates/page.tsx` — public and indexable, plus a sitemap entry and a header link.
 - `useResumeStore.applyTemplate` and `src/lib/resume/template-handoff.ts`.
 - `src/lib/resume/templates.test.ts` and `e2e/templates.spec.ts`. Both count from the data rather than from a literal, so a preset added and forgotten in the gallery fails rather than shipping invisible.
@@ -264,7 +265,7 @@ Twelve font-and-style permutations answered "does this look like a gallery". The
 - **The duplicate-signature test is what makes this safe to keep doing.** `fontPair|headerStyle|headingStyle|density` is 60 combinations and 24 are now spent. A twenty-fifth preset that collides with an existing one fails the build instead of shipping as a preset with two names.
 - **Every preset starts inside the fit assistant's legibility floors.** M4-T3 refuses to push a document below 10pt or under 0.6" margins because a resume squeezed past that gets thrown away. A preset that _started_ below the floor would ship the outcome the floor exists to prevent, so a test asserts it of all of them.
 - **Thumbnail aspect follows the page size.** A4 is 1:1.414 and Letter is 1:1.294. The image is `object-cover`, so a Letter render in an A4-shaped box loses its left and right edges — the picture whose entire job is proving "this is the document you get" would have been showing one with its margins shaved off.
-- **One serial render queue, still.** Grouping is a prop on `TemplateGallery`, not three galleries. Three components each calling `useTemplateThumbnails` would be three queues contending for one Yoga instance, which is precisely what that hook exists to prevent.
+- **One numbering across the groups.** Grouping is a prop on `TemplateGallery`, not three galleries, so the first row of the whole gallery is fetched on arrival whichever group it sits in. (It used to be one serial render queue for the same reason; the renders are files now — see `src/lib/thumbnail/template-images.ts`.)
 
 ---
 
