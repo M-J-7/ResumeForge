@@ -37,6 +37,7 @@ export function PublicTemplateGallery() {
       <TemplateGallery
         groups="page"
         href="/builder"
+        downloads
         actionLabel="Start with this"
         onSelect={(template) => {
           try {

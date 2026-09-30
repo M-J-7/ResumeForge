@@ -108,7 +108,12 @@ function renderWorker(): Worker | null {
   return worker;
 }
 
-async function pdfBytes(resume: ResumeDocument): Promise<Uint8Array> {
+/**
+ * A resume's PDF, laid out in the render worker when one can start and on
+ * this thread when not. The thumbnail below uses it, and so does the
+ * template gallery's "Download as PDF" (`lib/templates/download.ts`).
+ */
+export async function renderPdfBytes(resume: ResumeDocument): Promise<Uint8Array> {
   const available = renderWorker();
   if (available) {
     clearTimeout(idleTimer);
@@ -133,7 +138,7 @@ async function pdfBytes(resume: ResumeDocument): Promise<Uint8Array> {
 }
 
 export async function renderResumeThumbnail(resume: ResumeDocument): Promise<string> {
-  const bytes = await pdfBytes(resume);
+  const bytes = await renderPdfBytes(resume);
 
   const task = getDocument({
     data: new Uint8Array(bytes),

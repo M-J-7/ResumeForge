@@ -52,6 +52,7 @@ import { CheckIcon } from "@/components/ui/icons";
 import { TEMPLATES, TEMPLATE_GROUPS, type TemplateDefinition } from "@/lib/resume/templates";
 import { cn } from "@/lib/utils";
 import { TemplateThumbnail } from "./TemplateThumbnail";
+import { TemplateDownloads } from "./TemplateDownloads";
 
 interface TemplateGalleryProps {
   /** The template the open document currently matches, if any. */
@@ -67,6 +68,12 @@ interface TemplateGalleryProps {
    * Left off, they are one flat grid.
    */
   groups?: "page" | "panel";
+  /**
+   * "Download free: Word · PDF" under each card. The public page only — in
+   * the Design dialog a card applies a template to your own resume, and a
+   * file of the sample would be a strange thing to offer there.
+   */
+  downloads?: boolean;
 }
 
 export function TemplateGallery({ groups, ...card }: TemplateGalleryProps) {
@@ -122,6 +129,7 @@ function TemplateGrid({
   className,
   templates,
   label,
+  downloads = false,
 }: Omit<TemplateGalleryProps, "groups"> & {
   templates: readonly TemplateDefinition[];
   /** Names the list, so it is a group rather than an anonymous grid. */
@@ -138,7 +146,11 @@ function TemplateGrid({
       {templates.map((template) => {
         const selected = selectedId === template.id;
         return (
-          <li key={template.id}>
+          // A column when the downloads sit under the card, so the card takes
+          // the height that is left rather than all of it — `h-full` there
+          // pushed the row out of the cell and under the next row's card, which
+          // then took its clicks.
+          <li key={template.id} className={downloads ? "flex flex-col" : undefined}>
             {/*
               The whole card is one target rather than a card containing a
               button: that is what a pointer expects, and it halves the tab
@@ -148,6 +160,7 @@ function TemplateGrid({
             */}
             <CardShell
               href={href}
+              grow={downloads}
               selected={selected}
               onActivate={() => onSelect(template)}
               label={`${template.name} — ${template.forWho}`}
@@ -172,6 +185,7 @@ function TemplateGrid({
                 </span>
               </div>
             </CardShell>
+            {downloads ? <TemplateDownloads template={template} /> : null}
           </li>
         );
       })}
@@ -186,12 +200,15 @@ const CARD_CLASS = cn(
 
 function CardShell({
   href,
+  grow = false,
   selected,
   onActivate,
   label,
   children,
 }: {
   href?: string;
+  /** Takes the rest of a column's height instead of all of it. */
+  grow?: boolean;
   selected: boolean;
   onActivate: () => void;
   /** Names the whole card, so a screen reader gets one sensible target. */
@@ -200,6 +217,7 @@ function CardShell({
 }) {
   const className = cn(
     CARD_CLASS,
+    grow && "h-auto flex-1",
     // `.lift` supplies the shadow and the settle; this is only the border and
     // ground. A selected card is already raised by its ring and must not read
     // as hovered when it is not.

@@ -43,13 +43,13 @@ import { itemListJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Free resume templates",
+  title: "Free resume templates for Word and PDF",
   // Under 160: a description that runs past it is truncated mid-sentence in
   // the result, and the half that gets cut is always the half with the offer
   // in it. This one ends on the word that matters.
   description:
-    `${TEMPLATE_COUNT} free resume templates for the US, UK, Europe, Australia and India — ` +
-    "each a single column of real text with standard headings. No watermark, no account.",
+    `${TEMPLATE_COUNT} free resume templates for the US, UK, Europe, Australia and India. ` +
+    "Download any as Word or PDF, or fill one in. No watermark, no account.",
   path: "/templates",
 });
 
@@ -84,7 +84,9 @@ export default function TemplatesPage() {
           <Built className="mt-5">
             <p className={PAGE_LEAD_CLASS}>
               {TEMPLATE_COUNT} starting points, in three groups: ones to pick on looks, ones shaped
-              by where in the world you are applying, and ones shaped by the field you are in.
+              by where in the world you are applying, and ones shaped by the field you are in. Every
+              one downloads free as a Word file or a PDF, with a sample resume in it to write over —
+              or opens in the builder, where you fill it in and download it as yourself.
             </p>
           </Built>
           <Built className="mt-3">
