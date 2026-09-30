@@ -261,3 +261,26 @@ model RateLimit {
 
   @@index([expiresAt])
 }
+
+/// First-party, aggregate usage counts (MONETISATION.md Phase 1).
+///
+/// One row per event name per UTC day, and that is the whole of it. No user,
+/// no session, no address, no user agent, no resume content — there is no
+/// column any of them could go in. That is the design rather than a
+/// shortcut: a table that can only count cannot quietly become a tracker
+/// through a change to the code that writes it; it would take a migration,
+/// and a migration is reviewed.
+///
+/// Written in batches by `src/server/events.ts`, never per request. Every
+/// write is a WAL change Litestream ships off-site within a second, and the
+/// bucket's free tier allows 50,000 requests a month — a write per page view
+/// would spend that in days of modest traffic.
+model EventCount {
+  /// An allowlisted name from `src/lib/events.ts`.
+  name  String
+  /// The UTC calendar day, `YYYY-MM-DD`.
+  day   String
+  count Int    @default(0)
+
+  @@id([name, day])
+}
