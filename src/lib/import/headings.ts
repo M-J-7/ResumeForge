@@ -80,6 +80,10 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: HeadingKind }[] = [
   { pattern: /^(awards?|honou?rs?|achievements?|scholarships?)\b/i, kind: "custom" },
   { pattern: /^(languages?|interests?|hobbies|activities|references?)\b/i, kind: "custom" },
   { pattern: /^(positions? of responsibility|leadership roles?)\b/i, kind: "custom" },
+  // "Leadership Experience", "Leadership and Activities": the clubs and
+  // committees, kept apart from the work history the generic experience rule
+  // below would otherwise pour them into.
+  { pattern: /^leadership\b/i, kind: "custom" },
   { pattern: /^(conferences?|talks?|speaking|memberships?)\b/i, kind: "custom" },
 
   // --- certifications, before "courses" can be read as education ----------
@@ -90,6 +94,12 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: HeadingKind }[] = [
   // --- projects, before education can swallow "academic projects" ---------
   { pattern: /^(academic|personal|side|selected|key|major)?\s*projects?\b/i, kind: "projects" },
   { pattern: /^portfolio\b/i, kind: "projects" },
+
+  // --- a summary written as a list, before "qualifications" reads as education
+  {
+    pattern: /^((highlights|summary)\s+of\s+qualifications|qualifications\s+summary)\b/i,
+    kind: "summary",
+  },
 
   // --- education ----------------------------------------------------------
   { pattern: /^(education|academics?|academic background)\b/i, kind: "education" },
@@ -105,6 +115,8 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: HeadingKind }[] = [
   },
   { pattern: /^(technolog(y|ies)|tools?|tech\s+stack|technical\s+summary)\b/i, kind: "skills" },
   { pattern: /^areas?\s+of\s+expertise\b/i, kind: "skills" },
+  // "Computer Skills", "Media Skills", "Laboratory Skills".
+  { pattern: /^[\p{L}&/ -]{1,30}\bskills\b$/iu, kind: "skills" },
 
   // --- experience ---------------------------------------------------------
   {
@@ -116,6 +128,15 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: HeadingKind }[] = [
     pattern: /^(internships?|positions?\s+held|career\s+(history|summary))\b/i,
     kind: "experience",
   },
+  // How real resumes name the work history, found in twenty of them on
+  // 2026-09-30 (QA.md §7): "Employment" alone, and "<kind of> Experience" —
+  // "Healthcare and Related Experience", "Clinical Experience", "Teaching
+  // Experience", "Additional Work Experience". Every one had become a custom
+  // section, which left Experience empty for the match engine and the Six-
+  // Second View. Volunteering, research and leadership are caught above and
+  // stay their own sections.
+  { pattern: /^employment\b/i, kind: "experience" },
+  { pattern: /\bexperience$/i, kind: "experience" },
 
   // --- summary ------------------------------------------------------------
   {

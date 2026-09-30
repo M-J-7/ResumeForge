@@ -107,6 +107,12 @@ export function parsePartialDate(raw: string): ParsedDate | null {
     return { date: { year: Number(numericFull[1]), month: null }, monthCertain: false };
   }
 
+  // "Spring 2023", "Fall 2022" — how student resumes in the US date a term,
+  // a rotation or an internship. The season names no month, so the year is
+  // kept and the month is not guessed.
+  const season = text.match(/^(spring|summer|fall|autumn|winter)\s+((?:19|20)\d{2})$/i);
+  if (season) return { date: { year: Number(season[2]), month: null }, monthCertain: false };
+
   if (YEAR.test(text)) return { date: { year: Number(text), month: null }, monthCertain: true };
 
   return null;
@@ -147,10 +153,11 @@ export interface ParsedDateRange {
 const MONTH_ALTERNATION =
   "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\b";
 
-/** `Mar 2022`, `2022 Mar`, `03/04/2023`, `03/2022`, `2022` — in that order. */
+/** `Mar 2022`, `2022 Mar`, `Fall 2022`, `03/04/2023`, `03/2022`, `2022` — in that order. */
 const DATE_TOKEN_SOURCE = [
   `${MONTH_ALTERNATION}\\.?\\s+(?:19|20)\\d{2}`,
   `(?:19|20)\\d{2}\\s+${MONTH_ALTERNATION}\\.?`,
+  `(?:spring|summer|fall|autumn|winter)\\s+(?:19|20)\\d{2}`,
   `\\d{1,2}[/\\\\.-]\\d{1,2}[/\\\\.-](?:19|20)\\d{2}`,
   `\\d{1,2}[/\\\\.-](?:19|20)\\d{2}`,
   `(?:19|20)\\d{2}`,
@@ -225,6 +232,102 @@ export function findDateRange(line: string): ParsedDateRange | null {
   }
 
   return null;
+}
+
+/**
+ * "June – August 2023", "Jan–Mar 2024": two months sharing one year, the way
+ * a summer job or a term is usually written. `findDateRange` reads a range as
+ * two complete dates and so never sees this one.
+ */
+const SHARED_YEAR_RANGE = new RegExp(
+  `(${MONTH_ALTERNATION})\\.?\\s*(?:[–—−-]{1,2}|\\bto\\b)\\s*(${MONTH_ALTERNATION})\\.?,?\\s+((?:19|20)\\d{2})`,
+  "i",
+);
+
+function sharedYearRange(line: string): ParsedDateRange | null {
+  const match = SHARED_YEAR_RANGE.exec(line);
+  if (!match) return null;
+  const from = MONTHS[(match[1] ?? "").toLowerCase()];
+  const to = MONTHS[(match[2] ?? "").toLowerCase()];
+  if (from === undefined || to === undefined) return null;
+  const year = Number(match[3]);
+  // "Nov – Feb 2024" runs over the new year: the first month is the year before.
+  const startYear = from > to ? year - 1 : year;
+  return {
+    range: { start: { year: startYear, month: from }, end: { year, month: to }, current: false },
+    index: match.index,
+    length: match[0].length,
+    certain: true,
+  };
+}
+
+/** Punctuation that ends a sentence: a line ending in it is prose, not an entry's header. */
+const SENTENCE_END = /[.!?;]\s*$/;
+
+/**
+ * A grade set after the date on the same visual line — "…, May 2023
+ * Cumulative G.P.A.: 3.88/4.00" — which is the date's line all the same.
+ * Exported so the grouping can keep the grade for the entry it belongs to.
+ */
+export const TRAILING_RESULT =
+  /\s*[|,–—-]?\s*(?:(?:cumulative|overall|major|final)\s+)?(?:c?g\.?\s?p\.?\s?a\.?|grade|percentage|score|marks)\s*:?\s*\d+(?:\.\d+)?(?:\s*\/\s*\d+(?:\.\d+)?)?\s*%?\s*$/i;
+
+/** A detail line announced by its label, which never starts an entry of its own. */
+const DETAIL_LABEL =
+  /^(honou?rs?|awards?|gpa|g\.p\.a|c?gpa|coursework|relevant\s+coursework|thesis|dissertation|minors?|majors?|concentrations?|activities|scholarships?)\s*:/i;
+
+/**
+ * More words than this before a bare year, and the year is part of a sentence.
+ * Generous, because "M.B.A. Business Administration, Seton Hall University,
+ * South Orange, NJ 2019" is one field-packed header line; the long detail
+ * lines that end in a year announce themselves with a label instead
+ * ("Honors: … Scholarship Recipient 2023"), and `DETAIL_LABEL` catches those.
+ */
+const MAX_WORDS_BEFORE_BARE_YEAR = 12;
+
+/**
+ * The date that makes a line an entry's header, when it has one.
+ *
+ * `findDateRange` needs both ends of a range, and that is how our own
+ * emitters write every role. Real resumes often write one date: a graduation
+ * ("Bachelor of Science in Finance, May 2023"), a term ("Student Nurse,
+ * Pediatrics Spring 2023"), a summer job ("June – August 2023"). Put through
+ * the importer on 2026-09-30 (QA.md §7), those lines did not start entries,
+ * and the roles and degrees under them ran together. So a line is also an
+ * entry header when a single date, or two months sharing a year, *closes*
+ * it — and it is not one when it ends a sentence, since a wrapped paragraph
+ * line ending "…in November 2023." is description, not a new role.
+ *
+ * A single date is reported as a range from itself to itself: the schema's
+ * shape for a one-point entry.
+ */
+export function findEntryDate(line: string): ParsedDateRange | null {
+  if (DETAIL_LABEL.test(line.trim())) return null;
+  const range = findDateRange(line) ?? sharedYearRange(line);
+  if (range) return range;
+
+  const text = line.trimEnd().replace(TRAILING_RESULT, "");
+  if (SENTENCE_END.test(text)) return null;
+
+  let last: RegExpMatchArray | undefined;
+  for (const match of text.matchAll(new RegExp(DATE_TOKEN_SOURCE, "gi"))) last = match;
+  if (!last || last.index === undefined) return null;
+  if (text.slice(last.index + last[0].length).trim().length > 0) return null;
+
+  const parsed = parsePartialDate(last[0]);
+  if (!parsed) return null;
+  // A bare year closing a long line is usually the end of a sentence — "…
+  // Scholarship Recipient 2023" is a detail of the entry above, not a new one.
+  if (/^(?:19|20)\d{2}$/.test(last[0])) {
+    const wordsBefore = text.slice(0, last.index).trim().split(/\s+/).filter(Boolean).length;
+    if (wordsBefore > MAX_WORDS_BEFORE_BARE_YEAR) return null;
+  }
+  return {
+    range: { start: parsed.date, end: parsed.date, current: false },
+    index: last.index,
+    length: last[0].length,
+    certain: parsed.monthCertain,
+  };
 }
 
 /** A single date with no range — a graduation year or an issue date. */

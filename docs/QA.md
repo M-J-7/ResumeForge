@@ -311,7 +311,41 @@ builder, and at least one written outside the US/UK:
 - [ ] **Delete the files afterwards.** They are not fixtures and must not
       become any.
 
-**Result:** _not yet run._
+**Result: run 2026-09-30 on university career-centre samples — failed badly, fixed the same day.**
+
+Three public collections of sample resumes made in Word (Penn Nursing, Illinois,
+Seton Hall): about twenty resumes, twenty-five first pages with a contact block. Each
+page was extracted with the importer's own pdfjs clustering and parsed by
+`parseResumeLines`. The samples write years as "20XX", which no parser can date, so
+the run substituted a year to judge everything else. Files deleted afterwards, as
+required above.
+
+**Found:**
+
+- **The phone came back missing on every page.** libphonenumber was never told a
+  country, and a number written without `+1` or `+91` — which is how nearly everyone
+  writes their own — does not validate without one.
+- **Word's bullets read as paragraphs.** Symbol and Wingdings bullets extract as C1
+  control characters (U+0087, U+0099, U+0083) or as the letter "x" — 423 lines began
+  "x " — and only `•` was recognised.
+- **Every university was missed as a school.** The institution pattern was
+  `universit`, which needs the word to end at "universit"; only colleges, schools
+  and institutes ever matched. Dotted degrees ("B.S.", "M.B.A.") were missed too.
+- "Clinical and Related Experience", "Teaching Experience", "Employment" became
+  custom sections, leaving Experience empty.
+- A single date on a line ("Bachelor of Science in Finance, May 2023", "Spring 2024",
+  "June – August 2023") did not start an entry, so degrees and summer jobs ran together.
+- The location swallowed the name line above it; an employer-first layout came back
+  with title and employer swapped; a two-word city lost its first word.
+
+**Fixed** in `src/lib/xray/scorecard.ts`, `src/lib/import/{parse-resume,dates,headings}.ts`,
+each shape restated as a structural fixture in `src/lib/import/real-layouts.test.ts`.
+Re-run on the same pages: a phone on 21 of 25 first pages (the four without are a
+sample's deliberately fake `123-` exchange, which is correctly refused, and pages
+that list none); experience entries on 21 of 25; 37 of 50 education entries with both
+degree and school, the misses being advice pages and two-column pages mixed into the
+collections rather than resumes. Garbled text layers — one sample's font maps "t" to
+"W" — are reported as they are, which is what X-Ray exists to show.
 
 ### 8. Build a resume end-to-end on a real phone
 

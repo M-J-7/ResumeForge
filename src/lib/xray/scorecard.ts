@@ -42,7 +42,20 @@ const EMAIL = /[^\s@|]+@[^\s@|]+\.[A-Za-z]{2,}/;
  * and the punctuation phone numbers actually use. Deliberately loose, then
  * validated by libphonenumber.
  */
-const PHONE_CANDIDATE = /\+?[\d][\d\s().-]{6,}\d/g;
+const PHONE_CANDIDATE = /\+?\(?\d[\d\s().-]{6,}\d/g;
+
+/**
+ * Where a number written without its country code is looked up: the two
+ * markets this site writes for, then the English-speaking ones whose resumes
+ * it also reads.
+ *
+ * libphonenumber cannot validate "(215) 567-8910" without knowing the
+ * country, and until 2026-09-30 it was never told one — so the phone came
+ * back missing on every one of twenty real resumes put through `/check` (QA.md
+ * §7). Almost nobody writes their own country code on a resume for a job in
+ * their own country.
+ */
+const HOME_REGIONS = ["US", "IN", "GB", "CA", "AU"] as const;
 
 /**
  * The name is taken from the first line, which is the heuristic essentially
@@ -74,11 +87,15 @@ function recoverEmail(text: string): string | null {
  * matches dates, credential ids, and quantified outcomes ("cut latency from
  * 400ms to 90ms"), so the check has to be for a *real* number.
  */
-function recoverPhone(text: string): string | null {
+export function recoverPhone(text: string): string | null {
   for (const candidate of text.match(PHONE_CANDIDATE) ?? []) {
     const trimmed = candidate.trim();
-    const parsed = parsePhoneNumberFromString(trimmed);
-    if (parsed?.isValid()) return trimmed;
+    if (parsePhoneNumberFromString(trimmed)?.isValid()) return trimmed;
+    // A number that states its country is judged by that country alone.
+    if (trimmed.startsWith("+")) continue;
+    for (const region of HOME_REGIONS) {
+      if (parsePhoneNumberFromString(trimmed, region)?.isValid()) return trimmed;
+    }
   }
   return null;
 }

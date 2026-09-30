@@ -53,7 +53,7 @@ import {
   normalizeHeading,
 } from "./headings";
 import type { HeadingKind } from "./headings";
-import { findDateRange, findSingleDate } from "./dates";
+import { TRAILING_RESULT, findDateRange, findEntryDate, findSingleDate } from "./dates";
 import {
   createCertificationEntry,
   createCustomEntry,
@@ -217,7 +217,24 @@ export { importKindFromFilename } from "./kind";
  * bullet would take the role's end date with it. Pasted text has no wrapped
  * dates, so `parseResumeText` accepts dashes there.
  */
-const PDF_BULLET = /^\s*[•·▪◦‣*●○■□►▸➢➤✓✔-]\s+/;
+const PDF_BULLET =
+  /^\s*(?:[•·▪◦‣*●○■□►▸➢➤✓✔∙▪■⁃-]|[\u0080-\u009F-]|[xovqnly§Øü¨](?=\s+[\p{Lu}\d]))\s+/u;
+
+/*
+ * The second and third alternatives were added on 2026-09-30, from twenty
+ * real resumes made in Word (QA.md §7). Word draws its default bullets in the
+ * Symbol and Wingdings fonts, whose glyphs have no honest Unicode, and a PDF
+ * built from them extracts each bullet as whatever the font's table says:
+ * a C1 control character (U+0087, U+0099, U+0083), a private-use code point
+ * (U+F0B7), or a plain letter — Wingdings' round bullet comes out as "x",
+ * and it began 423 of the lines in that set. Only `•` was recognised, so
+ * every one of those bullets read as a paragraph. A letter counts as a
+ * bullet only when a capital or a digit follows it after a space: "x Managed
+ * the rota", never "x-ray" or a sentence that happens to start with "o".
+ */
+
+/** A line that is nothing but a rule typed with underscores, dashes or equals signs. */
+const RULE_LINE = /^[\s_=\-–—]{5,}$/;
 
 /**
  * Markers a person types that a PDF never produces unambiguously: a dash, or
@@ -233,19 +250,21 @@ const TYPED_MARKER = /^\s*(?:[–—]|\(?\d{1,2}[.)])\s+/;
  */
 export function parseResumeText(text: string): ImportResult {
   return parseResumeLines(
-    text.split(/\r?\n/).map((line) => (TYPED_MARKER.test(line) ? line.replace(TYPED_MARKER, "• ") : line)),
+    text
+      .split(/\r?\n/)
+      .map((line) => (TYPED_MARKER.test(line) ? line.replace(TYPED_MARKER, "• ") : line)),
   );
 }
 
 function pdfSourceLines(lines: readonly string[]): SourceLine[] {
-  return lines.map((line) => {
-    const isBullet = PDF_BULLET.test(line);
-    return {
-      text: (isBullet ? line.replace(PDF_BULLET, "") : line).trim(),
-      isBullet,
-      declared: null,
-    };
-  });
+  return lines
+    .filter((line) => !RULE_LINE.test(line))
+    .map((line) => {
+      const isBullet = PDF_BULLET.test(line);
+      // "Objective ______________" — a heading with its rule typed after it.
+      const text = (isBullet ? line.replace(PDF_BULLET, "") : line).replace(/[\s_]{4,}$/, "");
+      return { text: text.trim(), isBullet, declared: null };
+    });
 }
 
 /**
@@ -367,18 +386,45 @@ function splitFields(text: string): string[] {
 const TRAILING_LOCATION =
   /^(.*[^\s,])[,\s]\s*(\p{Lu}[\p{L}.'-]*(?:\s+[\p{L}.'-]+){0,2},\s*\p{Lu}[\p{L}.'-]*(?:\s+[\p{L}.'-]+){0,2})$/u;
 
+/**
+ * The same, when a comma stands before the city: "Seton Hall University, South
+ * Orange, NJ". Tried first, because a comma is the one separator that says
+ * where the city starts — the greedy match above, left to itself, splits
+ * after "South" and takes a two-word city for a one-word one (QA.md §7).
+ * Our own PDF sets the location at a tab stop with no comma before it, which
+ * this does not match, so that shape still reaches the rule above.
+ */
+const TRAILING_LOCATION_AFTER_COMMA =
+  /^(.*[^\s,])\s*,\s*(\p{Lu}[\p{L}.'-]*(?:\s+\p{Lu}[\p{L}.'-]*){0,2},\s*\p{Lu}[\p{L}.'-]*(?:\s+\p{Lu}[\p{L}.'-]*){0,2})$/u;
+
 function splitTrailingLocation(text: string): { rest: string; location: string } {
-  const match = TRAILING_LOCATION.exec(text.trim());
+  const match =
+    TRAILING_LOCATION_AFTER_COMMA.exec(text.trim()) ?? TRAILING_LOCATION.exec(text.trim());
   if (!match) return { rest: text.trim(), location: "" };
   return { rest: (match[1] ?? "").replace(/[,\s]+$/, ""), location: (match[2] ?? "").trim() };
 }
 
 /** True for a line that names an institution rather than a credential. */
-const INSTITUTION = /\b(universit|college|institute|school|academy|polytechnic|iit|nit|iiit)\b/i;
+const INSTITUTION = /\b(universit\w*|college|institute|school|academy|polytechnic|iit|nit|iiit)\b/i;
+/*
+ * `universit\w*`, not `universit`: with a word boundary straight after it the
+ * old pattern needed the word to *end* at "universit", so "University" never
+ * matched and every university in every imported resume was read as
+ * something else — only colleges, schools and institutes were recognised.
+ * Found by QA #7 on 2026-09-30.
+ */
 
 /** True for a line that names a credential rather than an institution. */
 const CREDENTIAL =
-  /\b(b\.?tech|m\.?tech|b\.?e\.?|m\.?e\.?|b\.?sc|m\.?sc|b\.?a\.?|m\.?a\.?|bs|ms|ba|ma|mba|bca|mca|ph\.?d|doctorate|bachelor|master|diploma|certificate|associate|hsc|ssc|high school)\b/i;
+  /\b(b\.?tech|m\.?tech|b\.?e\.?|m\.?e\.?|b\.?sc|m\.?sc|b\.?a\.?|m\.?a\.?|bs|ms|ba|ma|mba|bca|mca|ph\.?d|doctorate|bachelor|master|diploma|certificate|associate|hsc|ssc|high school)\b|(?:^|[\s(])(b\.s\.|m\.s\.|m\.b\.a\.?|b\.b\.a\.?|b\.?\s?com|m\.?\s?com|b\.?\s?ed|m\.?\s?ed|ms\.?\s?ed|ll\.?\s?b|ll\.?\s?m|m\.?b\.?b\.?s|b\.?d\.?s|b\.?\s?pharm|m\.?\s?pharm|b\.?\s?arch|b\.?\s?des|pgdm|pgdba|gnm|anm|(?:class|std\.?|standard)\s*(?:x|xii|10|12)(?:th)?|(?:10|12)th|sslc|puc|intermediate|matriculation)(?=[\s,.:;)]|$)/i;
+/*
+ * The second half, added 2026-09-30: dotted US degrees ("B.S.", "M.S.",
+ * "M.B.A."), which the word-bounded half cannot see because a dot is not a
+ * word character — three of twenty real resumes had their degree read as
+ * the institution for it (QA.md §7) — and the Indian credentials the India
+ * examples themselves use: B.Com, M.Com, B.Ed, MBBS, PGDM, GNM, Class 10 and
+ * 12, SSLC, PUC.
+ */
 
 const URL_IN_TEXT = /https?:\/\/[^\s|,;]+|\bwww\.[^\s|,;]+/gi;
 
@@ -484,9 +530,46 @@ function mergeSections(sections: readonly SourceSection[]): Map<HeadingKind, Sou
 /* Contact                                                                     */
 /* -------------------------------------------------------------------------- */
 
-/** A "City, Region" pair anywhere in the header block. */
-const LOCATION_IN_HEADER =
-  /(\p{Lu}[\p{L}.'-]*(?:\s+[\p{L}.'-]+){0,2}),\s*(\p{Lu}[\p{L}.'-]*(?:\s+[\p{L}.'-]+){0,2})/u;
+/**
+ * A "City, Region" closing one field of the contact block, with an optional
+ * ZIP or PIN after it. Spaces only, never newlines: the pattern that allowed
+ * `\s` matched across lines, and on real resumes it returned the name line
+ * joined to the city beneath it — "Patricia Pediatrics\nPhiladelphia, PA"
+ * (QA.md §7).
+ */
+const LOCATION_FIELD =
+  /(\p{Lu}[\p{L}.'-]*(?:[ ]\p{Lu}[\p{L}.'-]*){0,2}),[ ]*(\p{Lu}[\p{L}.'-]*(?:[ ]\p{Lu}[\p{L}.'-]*){0,2})(?:[ ]+\d{5,6}(?:-\d{4})?)?$/u;
+
+/** A street address ahead of the city: "4004 Helix Lane", "302 East John Street #1904". */
+const STREET_PREFIX =
+  /^\d+[\w/-]*\s+(?:.*?\b(?:street|st|avenue|ave|road|rd|lane|ln|drive|dr|boulevard|blvd|way|court|ct|place|pl|terrace|circle|parkway|pkwy|highway|hwy|nagar|marg|colony|sector|block|layout|cross|main)\b\.?,?\s*)(?:(?:apt|apartment|suite|unit|flat)\.?\s*\S+\s*|#\s*\S+\s*)?/i;
+
+/** "Current Address:", "Permanent address -" — a label before the place. */
+const ADDRESS_LABEL = /^(?:(?:current|permanent|home|present|mailing)\s+)?address\s*[:–—-]?\s*/i;
+
+/**
+ * The candidate's city, from the contact block, field by field.
+ *
+ * A contact line is several fields joined by separators — "Philadelphia, PA ●
+ * name@school.edu ● (215) 567-8910" — so each field is judged alone, with the
+ * name, email addresses, URLs, address labels and street addresses taken out
+ * first. Returns "" when nothing is shaped like a place, which the review
+ * then reports as missing rather than filled with a guess.
+ */
+function findLocation(lines: readonly string[], name: string | null): string {
+  for (const line of lines) {
+    const withoutName = name && line.startsWith(name) ? line.slice(name.length) : line;
+    const cleaned = withoutName.replace(/\S+@\S+/g, " ").replace(URL_IN_TEXT, " ");
+    for (const raw of cleaned.split(/\s*[|•●·◆♦▪]\s*|\s{2,}/)) {
+      let field = raw.trim().replace(ADDRESS_LABEL, "");
+      if (field.length === 0) continue;
+      if (/^\d/.test(field)) field = field.replace(STREET_PREFIX, "").trim();
+      const match = LOCATION_FIELD.exec(field);
+      if (match) return `${match[1]}, ${match[2]}`;
+    }
+  }
+  return "";
+}
 
 function parseContact(
   header: readonly SourceLine[],
@@ -539,8 +622,7 @@ function parseContact(
 
   // The location is matched by its shape rather than its position, because
   // the two formats put it in different places on the contact line.
-  const withoutEmail = text.replace(/\S+@\S+/g, " ").replace(URL_IN_TEXT, " ");
-  const location = LOCATION_IN_HEADER.exec(withoutEmail)?.[0]?.trim() ?? "";
+  const location = findLocation(lines, name);
   fields.push({
     field: "Location",
     stepId: "contact",
@@ -652,22 +734,43 @@ interface RawEntry {
   bullets: string[];
 }
 
-function groupEntries(lines: readonly SourceLine[]): RawEntry[] {
+/**
+ * What a graduation or a start date is often introduced by, left behind on
+ * the headline once the date itself is cut out of it: "Bachelor of Science in
+ * Nursing, expected in May 2023" should leave "Bachelor of Science in Nursing".
+ */
+const DATE_LEAD_IN =
+  /[\s,(]*\b(expected|anticipated|graduating|graduation|completion|completed|since|from)\b(\s+(in|on|by))?[\s,:(]*$/i;
+
+interface GroupOptions {
+  /**
+   * Whether a plain line should open the *next* entry rather than add to the
+   * current one. Education uses it: a second school's name under the first
+   * school's degree is the start of the next degree, not a detail of this one.
+   */
+  leadIn?: (text: string, current: RawEntry) => boolean;
+}
+
+function groupEntries(lines: readonly SourceLine[], options: GroupOptions = {}): RawEntry[] {
   const entries: RawEntry[] = [];
   let pending: string[] = [];
 
   for (const line of lines) {
     if (line.text.length === 0) continue;
 
-    const dated = line.isBullet ? null : findDateRange(line.text);
+    const dated = line.isBullet ? null : findEntryDate(line.text);
     if (dated) {
-      const headline = (
-        line.text.slice(0, dated.index) + line.text.slice(dated.index + dated.length)
-      )
+      // A grade after the date belongs to the entry, not to its headline:
+      // "…, expected December 2023 Cumulative G.P.A.: 3.88/4.00".
+      const after = line.text.slice(dated.index + dated.length);
+      const grade = TRAILING_RESULT.test(after) ? after.trim().replace(/^[|,–—-]\s*/, "") : "";
+      const headline = (line.text.slice(0, dated.index) + (grade ? "" : after))
         .replace(/\s{2,}/g, " ")
         .replace(/^[\s|·•—–-]+|[\s|·•—–-]+$/g, "")
+        .replace(DATE_LEAD_IN, "")
+        .replace(/[\s,|·•—–-]+$/g, "")
         .trim();
-      entries.push({ headline, dated, detail: [], above: pending, bullets: [] });
+      entries.push({ headline, dated, detail: grade ? [grade] : [], above: pending, bullets: [] });
       pending = [];
       continue;
     }
@@ -686,16 +789,24 @@ function groupEntries(lines: readonly SourceLine[]): RawEntry[] {
     // on its own line writes title, employer, date, bullets — so by the time
     // bullets have been seen, everything unbulleted belongs to what comes
     // next. Before the first bullet it is this entry's own meta line.
-    if (current.bullets.length > 0) pending.push(line.text);
-    else current.detail.push(line.text);
+    if (current.bullets.length > 0 || pending.length > 0 || options.leadIn?.(line.text, current)) {
+      pending.push(line.text);
+    } else current.detail.push(line.text);
   }
 
   // Lines left over after the last entry's bullets never found a date to
   // belong to. They are content, so they stay with the entry above them
-  // rather than being dropped or turned into an entry that has no evidence.
+  // rather than being dropped or turned into an entry that has no evidence —
+  // unless they open with a line the section says starts an entry, in which
+  // case they are an undated entry of their own.
   const last = entries[entries.length - 1];
   if (last && pending.length > 0) {
-    last.detail.push(...pending);
+    if (options.leadIn?.(pending[0]!, last)) {
+      const [headline, ...detail] = pending;
+      entries.push({ headline: headline!, dated: null, detail, above: [], bullets: [] });
+    } else {
+      last.detail.push(...pending);
+    }
     pending = [];
   }
 
@@ -752,9 +863,31 @@ function parseExperience(
     const supportLine = support[0] ?? "";
     const { rest, location } = splitTrailingLocation(supportLine);
 
-    entry.title = (parts[0] ?? title).slice(0, 140);
-    entry.organization = (parts[1] ?? splitFields(rest)[0] ?? rest).slice(0, 140);
-    entry.location = location.slice(0, 120);
+    // The employer can lead: "RIVERSIDE HOSPITAL, Columbus, OH  May 2023 –
+    // Present" over "Patient Care Technician". Where the city sits says which
+    // is which — every layout puts it on the employer's line — so a dated
+    // line that ends in a city, over a line that does not, is the employer,
+    // and the line under it is the title. Read the other way round, every
+    // role in that layout came back with its title and employer swapped
+    // (QA.md §7). Our own layout puts the city on the line *under* the title,
+    // so it never takes this branch.
+    const fromHeadline = splitTrailingLocation(title);
+    const employerLeads =
+      raw.headline.length > 0 &&
+      parts.length === 1 &&
+      fromHeadline.location !== "" &&
+      supportLine !== "" &&
+      location === "";
+
+    if (employerLeads) {
+      entry.title = supportLine.slice(0, 140);
+      entry.organization = fromHeadline.rest.slice(0, 140);
+      entry.location = fromHeadline.location.slice(0, 120);
+    } else {
+      entry.title = (parts[0] ?? title).slice(0, 140);
+      entry.organization = (parts[1] ?? splitFields(rest)[0] ?? rest).slice(0, 140);
+      entry.location = location.slice(0, 120);
+    }
     entry.bullets = [...support.slice(1), ...raw.bullets].map((b) => b.slice(0, 1000));
     if (raw.dated) entry.dates = raw.dated.range;
 
@@ -819,14 +952,41 @@ function describeRange(range: {
 function parseEducation(
   lines: readonly SourceLine[],
 ): Extract<Section, { type: "education" }>["entries"] {
-  return groupEntries(lines).map((raw) => {
+  // A school named while this entry already has one is the next degree
+  // starting: "Seton Hall University" / "MS Accounting, May 2023" / "GPA 3.8" /
+  // "University of South Florida" / "BS Finance" is two entries, and without
+  // this the second school became a detail line of the first (QA.md §7).
+  const leadIn = (text: string, current: RawEntry) =>
+    INSTITUTION.test(text) &&
+    [current.headline, ...current.above, ...current.detail].some((line) => INSTITUTION.test(line));
+
+  return groupEntries(lines, { leadIn }).map((raw) => {
     const { title, support } = titleAndSupport(raw);
     const entry = createEducationEntry();
 
-    const candidates = [title, ...support].filter((t) => t.length > 0);
-    const institutionLine = candidates.find((t) => INSTITUTION.test(t));
-    const credentialLine = candidates.find((t) => t !== institutionLine && CREDENTIAL.test(t));
-    const leftover = candidates.filter((t) => t !== institutionLine && t !== credentialLine);
+    // The lines *above* a dated headline count too. "Seton Hall University,
+    // South Orange, NJ" over "Master of Science in Accounting, May 2023" is
+    // the commonest shape there is: the date sits on the degree line, and
+    // the school above it was dropped for not being on that line.
+    const above = raw.headline.length > 0 ? raw.above : [];
+    const candidates = [...above, title, ...support].filter((t) => t.length > 0);
+    let institutionLine = candidates.find((t) => INSTITUTION.test(t));
+    let credentialLine = candidates.find((t) => t !== institutionLine && CREDENTIAL.test(t));
+
+    // One line carrying both: "M.B.A. Business Administration, Seton Hall
+    // University, South Orange, NJ". Split at the comma before the school, so
+    // the degree is the degree and the school is the school.
+    if (institutionLine && !credentialLine && CREDENTIAL.test(institutionLine)) {
+      const parts = institutionLine.split(/\s*,\s*/);
+      const at = parts.findIndex((part) => INSTITUTION.test(part));
+      if (at > 0) {
+        credentialLine = parts.slice(0, at).join(", ");
+        institutionLine = parts.slice(at).join(", ");
+      }
+    }
+    const leftover = candidates.filter(
+      (t) => t !== institutionLine && t !== credentialLine && !institutionLine?.startsWith(t),
+    );
 
     const fromCredential = splitTrailingLocation(credentialLine ?? "");
     const fromInstitution = splitTrailingLocation(institutionLine ?? "");
