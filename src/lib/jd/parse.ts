@@ -132,6 +132,19 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: JdSectionKind }[] = [
   { pattern: /\bextra\s+credit\b/i, kind: "preferred" },
   { pattern: /\bit['’]?d\s+be\s+great\b|\bgreat\s+if\b/i, kind: "preferred" },
   { pattern: /\b(a\s+)?plus(es)?\b/i, kind: "preferred" },
+  { pattern: /\bdesired\b/i, kind: "preferred" },
+
+  // --- two that the generic rules below would misfile ----------------------
+  // Found in real postings on 2026-09-30 (QA.md §6). "The impact you will
+  // have" is the duties list, and the required rule's `you will have` took it
+  // as the bar; "About you" is the requirements, and "About <company>" below
+  // would otherwise take it as boilerplate.
+  {
+    pattern:
+      /\b(impact\s+you\s*(?:['’]?ll|will)\s+(have|make)|the\s+difference\s+you\b|a\s+typical\s+day)\b/i,
+    kind: "responsibilities",
+  },
+  { pattern: /^about\s+you\b/i, kind: "required" },
 
   // --- boilerplate, before "requirements"-ish words can reach it ----------
   { pattern: /\bequal\s+(opportunity|employment)/i, kind: "legal" },
@@ -143,6 +156,13 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: JdSectionKind }[] = [
   { pattern: /\b(benefits?|perks?|compensation|salary|what\s+we\s+offer)\b/i, kind: "benefits" },
   { pattern: /\bwhy\s+(join|work|you['’]?ll\s+love)\b/i, kind: "benefits" },
   { pattern: /\b(pay|package|total\s+rewards?)\b/i, kind: "benefits" },
+  {
+    pattern: /\b(equity|time\s+off|paid\s+leave|holidays?|well[-\s]?being|retirement)\b/i,
+    kind: "benefits",
+  },
+  // "How GitLab Supports Full-Time Employees".
+  { pattern: /^how\s+.+\s+supports?\b/i, kind: "benefits" },
+  { pattern: /^compliance$/i, kind: "legal" },
 
   {
     pattern:
@@ -150,10 +170,32 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: JdSectionKind }[] = [
     kind: "about",
   },
   { pattern: /\bthe\s+company\b/i, kind: "about" },
+  // "About Databricks", "Mission", "See yourself at Twilio", "The community
+  // you will join" — the company describing itself, in the wording real
+  // postings use. "About the role" and its kin are the job, not the company,
+  // and are left for the responsibilities rules below.
+  {
+    pattern:
+      /^about\s+(?!you\b|the\s+(role|job|position|opportunity)\b|this\s+(role|job|position|opportunity)\b)\S/i,
+    kind: "about",
+  },
+  {
+    pattern: /\b(mission|life\s+at|see\s+yourself\s+at|the\s+community\s+you)\b/i,
+    kind: "about",
+  },
 
   {
     pattern:
       /\b(how\s+to\s+apply|application\s+process|interview\s+process|hiring\s+process|next\s+steps)\b/i,
+    kind: "process",
+  },
+  // Logistics: how often on the road, and by when. No skills are asked for
+  // under these. ("Location" stays `unknown` — `parse.test.ts` holds that line
+  // on purpose — and so do "Remote" and "Hybrid", which in a pasted posting
+  // are usually a label under the title with the opening paragraph beneath
+  // them. `resolveKind` keeps all three from borrowing a neighbour's kind.)
+  {
+    pattern: /^travel(\s+requirements?)?$|\bapplication\s+deadline\b/i,
     kind: "process",
   },
 
@@ -173,6 +215,12 @@ const HEADING_PATTERNS: readonly { pattern: RegExp; kind: JdSectionKind }[] = [
     kind: "required",
   },
   { pattern: /\bwhat\s+you\s+bring\b/i, kind: "required" },
+  { pattern: /\bwhat\s+you\s*(?:['’]?ll|will)\s+bring\b/i, kind: "required" },
+  {
+    pattern: /\bwhat\s+we\s+(?:look|are\s+looking|['’]re\s+looking)\s+for\b/i,
+    kind: "required",
+  },
+  { pattern: /\b(your\s+)?expertise\b/i, kind: "required" },
   { pattern: /\bwho\s+you\s+are\b/i, kind: "required" },
   { pattern: /\b(your\s+)?(background|experience|skills)\b/i, kind: "required" },
   { pattern: /\byou\s+(have|are|will\s+have)\b/i, kind: "required" },
@@ -200,6 +248,43 @@ export function classifyHeading(heading: string): JdSectionKind {
     if (pattern.test(text)) return kind;
   }
   return "unknown";
+}
+
+/**
+ * Verbs a duties sub-heading opens with: "Generate qualified pipeline…",
+ * "Drive demand and revenue growth…". A heading that begins by telling the
+ * reader what to do is describing the job.
+ */
+const DUTY_VERB =
+  /^(build|lead|drive|own|create|develop|design|manage|deliver|generate|grow|turn|run|shape|define|partner|support|launch|meet|scale|establish|execute|improve|maintain|oversee|coordinate|plan|analy[sz]e|write|ensure|identify|collaborate|mentor|hire|engage|influence|champion|operate)\b/i;
+
+/** Headings that name a fact about the job, never a part of one of its lists. */
+const NOT_A_SUBHEADING =
+  /^((work\s+)?locations?|remote|hybrid|on[-\s]?site|reporting\s+(line|to)|schedule|shifts?|hours|start\s+date|salary\s+range)$/i;
+
+/**
+ * A heading's kind, given the section it follows.
+ *
+ * Real postings split a list into sub-headings — "What you'll do", then
+ * "Quarterly earnings and consensus management", then "Investor engagement
+ * and external communications" — and no vocabulary can name every one of
+ * those. Checked against eleven real postings on 2026-09-30 (QA.md §6), they
+ * were the largest single source of `unknown`, and `unknown` scores at the
+ * intro's weight: a requirement under one counted a third as much as it
+ * should. So a heading nothing names takes the kind of the list it sits in,
+ * when that list is duties or requirements; failing that, one that opens
+ * with a duty verb is a duty.
+ */
+function resolveKind(heading: string, previous: JdSectionKind): JdSectionKind {
+  const kind = classifyHeading(heading);
+  if (kind !== "unknown") return kind;
+  // Facts about the job rather than parts of a list: they stay `unknown`
+  // wherever they appear, so a place name never inherits a requirement's weight.
+  if (NOT_A_SUBHEADING.test(heading)) return "unknown";
+  if (previous === "responsibilities" || previous === "required" || previous === "preferred") {
+    return previous;
+  }
+  return DUTY_VERB.test(heading) ? "responsibilities" : "unknown";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -354,7 +439,7 @@ export function parseJobDescription(source: string): ParsedJd {
     if (looksLikeHeading(raw, nextNonEmpty(rawLines, index))) {
       const heading = normalizeHeading(raw);
       push();
-      const kind = classifyHeading(heading);
+      const kind = resolveKind(heading, current.kind);
       current = { kind, heading, lines: [], weight: SECTION_WEIGHTS[kind], sourceLine: index };
       continue;
     }

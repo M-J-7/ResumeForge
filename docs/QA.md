@@ -243,7 +243,38 @@ different job boards:
 - [ ] Record any heading wording that came back `unknown`; that is the list
       of patterns to add.
 
-**Result:** _not yet run._
+**Result: run 2026-09-30 on eleven real postings — failed as found, fixed the same day.**
+
+Eleven public postings from Greenhouse boards (GitLab, Databricks ×2, Figma, Airbnb,
+Oscar Health, Discord, Twilio, Reddit, Cloudflare ×2 — one of them Bengaluru),
+across engineering, data, product, design, clinical, sales, marketing, finance,
+recruiting and business development. Kept outside the repository and not
+committed, per the rule above.
+
+**Found.** Most postings had at least one requirements or duties section read as
+`unknown`, which scores it at the intro's weight — a requirement counted a third
+as much as it should:
+
+- Unrecognised requirement headings: "What you'll bring", "What we look for",
+  "About You", "Your expertise", "Desired" (preferred).
+- **Misfiled:** "The impact you will have" — the duties list — scored as *required*,
+  because the requirements rule matched "you will have".
+- Sub-headings under "What you'll do" or "Requirements" ("Quarterly earnings and
+  consensus management", "Generate qualified pipeline through outbound
+  activities") and verb-led section headings with no parent ("Drive Demand and
+  Revenue Growth") — the largest single source of `unknown`.
+- Boilerplate scored as content: "About Databricks", "Mission", "See yourself at
+  Twilio", "How GitLab Supports Full-Time Employees", "Equity", "Time Off",
+  "Compliance", "Travel", "Application deadline information".
+
+**Fixed** in `src/lib/jd/parse.ts`: the vocabulary above, ordered so the duties
+shapes are reached before the requirements rule can claim them; and a heading
+nothing names takes the kind of the list it sits in, or reads as a duty when it
+opens with a duty verb. Location-like headings ("Location", "Remote") stay
+`unknown` and never inherit, so a place name is never scored as a requirement.
+Re-run, every heading in the eleven lands where a person would put it, except a
+job code and a city line, which stay `unknown` at the intro's weight. Each shape
+is restated in `src/lib/jd/parse-real-shapes.test.ts`.
 
 ### 7. Resume import against real third-party resumes (P31)
 
