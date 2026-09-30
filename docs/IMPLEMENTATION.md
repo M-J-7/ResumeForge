@@ -12,7 +12,7 @@
 
 ## 1. Status
 
-The build is feature-complete through P37 — every package in the roadmap. **1,627 unit tests and 77 Playwright tests pass.** Everything below the line is either deferred by decision or blocked on hardware, credentials or third-party software — not on code. `docs/BLOCKERS.md` holds those blockers in full, with what would clear each.
+The build is feature-complete through P37 — every package in the roadmap — and **live at `https://sixseconds.tech`**, last deployed 2026-09-29 at `5d02a33`. **2,121 unit tests and 119 Playwright tests pass** (2026-09-29). Everything below the line is either deferred by decision or blocked on hardware, credentials or third-party software — not on code. `docs/BLOCKERS.md` holds those blockers in full, with what would clear each.
 
 | Milestone                                                       | Delivered                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,10 +33,10 @@ The build is feature-complete through P37 — every package in the roadmap. **1,
 
 |                                                                                 | Blocked on                                                                                                                                                                              |
 | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Deploy** (P17) — no host, no domain, no product name                          | A host and a registrable domain. **Deferred by decision, 2026-09-02** — feature work first.                                                                                             |
-| **Off-site backups** (P18) — `litestream.yml` written, never run                | S3-compatible bucket credentials                                                                                                                                                        |
-| **Live Google sign-in** (P20) — code done, `pnpm auth:google` pre-flight exists | A registrable domain. Google rejects redirect URIs on Public Suffix List hosts, so `*.duckdns.org` will not work                                                                        |
-| **Manual QA** (P30) — 4 checks                                                  | Word/LibreOffice/Google Docs · a real phone at 390px · a Google consent screen · ten real job postings                                                                                  |
+| ~~**Deploy** (P17)~~                                                            | **Done.** Live since 2026-09-12 on Oracle Always Free; redeployed 2026-09-29. `BLOCKERS.md` §0                                                                                          |
+| ~~**Off-site backups** (P18)~~                                                  | **Done.** Litestream replicating since 2026-09-12, restore rehearsed. `RUNBOOK.md` → Backups                                                                                            |
+| ~~**Live Google sign-in** (P20)~~                                               | **Done.** Live since 2026-09-12                                                                                                                                                         |
+| **Manual QA** (P30) — 10 checks in `QA.md`, none yet run                        | Word/LibreOffice/Google Docs · a real phone at 390px · a Google consent screen · ten real job postings. `ROADMAP.md` R5                                                                  |
 | **Monetization**                                                                | Nothing. The original plan's answer stands: ship free, talk to the first hundred users. Constrained by **D13** regardless — the paid thing can never be getting your own work back out. |
 
 ---
@@ -159,7 +159,7 @@ Four of those are claims a competitor charging for downloads cannot make at all.
 
 ### Behind — ranked by what it costs
 
-1. **Not deployed.** Zero users, zero feedback, zero search presence. Everything else is theory. Deferred by decision, not by disagreement.
+1. ~~**Not deployed.**~~ **Closed 2026-09-12**, and current as of 2026-09-29. Search presence is the open half: see `ROADMAP.md` Phase 1.
 2. **No way to start from an existing resume.** They accept a PDF/DOCX upload and prefill the wizard. We import JSON Resume only — while owning the entire extraction layer that solves this.
 3. **We read as having no templates.** Five font pairs behind a "Design" dialog against their thumbnailed public gallery. A visitor comparison-shopping bounces in ten seconds.
 4. **No content help.** Their pre-written phrase library keyed by job title is the most-used feature in that wizard. Our lint engine says what is wrong and never what to write. Closable without a model — their library is a database.

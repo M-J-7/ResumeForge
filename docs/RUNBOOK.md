@@ -269,11 +269,11 @@ directory full of unusable files.
 Recovers from: a bad migration, a mistaken delete, corruption.
 Does not recover from: losing the volume.
 
-### 2. Litestream — off-site, still owed
+### 2. Litestream — off-site, running since 2026-09-12
 
 **Design (D9):** [Litestream](https://litestream.io) as a sidecar, streaming
-the WAL to an S3-compatible bucket continuously. Uncomment the service in
-`docker-compose.yml` and add `litestream.yml`:
+the WAL to an S3-compatible bucket continuously. The service is in
+`docker-compose.yml` and reads `litestream.yml`, which has this shape:
 
 ```yaml
 dbs:

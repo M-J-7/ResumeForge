@@ -27,7 +27,7 @@ switch back to A1 whenever capacity appears.
 
 | #   | Yours to do                          | Status                                                              |
 | --- | ------------------------------------ | ------------------------------------------------------------------- |
-| 1   | Merge to master                      | Done — `a985c46`, then everything since as PR #5 (`4dbe1bb`, 2026-09-29) |
+| 1   | Merge to master                      | Done — `a985c46`, then everything since as PR #5 (`4dbe1bb`) and `5d02a33`, both deployed 2026-09-29 |
 | 2   | An Oracle Cloud account, home region | Done — `ap-hyderabad-1`                                             |
 | 3   | A domain                             | Done — `sixseconds.tech`                                            |
 | 4   | An SMTP provider                     | Brevo configured; domain authentication added 2026-09-12            |
@@ -36,11 +36,21 @@ switch back to A1 whenever capacity appears.
 master in PR #5, so the Litestream configuration is in the repository rather
 than only on the instance, and a deploy's `git reset --hard` keeps it.
 
-**Owed: the first deploy of PR #5.** The instance still has the *old*
-`deploy.sh`, which builds on a machine that cannot build. Run the new one
-from `origin/master` once — the commands are in PR #5's description and in
-`docs/ROADMAP.md` — and `./.env` must name
-`APP_IMAGE=ghcr.io/m-j-7/resumeforge:latest`, the package CI publishes to.
+**Redeployed 2026-09-29: `a985c46` → `5d02a33`.** The instance still had the
+*old* `deploy.sh`, which builds on a machine that cannot build, so the new one
+was run once straight out of `origin/master`:
+
+```bash
+cd /opt/resume-builder && sudo git fetch --quiet origin \
+  && git show origin/master:deploy/oracle/deploy.sh > /tmp/deploy.sh \
+  && sudo bash /tmp/deploy.sh
+```
+
+The checkout now carries the new script, so every deploy after this one is
+plain `sudo ./deploy/oracle/deploy.sh`. The files the instance had edited by
+hand (`docker-compose.yml`, `litestream.yml`, both scripts) matched `master`
+in everything but comments, so the reset lost nothing; Litestream kept
+replicating through the restart.
 
 **Known risk, not yet a blocker.** Brevo rewrites every link in transactional
 mail through its click tracker and offers no way to disable it over SMTP. The
