@@ -53,6 +53,8 @@ export const ACTION_EVENTS = [
   "signin:google",
   "signin:complete",
   "resume:save",
+  // A guest keeping a copy, from the reminder that there is only one.
+  "backup:download",
 ] as const;
 
 /**
@@ -112,6 +114,7 @@ export const ACTION_DESCRIPTIONS: Record<ActionEvent, string> = {
   "signin:google": "a Google sign-in was started",
   "signin:complete": "a sign-in completed",
   "resume:save": "a resume made without an account was saved to one",
+  "backup:download": "a backup was downloaded from the reminder to keep one",
 };
 
 /** Written by the server about itself: events it refused to count because a window's cap was full. */

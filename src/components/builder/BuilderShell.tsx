@@ -21,6 +21,7 @@ import { PreviewPane } from "@/components/preview/PreviewPane";
 import { ImportResumeFile } from "./ImportResumeFile";
 import { ResumeTitleEditor, SaveAsNewResumeButton } from "./ResumeTitleEditor";
 import { SyncStatus } from "./SyncStatus";
+import { BackupNudge } from "./BackupNudge";
 import { MAIN_CONTENT_ID } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { configureRemoteSync, installAutosaveFlush, useResumeStore } from "@/store/resume";
@@ -405,6 +406,10 @@ export function BuilderShell({
             <div className="border-line mt-8 border-t pt-6 lg:hidden">
               <SectionManager />
             </div>
+
+            {/* A guest's only copy is this browser's; once there is work to
+                lose, say so, and offer the two ways to keep it (R2). */}
+            <BackupNudge signedIn={signedIn} />
 
             <footer className="border-line mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-6">
               <p className="text-muted text-xs">

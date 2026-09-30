@@ -19,7 +19,16 @@
 
 import Database from "better-sqlite3";
 import process from "node:process";
-import { databaseFilePath } from "../src/server/backup.ts";
+
+// `backup.ts` is TypeScript, loaded through Node's type stripping, and Node
+// warns that the image's package.json does not say what module type it is —
+// four lines of noise above a report somebody is trying to read. That one
+// warning is dropped; any other is printed as usual.
+process.removeAllListeners("warning");
+process.on("warning", (warning) => {
+  if (warning.code !== "MODULE_TYPELESS_PACKAGE_JSON") console.warn(warning);
+});
+const { databaseFilePath } = await import("../src/server/backup.ts");
 
 const days = Math.max(1, Number(process.argv[2]) || 14);
 const url = process.env.DATABASE_URL;
@@ -61,7 +70,9 @@ const blocks = [
   ["WHAT PEOPLE DID", ""],
 ];
 
-const width = Math.max(28, ...[...table.keys()].map((name) => name.length - 4));
+/** A row's label is its name without the block's prefix. */
+const labelOf = (name) => name.replace(/^(view|src):/, "");
+const width = Math.max(28, ...[...table.keys()].map((name) => labelOf(name).length + 2));
 const header = recent.map((day) => day.slice(5).padStart(6)).join("");
 
 console.log(`Usage counts, ${since} to ${dayOf(0)} (UTC).`);
@@ -77,7 +88,7 @@ for (const [title, prefix] of blocks) {
   if (names.length === 0) console.log("  (none)");
   for (const name of names) {
     const { total, byDay } = table.get(name);
-    const label = prefix ? name.slice(prefix.length) : name;
+    const label = labelOf(name);
     const cells = recent.map((day) => String(byDay.get(day) ?? "·").padStart(6)).join("");
     console.log(`  ${label.padEnd(width - 2)} ${String(total).padStart(7)}${cells}`);
   }
