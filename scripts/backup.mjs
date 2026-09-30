@@ -21,13 +21,14 @@
  * tried.
  */
 
-import { readdirSync, statSync, unlinkSync } from "node:fs";
+import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import {
   backupFileName,
   createBackup,
   databaseFilePath,
+  pruneBackups,
   restoreBackup,
   verifyBackup,
 } from "../src/server/backup.ts";
@@ -92,10 +93,12 @@ switch (command) {
 
     const keep = Number(flag("keep", "0"));
     if (keep > 0) {
-      const existing = listBackups();
-      for (const name of existing.slice(0, Math.max(0, existing.length - keep))) {
-        unlinkSync(path.join(backupDir, name));
-        console.log(`Pruned ${name}`);
+      // Snapshots past `keep`, and the -wal/-shm files that outlived theirs
+      // (`pruneBackups` in src/server/backup.ts says why there were any).
+      const pruned = pruneBackups(backupDir, keep);
+      for (const name of pruned.snapshots) console.log(`Pruned ${name}`);
+      if (pruned.sidecars.length > 0) {
+        console.log(`Swept ${pruned.sidecars.length} leftover -wal/-shm files`);
       }
     }
     break;

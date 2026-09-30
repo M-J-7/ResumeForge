@@ -32,7 +32,7 @@
  */
 
 import Database from "better-sqlite3";
-import { mkdirSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
 import path from "node:path";
 
 /** Turns `file:./app.db` — or a bare path — into a filesystem path. */
@@ -74,6 +74,22 @@ export async function createBackup(
     await source.backup(destinationPath);
   } finally {
     source.close();
+  }
+
+  // A snapshot is a file that is only ever read, so it leaves WAL mode here.
+  // The backup API copies the live database's header, WAL flag included, and
+  // a WAL-mode file grows a `-wal` and a `-shm` beside it every time anything
+  // opens it — `verifyBackup` below, straight after this, for one. Pruning
+  // removed the snapshots and never their sidecars: the instance had 894
+  // orphans in `/data/backups` by 2026-09-30, two more every hour. In
+  // rollback-journal mode, opening a snapshot to read it leaves nothing behind.
+  // A restore is unaffected: the server sets WAL again the moment it opens
+  // the file (`applyPragmas`).
+  const snapshot = new Database(destinationPath, { fileMustExist: true });
+  try {
+    snapshot.pragma("journal_mode = DELETE");
+  } finally {
+    snapshot.close();
   }
 
   return {
@@ -211,4 +227,47 @@ export function sameContents(a: VerificationResult, b: VerificationResult): bool
     if (a.tables[key] !== b.tables[key]) return false;
   }
   return a.migrations.join() === b.migrations.join();
+}
+
+/** What `pruneBackups` removed, for the log line cron keeps. */
+export interface PruneResult {
+  snapshots: string[];
+  sidecars: string[];
+}
+
+/**
+ * Keeps the newest `keep` hourly snapshots, and the files that belong only to
+ * the ones it removes.
+ *
+ * Hourly snapshots are `app-<timestamp>.db` and sort by name. Anything else
+ * ending `.db` — the `pre-migration-` snapshot a deploy takes before a schema
+ * change — is not in the rotation and is never pruned here; it is the one
+ * copy of the database as it was before the change.
+ *
+ * A `-wal` or `-shm` whose database is gone is swept as well. Those are the
+ * sidecars SQLite leaves beside a WAL-mode file that was opened; snapshots
+ * made before 2026-09-30 were WAL-mode, and every one left a pair that
+ * outlived it. One whose database still exists is left alone: an unmerged
+ * `-wal` can hold committed data, and deleting it beside a live file would
+ * lose that data. Beside a deleted one there is nothing left to merge into.
+ */
+export function pruneBackups(directory: string, keep: number): PruneResult {
+  const names = existsSync(directory) ? readdirSync(directory) : [];
+  const hourly = names.filter((name) => /^app-.*\.db$/.test(name)).sort();
+  const doomed = new Set(hourly.slice(0, Math.max(0, hourly.length - keep)));
+
+  const removed: PruneResult = { snapshots: [], sidecars: [] };
+  for (const name of doomed) {
+    unlinkSync(path.join(directory, name));
+    removed.snapshots.push(name);
+  }
+
+  const kept = new Set(names.filter((name) => name.endsWith(".db") && !doomed.has(name)));
+  for (const name of names) {
+    const sidecar = /^(.*\.db)-(wal|shm)$/.exec(name);
+    if (!sidecar || kept.has(sidecar[1]!)) continue;
+    unlinkSync(path.join(directory, name));
+    removed.sidecars.push(name);
+  }
+  return removed;
 }

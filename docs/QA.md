@@ -177,7 +177,23 @@ Then, against a running container:
 - [ ] `/` and `/signin` render.
 - [ ] A magic link arrives through the real `EMAIL_SERVER` and signs in.
 
-**Result:** _not yet run._
+**Result: run 2026-09-30 against production (`be1c489`), all but two boxes.**
+
+- `better-sqlite3` loads from the standalone output: the app answers and a
+  read-only query from inside the container counts every table.
+- The volume holds the database across container recreation: five deploys since
+  2026-09-29 recreated `app`, and the account created on 2026-09-12 is still
+  there, with all five migrations recorded.
+- The `backup` service writes hourly into `/data/backups` and prunes to 48.
+  **Found:** it left the `-wal`/`-shm` of every pruned snapshot behind — 894
+  orphans, two more an hour. Fixed the same day: snapshots are taken out of WAL
+  mode as they are written, and pruning sweeps orphans
+  (`src/server/backup-sidecars.test.ts`).
+- `/api/health` returns `{"status":"ok"}`; `/` and `/signin` return 200.
+- **Not ticked:** the healthcheck marking the container unhealthy when the
+  database is unreadable (it would mean breaking the live database), and a magic
+  link through the real `EMAIL_SERVER` (waits on the Resend move,
+  `OWNER-ACTIONS.md` item 2).
 
 ### 5. Off-site restore rehearsal (M2-T5)
 
