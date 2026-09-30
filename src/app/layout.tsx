@@ -32,6 +32,12 @@ const geistMono = Geist_Mono({
  *
  * The payload goes **down**: one static face replaces three variable axes.
  *
+ * Upright only. The italic was loaded too and nothing ever set it — the one
+ * `<em>` on a public page is in the sans — but `next/font` preloads every
+ * style it is given, so every page spent a font file's worth of a phone's
+ * bandwidth on it while the render-blocking stylesheet waited behind the
+ * same pipe (measured 2026-09-30). Add it back with the first use.
+ *
  * Loaded here because the CSP is `font-src 'self' data:`: `next/font`
  * self-hosts at build time, where a `<link>` to Google's CDN would be blocked
  * in production and work perfectly in development.
@@ -40,7 +46,7 @@ const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
   subsets: ["latin"],
   weight: "400",
-  style: ["normal", "italic"],
+  style: "normal",
   display: "swap",
 });
 

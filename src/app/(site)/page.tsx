@@ -229,7 +229,9 @@ export default function Home() {
 
             <div className="mt-12 grid items-start gap-12 lg:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)] lg:gap-16">
               <div>
-                <Built>
+                {/* Nested, so numbered: the headline is the group's first
+                    child and takes 0 by position. */}
+                <Built order={1}>
                   <p className="text-muted text-body-l max-w-[46ch]">
                     One column of real text, downloadable as PDF, Word, plain text and JSON Resume
                     &mdash; all four free, permanently. It runs in your browser and works without an
@@ -237,7 +239,7 @@ export default function Home() {
                   </p>
                 </Built>
 
-                <Built className="mt-8">
+                <Built order={2} className="mt-8">
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
                     <CtaLink href="/builder">Start building</CtaLink>
                     {/* `/check` is the strongest thing we can offer someone
@@ -254,7 +256,7 @@ export default function Home() {
                   </div>
                 </Built>
 
-                <Built className="mt-6">
+                <Built order={3} className="mt-6">
                   <p className="text-faint text-small">No sign-up needed. Nothing to cancel.</p>
                 </Built>
 
@@ -263,7 +265,7 @@ export default function Home() {
                   this tool makes the file they need. It used to be a sentence
                   in section two.
                 */}
-                <Built className="mt-8">
+                <Built order={4} className="mt-8">
                   <SpotlightGroup>
                     <ul className="flex flex-wrap gap-2">
                       {FORMATS.map((format) => (

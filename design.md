@@ -895,6 +895,22 @@ Non-negotiable, and each one has already cost someone a debugging session.
     the extremes it can meet — the white page under the header on `/builder` included
     — and lays the strongest gradient stop over the result.
 
+### Added 2026-09-30, from the first measurement against the live origin
+
+17. **Above the fold, the build is CSS.** A Motion reveal cannot start before React
+    hydrates, and a built element is server-rendered hidden — so the title and lead of
+    every reading page sat clipped over an empty band until the bundle had run, 3.2s
+    after the text arrived on a throttled phone. `BuildGroup trigger="load"` renders
+    plain markup animated by keyframes that start at first paint; `build-load.test.tsx`
+    holds those keyframes to the Motion variants number for number. Anything that
+    must be seen on arrival goes in a `load` group, never behind `initial`.
+18. **A public page never statically imports the PDF or parse machinery.** react-pdf
+    and pdfjs are most of a megabyte, and `<Link>` prefetches the routes it points
+    at — so one static import in `/check` or `/templates` put them in the first
+    seconds of every page whose header links there. Load them with `import()` at the
+    point of use; `site-weight.test.ts` walks the static import graph of every
+    `(site)` route and fails on the first path that reaches them.
+
 ---
 
 ## 8. Delivery

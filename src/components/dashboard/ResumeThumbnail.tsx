@@ -23,7 +23,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getResumeContentAction } from "@/app/dashboard/actions";
 import { readCachedThumbnail, thumbnailKey, writeCachedThumbnail } from "@/lib/thumbnail/cache";
-import { renderResumeThumbnail } from "@/lib/thumbnail/render";
 import { cn } from "@/lib/utils";
 import { FileTextIcon } from "@/components/ui/icons";
 
@@ -69,6 +68,9 @@ export function ResumeThumbnail({
       }
 
       try {
+        // Loaded with the first card that needs it, not with the dashboard:
+        // it is react-pdf and pdfjs (`thumbnail/render.ts`).
+        const { renderResumeThumbnail } = await import("@/lib/thumbnail/render");
         const rendered = await renderResumeThumbnail(result.value);
         if (cancelled) return;
         setDataUrl(rendered);

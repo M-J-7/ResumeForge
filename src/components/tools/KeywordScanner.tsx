@@ -24,7 +24,6 @@ import { useState } from "react";
 import { Button, Field, Textarea } from "@/components/ui/control";
 import { MatchReport } from "@/components/match/MatchReport";
 import { useMatchAnalysis } from "@/components/match/useMatchAnalysis";
-import { parseResumeText } from "@/lib/import/parse-resume";
 import { CHECK_HANDOFF_KEY } from "@/lib/import/handoff";
 import { MAX_JOB_DESCRIPTION_LENGTH } from "@/lib/match/job-target";
 import type { ResumeDocument } from "@/lib/resume/schema";
@@ -43,7 +42,7 @@ export function KeywordScanner() {
   } | null>(null);
   const { state, analyse } = useMatchAnalysis();
 
-  const compare = () => {
+  const compare = async () => {
     if (!posting.trim() || !resumeText.trim()) {
       setProblem(
         !posting.trim()
@@ -53,6 +52,11 @@ export function KeywordScanner() {
       return;
     }
     setProblem(null);
+    // Loaded on the first comparison, not with the page. Reading pasted text
+    // needs none of pdfjs, but `parse-resume.ts` imports it for the file
+    // paths, and a static import here put it in this page's first load and
+    // in the prefetch of every page that links here (`site-weight.test.ts`).
+    const { parseResumeText } = await import("@/lib/import/parse-resume");
     const { document } = parseResumeText(resumeText);
     setCompared({ posting, resumeText, document });
     void analyse(document, posting);
@@ -108,7 +112,11 @@ export function KeywordScanner() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="primary" onClick={compare} disabled={state.status === "running"}>
+        <Button
+          variant="primary"
+          onClick={() => void compare()}
+          disabled={state.status === "running"}
+        >
           {state.status === "running" ? "Comparing…" : "Compare"}
         </Button>
         {state.status === "running" ? (

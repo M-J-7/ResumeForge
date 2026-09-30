@@ -30,7 +30,7 @@
 | B8 — stale docs | **Done** — IMPLEMENTATION.md header, BLOCKERS.md after PR #5, MONETISATION.md §2b status, the memory entry |
 | F5 — vocabulary beyond tech | **Done** — ~150 owned terms (healthcare, education, office, finance, retail, HR, sales, engineering) and short product names; fixed RN resolving to React Native and canvas resolving to Canva |
 | Phase 3 — examples, first batches | **Done** — India: Software Engineer (Fresher), B.Com Fresher, MBA Fresher, BPO Customer Support Executive. US: Cashier, Medical Assistant, Warehouse Associate, Certified Nursing Assistant. 16 → 24 examples; target 60 |
-| Phase 1.6 — mobile page speed | Waits on the deploy: measure with PageSpeed Insights against the live site |
+| Phase 1.6 — mobile page speed | **Measured 2026-09-30, largely fixed.** Live, mobile Lighthouse: `/` 91, `/check` 76, an example 85, a guide 88 (the keyless PageSpeed API has no quota, so Lighthouse ran locally against the live origin). Two causes: react-pdf and pdfjs were statically imported by `/check`, `/templates` and the keyword scanner, so header prefetches put ~650 KiB of script on every page; and above-the-fold text was a Motion reveal that waited for hydration. Now `import()` at the point of use (held by `site-weight.test.ts`) and CSS keyframes from first paint. Local A/B on the same preset: `/` 83→92, `/check` 73→93, an example 86→92, `/templates` 46→71; script 975→311 KiB; blocking time ~350→~25ms. **Left:** `/templates`, whose thumbnails render in the browser; re-measure live after the next deploy |
 | Everything else | Not started |
 
 ## Context

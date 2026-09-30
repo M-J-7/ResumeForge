@@ -73,7 +73,8 @@ import {
   type Section,
 } from "@/lib/resume/schema";
 
-export type ImportKind = "pdf" | "docx";
+import type { ImportKind } from "./kind";
+export type { ImportKind } from "./kind";
 
 /**
  * How much the parser is willing to stand behind a field.
@@ -192,12 +193,8 @@ export function parseResumeLines(lines: readonly string[]): ImportResult {
   });
 }
 
-/** Which of the two file kinds a filename claims to be, or null. */
-export function importKindFromFilename(name: string): ImportKind | null {
-  if (/\.pdf$/i.test(name)) return "pdf";
-  if (/\.docx$/i.test(name)) return "docx";
-  return null;
-}
+/** Moved to `kind.ts`, which costs nothing to import; re-exported here. */
+export { importKindFromFilename } from "./kind";
 
 /* -------------------------------------------------------------------------- */
 /* Format-specific: lines in, `SourceLine[]` out                               */

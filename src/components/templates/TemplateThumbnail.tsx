@@ -35,7 +35,6 @@
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { readCachedThumbnail, writeCachedThumbnail } from "@/lib/thumbnail/cache";
-import { renderResumeThumbnail } from "@/lib/thumbnail/render";
 import type { TemplateDefinition } from "@/lib/resume/templates";
 import type { ResumeDocument, Settings } from "@/lib/resume/schema";
 
@@ -84,6 +83,12 @@ export function useTemplateThumbnails(
         }
 
         try {
+          // Loaded on the first cache miss rather than with the page. It is
+          // react-pdf and pdfjs — most of a megabyte — and a static import
+          // put it in `/templates`' first load and in the prefetch of every
+          // page whose header links there (`thumbnail/render.ts`).
+          const { renderResumeThumbnail } = await import("@/lib/thumbnail/render");
+          if (cancelled) return;
           const dataUrl = await renderResumeThumbnail({
             ...sample,
             settings: template.settings,

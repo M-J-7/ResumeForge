@@ -656,6 +656,138 @@ body {
   animation: six-mark 0.45s var(--ease) both;
 }
 
+/*
+ * The build, above the fold.
+ *
+ * A `trigger="load"` group (`Build.tsx`) is plain markup, and this is its
+ * animation. Motion cannot start a reveal before React hydrates, so the title
+ * and lead of every reading page used to sit clipped to nothing until the
+ * bundle had arrived and run — seconds on a phone, and the largest paint on
+ * the page with them. These run from first paint instead.
+ *
+ * The four keyframes are Motion's variants in `motion-tokens.ts` written out:
+ * the same travel, blur and clip, the same 550ms on `--ease-soft`, and the
+ * paper's spring sampled into `linear()` from Motion's own formula (bounce
+ * 0.12, visual duration 0.6s). `build-load.test.ts` holds each pair to the
+ * same numbers.
+ *
+ * `backwards`, never `both`: an item that has landed carries no clip and no
+ * filter, because a resting clip would cut its hover shadow off square. The
+ * noscript and reduced-motion rules both key off `[data-build]`, which these
+ * items carry, so neither needs anything new.
+ */
+@keyframes build-item {
+  from {
+    transform: translateY(24px);
+    filter: blur(6px);
+    clip-path: inset(0% 0% 100% 0%);
+  }
+  to {
+    transform: translateY(0);
+    filter: blur(0px);
+    clip-path: inset(0% 0% 0% 0%);
+  }
+}
+
+@keyframes build-row {
+  from {
+    transform: translateY(16px);
+    clip-path: inset(0% 0% 100% 0%);
+  }
+  to {
+    transform: translateY(0);
+    clip-path: inset(0% 0% 0% 0%);
+  }
+}
+
+@keyframes build-paper {
+  from {
+    transform: translateY(28px) scale(0.985);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes build-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+[data-build-load] [data-build-variant] {
+  animation: build-item 550ms var(--ease-soft) backwards;
+  animation-delay: calc(var(--build-delay, 0s) + var(--build-order, 0) * var(--build-stagger, 0.07s));
+}
+
+[data-build-load] [data-build-variant="row"] {
+  animation-name: build-row;
+}
+
+[data-build-load] [data-build-variant="paper"] {
+  animation-name: build-paper;
+  animation-duration: 1000ms;
+  animation-timing-function: linear(
+    0,
+    0.0531,
+    0.1722,
+    0.3147,
+    0.4558,
+    0.5827,
+    0.6898,
+    0.7762,
+    0.8434,
+    0.8939,
+    0.9308,
+    0.9569,
+    0.9749,
+    0.9868,
+    0.9943,
+    0.9989,
+    1.0014,
+    1.0026,
+    1.003,
+    1.0029,
+    1.0026,
+    1.0021,
+    1.0017,
+    1.0013,
+    1
+  );
+}
+
+[data-build-load] [data-build-variant="rule"] {
+  animation-name: build-rule;
+  animation-duration: 700ms;
+}
+
+/*
+ * The stagger, for a group's direct children. Motion counted them in render
+ * order; CSS counts them by position. An item nested deeper than this passes
+ * `order` and gets `--build-order` inline, which wins over these.
+ */
+[data-build-load] > [data-build-variant]:nth-child(2) {
+  --build-order: 1;
+}
+[data-build-load] > [data-build-variant]:nth-child(3) {
+  --build-order: 2;
+}
+[data-build-load] > [data-build-variant]:nth-child(4) {
+  --build-order: 3;
+}
+[data-build-load] > [data-build-variant]:nth-child(5) {
+  --build-order: 4;
+}
+[data-build-load] > [data-build-variant]:nth-child(6) {
+  --build-order: 5;
+}
+[data-build-load] > [data-build-variant]:nth-child(n + 7) {
+  --build-order: 6;
+}
+
 /* ---------------------------------------------------------------------------
  * The build layer.
  *

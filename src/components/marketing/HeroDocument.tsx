@@ -104,9 +104,19 @@ export function HeroDocument({ className }: { className?: string }) {
         that made the pair read as a picture and a caption.
       */}
       <div className="flex flex-col items-center gap-5 sm:grid sm:grid-cols-[minmax(0,1.06fr)_minmax(0,0.94fr)] sm:items-stretch sm:gap-6">
+        {/*
+          Its own `initial` and `animate`, where it used to inherit them: the
+          hero's group now builds in CSS from first paint (`Build.tsx`), and
+          a CSS group hands nothing down. The drop is a translate and a scale
+          only, so the page is visible in the HTML either way — this starts
+          the landing at hydration, which is when the tilt and the sweep that
+          follow it can start too.
+        */}
         <m.div
           data-build=""
           variants={dropPaper}
+          initial={reduced ? false : "hidden"}
+          animate="shown"
           onPointerMove={onPointerMove}
           onPointerLeave={() => {
             rest();
@@ -213,6 +223,8 @@ export function HeroDocument({ className }: { className?: string }) {
         <m.div
           data-build=""
           variants={dropPaper}
+          initial={reduced ? false : "hidden"}
+          animate="shown"
           className="machine-panel w-full rounded-lg border"
         >
           <div className="border-line flex items-center justify-between gap-3 border-b px-3.5 py-2">

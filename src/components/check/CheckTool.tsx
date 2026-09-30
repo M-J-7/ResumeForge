@@ -31,17 +31,24 @@ import { Button, buttonClassName } from "@/components/ui/control";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangleIcon, FileTextIcon } from "@/components/ui/icons";
 import { ImportReview } from "@/components/import/ImportReview";
-import {
-  importKindFromFilename,
-  parseResumeFile,
-  type ImportResult,
-} from "@/lib/import/parse-resume";
-import {
-  extractPdfGeometric,
-  extractPdfStreamOrder,
-  strategyDisagreements,
-} from "@/lib/xray/extract-browser";
+import { importKindFromFilename } from "@/lib/import/kind";
+import type { ImportResult } from "@/lib/import/parse-resume";
 import { CHECK_HANDOFF_KEY } from "@/lib/import/handoff";
+
+/**
+ * The parser and pdfjs, loaded when a file arrives rather than with the page.
+ *
+ * Together they are most of a megabyte of script, and a static import put
+ * all of it in `/check`'s first load — and, because `<Link>` prefetches the
+ * routes it points at, in the first seconds of every page whose header links
+ * here. Lighthouse measured 975 KiB of script on a guide page on 2026-09-30,
+ * half of it PDF machinery the guide never touches. Nobody who has not chosen
+ * a file needs any of it, and the one who has is about to wait for a parse
+ * anyway.
+ */
+function loadReader() {
+  return Promise.all([import("@/lib/import/parse-resume"), import("@/lib/xray/extract-browser")]);
+}
 
 interface CheckState {
   fileName: string;
@@ -72,16 +79,20 @@ export function CheckTool() {
 
     setBusy(true);
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
+      const [[{ parseResumeFile }, xray], buffer] = await Promise.all([
+        loadReader(),
+        file.arrayBuffer(),
+      ]);
+      const bytes = new Uint8Array(buffer);
       const result = await parseResumeFile(bytes, kind);
 
       // Layer 3, and only for PDFs: a DOCX states its own reading order, so
       // there are not two readings of it to disagree.
       let disagreements: string[] = [];
       if (kind === "pdf") {
-        const naive = await extractPdfStreamOrder(bytes);
-        const careful = await extractPdfGeometric(bytes);
-        disagreements = strategyDisagreements(naive, careful);
+        const naive = await xray.extractPdfStreamOrder(bytes);
+        const careful = await xray.extractPdfGeometric(bytes);
+        disagreements = xray.strategyDisagreements(naive, careful);
       }
 
       setState({ fileName: file.name, result, disagreements });
