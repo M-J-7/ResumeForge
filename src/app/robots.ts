@@ -26,17 +26,23 @@
 import type { MetadataRoute } from "next";
 import { isPublicDeployment, siteUrl } from "@/lib/site";
 
-/**
- * Evaluated per request, not at build time.
+/*
+ * Prerendered, as a file — since 2026-09-30.
  *
- * The origin comes from the environment, and the environment at build time is
- * not the environment at run time — an image built in CI and run in
- * production would otherwise bake in CI's answer. Since that answer is "no
- * origin configured", the production site would serve a `robots.txt` that
- * disallows everything, and nobody would notice until the search traffic
- * never arrived.
+ * This used to be `force-dynamic`, for a reason that was right when it was
+ * written: the origin came from the run-time environment, and an image built
+ * in CI would have baked in CI's answer — "no origin", so a robots.txt that
+ * disallows everything. Landmine 27 removed that reason. The image is now
+ * built with the public origin as a build argument, and the Dockerfile
+ * refuses to build without one, so the origin at build time *is* the one at
+ * run time.
+ *
+ * And the per-request version had started to cost something. Rendered on a
+ * 1/8-OCPU instance for every crawler that asked, it failed to arrive once
+ * during a Lighthouse run against the live site, and Google reads a
+ * robots.txt it cannot fetch as a reason to stop crawling. A file cannot fail
+ * that way.
  */
-export const dynamic = "force-dynamic";
 
 export default function robots(): MetadataRoute.Robots {
   if (!isPublicDeployment()) {

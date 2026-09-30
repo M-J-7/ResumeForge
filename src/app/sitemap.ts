@@ -15,17 +15,13 @@ import { GUIDES } from "@/lib/guides/guides";
 import { latestUpdate } from "@/lib/content-dates";
 import { ACTION_VERBS_PATH, ACTION_VERBS_UPDATED } from "@/lib/verbs/action-verbs";
 
-/**
- * Evaluated per request, not at build time.
- *
- * The origin comes from the environment, and the environment at build time is
- * not the environment at run time — an image built in CI and run in
- * production would otherwise bake in CI's answer. Since that answer is "no
- * origin configured", the production site would serve a `robots.txt` that
- * disallows everything, and nobody would notice until the search traffic
- * never arrived.
+/*
+ * Prerendered, as a file — since 2026-09-30, for the reasons in `robots.ts`:
+ * the origin is a build argument now (landmine 27), so the build knows it,
+ * and a sitemap rendered per request on a 1/8-OCPU instance was one more
+ * thing a crawler could catch failing. Every entry's `lastModified` changes
+ * only with content, and content only changes with a build.
  */
-export const dynamic = "force-dynamic";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
