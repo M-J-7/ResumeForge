@@ -13,6 +13,7 @@ import { DesignPanel } from "@/components/builder/DesignPanel";
 import { analyzeFit, fitInputsFromPages, suggestFit, type PageFit } from "@/lib/layout/fit";
 import { readPages } from "@/lib/pdf/read";
 import { useResumeStore } from "@/store/resume";
+import { track } from "@/lib/track";
 import { cn } from "@/lib/utils";
 
 type ZoomMode = "fit-width" | "fit-page" | "actual";
@@ -46,6 +47,13 @@ export function PreviewPane({
   const setMeasuredPageCount = useResumeStore((s) => s.setMeasuredPageCount);
 
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+  /** Switches tab, and counts an opening of the two a first visit is shown for (`lib/track.ts`). */
+  const showView = (next: ViewMode) => {
+    setViewMode(next);
+    if (next === viewMode) return;
+    if (next === "scan") track("six-seconds:open");
+    if (next === "xray") track("xray:open");
+  };
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
   const [containerWidth, setContainerWidth] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
@@ -132,7 +140,7 @@ export function PreviewPane({
         and the second group simply disappears when it has nothing to operate.
       */}
       <div className="border-line flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-2">
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+        <Tabs value={viewMode} onValueChange={(v) => showView(v as ViewMode)}>
           <TabList label="Document view">
             <Tab value="preview">Preview</Tab>
             <Tab value="scan">Six seconds</Tab>

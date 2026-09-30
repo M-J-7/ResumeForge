@@ -38,6 +38,7 @@ import {
   type ExperienceLevel,
 } from "@/lib/resume/experience-level";
 import { getTemplate } from "@/lib/resume/templates";
+import { track } from "@/lib/track";
 
 const STEP_COMPONENTS: Record<string, () => React.JSX.Element | null> = {
   contact: ContactStep,
@@ -196,7 +197,9 @@ export function BuilderShell({
     const templateId = takeTemplateHandoff();
     if (templateId === null) return;
     const template = getTemplate(templateId);
-    if (template) applyTemplate(template.settings, template.sectionOrder);
+    if (!template) return;
+    applyTemplate(template.settings, template.sectionOrder);
+    track("template:apply");
   }, [hydrated, applyTemplate]);
 
   /**

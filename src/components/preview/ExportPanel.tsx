@@ -14,6 +14,7 @@ import { DESTINATION_ADVICE, resumeFileName, type ExportFormat } from "@/lib/emi
 import { renderDocx } from "@/lib/emit/docx/render";
 import { renderText } from "@/lib/emit/text/render";
 import { toJsonResume } from "@/lib/interop/json-resume";
+import { track } from "@/lib/track";
 import { useResumeStore } from "@/store/resume";
 
 function download(blob: Blob, fileName: string): void {
@@ -36,17 +37,23 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
 
   const nameFor = (format: ExportFormat) => resumeFileName(resume.contact.fullName, format);
 
+  /** Hands the file over, and counts that a file of this format left (`lib/track.ts`). */
+  const deliver = (blob: Blob, format: ExportFormat) => {
+    download(blob, nameFor(format));
+    track(`export:${format}`);
+  };
+
   const exportPdf = () => {
     if (!pdfBytes) return;
     // The exact bytes the preview rendered — not a second render (D2).
-    download(new Blob([pdfBytes.slice()], { type: "application/pdf" }), nameFor("pdf"));
+    deliver(new Blob([pdfBytes.slice()], { type: "application/pdf" }), "pdf");
   };
 
   const exportDocx = async () => {
     setBusy("docx");
     try {
       const { blob } = await renderDocx(resume);
-      download(blob, nameFor("docx"));
+      deliver(blob, "docx");
     } finally {
       setBusy(null);
     }
@@ -54,7 +61,7 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
 
   const exportText = () => {
     const blob = new Blob([renderText(resume)], { type: "text/plain;charset=utf-8" });
-    download(blob, nameFor("txt"));
+    deliver(blob, "txt");
   };
 
   /**
@@ -67,7 +74,7 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
     const blob = new Blob([JSON.stringify(toJsonResume(resume), null, 2)], {
       type: "application/json;charset=utf-8",
     });
-    download(blob, nameFor("json"));
+    deliver(blob, "json");
   };
 
   return (

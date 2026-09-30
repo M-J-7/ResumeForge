@@ -120,6 +120,14 @@ first traffic you get.
 
 You are currently blind. Everything after this depends on it.
 
+> **Status, 2026-09-30: the counter is built** (`src/lib/events.ts`, `src/server/events.ts`,
+> `src/app/api/e/route.ts`), with two departures from the list below. Counts are batched in
+> memory and written every five minutes rather than per event — a write per page view would keep
+> Litestream uploading continuously and spend the bucket's 50,000-request month. And the event
+> names are namespaced (`export:pdf`, `view:/check`, `src:reddit`) rather than these, with
+> page views and referrer sources counted too. `checkout_started` waits for a checkout. The email
+> capture on `/check` is not built.
+
 - **`POST /api/e`** — same-origin event endpoint. `connect-src 'self'` in
   [next.config.ts](next.config.ts) **already permits this**; no CSP change is needed, contrary
   to what the docs assume. No cookies, no session id, no IP, no resume content — increment a

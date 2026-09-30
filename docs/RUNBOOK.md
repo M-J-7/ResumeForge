@@ -401,6 +401,36 @@ Worth knowing before changing any of it.
   silently from the app's point of view — nobody reports "I did not receive an
   email" quickly.
 
+## Reading the usage counts
+
+The first-party counter (`POST /api/e`, MONETISATION.md Phase 1) keeps one
+number per event name per UTC day in `EventCount`, and nothing else. Read it
+where the database is:
+
+```bash
+cd /opt/resume-builder
+sudo docker compose exec -T app node scripts/events.mjs 30   # the last 30 days
+```
+
+Three blocks — pages viewed, where visits came from, what people did — each
+with a total and the last seven days beside it.
+
+Two things to know before reading anything into it:
+
+- **Counts are written every five minutes**, not per request
+  (`src/server/events.ts` says why: the event loop, Litestream's uploads, and
+  the bucket's 50,000-request month). The last few minutes may not be in the
+  table yet, and **a deploy loses whatever had not been written.** A quiet
+  hour straddling a deploy is the deploy.
+- **`meter:dropped` above zero means a window hit its cap** — 20,000 events in
+  five minutes. That is either a very good day or somebody posting to the
+  endpoint in a loop, and the other counts that day should be read with that
+  in mind. It is also logged, as `events: window cap reached`.
+
+Crawlers, Lighthouse, and browsers sending Global Privacy Control or Do Not
+Track are not counted, so these numbers run a little under Search Console's
+and under the access log's. That is the intended direction to be wrong in.
+
 ## The local cover-letter enhancement model: do not turn it on
 
 **It does not work well enough to ship, and this is measured rather than

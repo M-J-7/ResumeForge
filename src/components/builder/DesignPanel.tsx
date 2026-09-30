@@ -34,6 +34,7 @@ import {
 import { matchTemplate } from "@/lib/resume/templates";
 import { TemplateGallery } from "@/components/templates/TemplateGallery";
 import { meetsAccentContrast } from "@/lib/resume/contrast";
+import { track } from "@/lib/track";
 import { cn } from "@/lib/utils";
 
 /**
@@ -125,7 +126,10 @@ export function DesignPanel({ open, onClose }: { open: boolean; onClose: () => v
             <TemplateGallery
               groups="panel"
               selectedId={activeTemplate?.id ?? null}
-              onSelect={(template) => applyTemplate(template.settings, template.sectionOrder)}
+              onSelect={(template) => {
+                applyTemplate(template.settings, template.sectionOrder);
+                track("template:apply");
+              }}
               className="lg:grid-cols-3"
             />
           ) : null}

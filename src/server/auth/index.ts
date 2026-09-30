@@ -19,6 +19,7 @@ import { getPrisma } from "@/server/db";
 import { withIdentityOnlyAccounts } from "./adapter";
 import { buildAuthConfig, googleCredentials } from "./config";
 import { resolveMailTransport } from "./mail";
+import { countServerEvent } from "@/server/count-server-event";
 
 export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
   const prisma = await getPrisma();
@@ -34,5 +35,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     adapter: withIdentityOnlyAccounts(PrismaAdapter(prisma as never) as Adapter),
     mailTransport: () => resolveMailTransport(),
     google: googleCredentials(),
+    // The usage counter's conversion: that a sign-in completed, and nothing
+    // about whose (`src/server/count-server-event.ts`).
+    onSignIn: () => countServerEvent("signin:complete"),
   });
 });

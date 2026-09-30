@@ -34,6 +34,7 @@ import { ImportReview } from "@/components/import/ImportReview";
 import { importKindFromFilename } from "@/lib/import/kind";
 import type { ImportResult } from "@/lib/import/parse-resume";
 import { CHECK_HANDOFF_KEY } from "@/lib/import/handoff";
+import { track } from "@/lib/track";
 
 /**
  * The parser and pdfjs, loaded when a file arrives rather than with the page.
@@ -96,6 +97,7 @@ export function CheckTool() {
       }
 
       setState({ fileName: file.name, result, disagreements });
+      track("check:read");
     } catch (err) {
       setError(err instanceof Error ? err.message : "That file could not be read.");
     } finally {
@@ -117,6 +119,7 @@ export function CheckTool() {
    */
   const stashForBuilder = () => {
     if (!state) return;
+    track("check:handoff");
     try {
       sessionStorage.setItem(CHECK_HANDOFF_KEY, JSON.stringify(state.result.document));
     } catch {

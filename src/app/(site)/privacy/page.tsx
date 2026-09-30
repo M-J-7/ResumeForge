@@ -18,6 +18,7 @@ import { AppFooter } from "@/components/shell/AppFooter";
 import { Built } from "@/components/marketing/Build";
 import { PageHeader, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { pageMetadata } from "@/lib/seo";
+import { ACTION_DESCRIPTIONS, ACTION_EVENTS } from "@/lib/events";
 
 /*
  * These two were fixed by hand once, for `alternates` only — the comment that
@@ -47,7 +48,7 @@ export default function PrivacyPage() {
           <Built className="mt-4">
             {/* Mono: this is a fact about the document, not a sentence in
                 it. The same rule the guides' reading time follows. */}
-            <p className="text-faint text-micro font-mono">Last updated 8 September 2026.</p>
+            <p className="text-faint text-micro font-mono">Last updated 30 September 2026.</p>
           </Built>
         </PageHeader>
 
@@ -124,6 +125,42 @@ export default function PrivacyPage() {
               content: error reports are scrubbed of it, and without an account none of it reaches
               the server at all.
             </p>
+          </section>
+
+          {/*
+            The usage counter, described from the code rather than about it:
+            the list below is rendered from `ACTION_DESCRIPTIONS`, which the
+            compiler will not let fall behind the list of events, and
+            `event-count-table.test.ts` holds the table to the three columns
+            this section says it has.
+          */}
+          <section className="text-muted text-body flex flex-col gap-3 leading-relaxed">
+            <h2 className="text-text text-title font-semibold">What we count, and what we do not</h2>
+            <p>
+              This site keeps a tally of how often each of its pages is viewed and each of its tools
+              is used, so we can tell which pages help people and which do not. It is a count and
+              nothing more: for each thing below, one number per day. The table it is kept in has a
+              column for the name of the thing, one for the day and one for the number, and no
+              column where a person, a device, an address or a word of your resume could go.
+            </p>
+            <p>
+              <strong className="font-medium">No cookie, no identifier, no IP address.</strong> The
+              count is sent to this site and nowhere else, without the cookie a signed-in visitor
+              has — the server refuses one that arrives with a cookie — so it cannot be tied to an
+              account. Nothing you type is ever part of it. Crawlers are not counted, and if your
+              browser sends Global Privacy Control or Do Not Track, nothing is sent at all.
+            </p>
+            <p>What is counted:</p>
+            <ul className="flex list-disc flex-col gap-1 pl-5">
+              <li>which page on this site was viewed;</li>
+              <li>
+                where a visit came from, as one name from a short list — a search engine, a social
+                site, &ldquo;other&rdquo; or &ldquo;direct&rdquo; — and never the page it came from;
+              </li>
+              {ACTION_EVENTS.map((name) => (
+                <li key={name}>that {ACTION_DESCRIPTIONS[name]};</li>
+              ))}
+            </ul>
           </section>
 
           <section className="text-muted text-body flex flex-col gap-3 leading-relaxed">

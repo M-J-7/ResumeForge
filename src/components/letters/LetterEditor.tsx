@@ -83,6 +83,7 @@ import type { ResumeDocument } from "@/lib/resume/schema";
 import { renderCoverLetterDocx, renderCoverLetterText } from "@/lib/emit/cover-letter";
 import { coverLetterFileName, type ExportFormat } from "@/lib/emit/filename";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/track";
 
 export interface ResumeOption {
   id: string;
@@ -591,6 +592,7 @@ export function LetterEditor({
       const sources: ComposeSources = { resume, match };
       setComposeSources(sources);
       setLetter(composeCoverLetter(toComposeInput(sources, setup)));
+      track("letter:compose");
       setProposal(null);
       setDirty(true);
       // The controls now match the text on screen, so the warning about them

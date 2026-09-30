@@ -14,13 +14,14 @@
  * somebody to optimise a number.
  */
 
-import { useDeferredValue, useId, useState } from "react";
+import { useDeferredValue, useEffect, useId, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button, Field, Textarea } from "@/components/ui/control";
 import { CheckIcon, InfoIcon } from "@/components/ui/icons";
 import { checkBullets, MAX_BULLETS } from "@/lib/coach/check-bullets";
 import { BULLET_PARTS, PART_LABELS } from "@/lib/coach/parse-bullet";
+import { track } from "@/lib/track";
 
 /**
  * Three bullets that show the three things the checker does: one it is
@@ -40,6 +41,17 @@ export function BulletChecker() {
   const deferred = useDeferredValue(text);
   const results = checkBullets(deferred);
   const statusId = useId();
+
+  // Counted once per visit, the first time there is anything to show — it
+  // checks as you type, so there is no button press to count instead, and a
+  // count per keystroke would measure typing speed. The name only; never the
+  // text (`lib/track.ts`).
+  const counted = useRef(false);
+  useEffect(() => {
+    if (results.length === 0 || counted.current) return;
+    counted.current = true;
+    track("bullets:check");
+  }, [results.length]);
 
   return (
     <div className="flex flex-col gap-6">

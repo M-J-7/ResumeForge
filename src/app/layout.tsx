@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
+import { PageViews } from "@/components/shell/PageViews";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -149,6 +150,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
          * full-height application view whose preview pane fills whatever is
          * left below the bar, and a footer would take height from it.
          */}
+        {/* The usage counter's page views. Renders nothing, reads nothing on
+            the server, so the content pages stay static. See `lib/track.ts`. */}
+        <PageViews />
         {children}
       </body>
     </html>

@@ -95,6 +95,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma/migrations ./prisma/migrat
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/backup.mjs ./scripts/backup.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/src/server/backup.ts ./src/server/backup.ts
 
+# The usage counts, read where the database is:
+# `docker compose exec -T app node scripts/events.mjs 30`. It borrows
+# `databaseFilePath` from backup.ts, which is already here.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/events.mjs ./scripts/events.mjs
+
 # Everything durable lives here: the database, its WAL, and the snapshots.
 # Mount a real volume over it — an unmounted VOLUME is a container-lifetime
 # directory, which is a database that disappears on the next deploy.

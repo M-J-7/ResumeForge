@@ -37,6 +37,7 @@ import {
   parseResumeFile,
   type ImportResult,
 } from "@/lib/import/parse-resume";
+import { track } from "@/lib/track";
 import { useResumeStore } from "@/store/resume";
 
 export function ImportResumeFile({
@@ -91,6 +92,7 @@ export function ImportResumeFile({
     }
 
     importDocument(result.document);
+    track("import:json");
     setMessage({
       tone: "ok",
       text: `Imported ${file.name}. Undo (Ctrl+Z) puts your previous draft back.`,
@@ -114,6 +116,7 @@ export function ImportResumeFile({
     const result = await parseResumeFile(bytes, kind);
 
     importDocument(result.document);
+    track(`import:${kind}`);
     setReview(result);
     setMessage({
       tone: "ok",

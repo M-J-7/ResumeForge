@@ -154,12 +154,20 @@ export interface BuildAuthConfigOptions {
    */
   mailTransport: () => MailTransport;
   google: GoogleCredentials | null;
+  /**
+   * Runs after any successful sign-in, by either provider. Given nothing
+   * about who signed in — the one caller counts that a sign-in happened
+   * (`countServerEvent`), and a hook that handed it the user would invite
+   * the counter to learn more than a count.
+   */
+  onSignIn?: () => void | Promise<void>;
 }
 
 export function buildAuthConfig({
   adapter,
   mailTransport,
   google,
+  onSignIn,
 }: BuildAuthConfigOptions): NextAuthConfig {
   const providers: NextAuthConfig["providers"] = [
     {
@@ -279,5 +287,6 @@ export function buildAuthConfig({
         return session;
       },
     },
+    ...(onSignIn ? { events: { signIn: async () => void (await onSignIn()) } } : {}),
   };
 }

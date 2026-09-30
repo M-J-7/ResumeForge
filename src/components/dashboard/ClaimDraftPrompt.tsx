@@ -66,6 +66,7 @@ import { createDraftStore, idbBackend, STORAGE_KEY, type DraftStore } from "@/st
 import { GUEST_OWNER, namespacedKey } from "@/store/owner";
 import { CLAIM_DRAFT_DISMISSED_KEY } from "@/store/purge";
 import { claimDraftAction } from "@/app/dashboard/actions";
+import { track } from "@/lib/track";
 
 type State =
   | { phase: "checking" }
@@ -194,6 +195,7 @@ export function ClaimDraftPrompt() {
         // Only now is it safe to drop the local copy — and only the slot the
         // offer actually came from, never both.
         await createDraftStore(idbBackend, { key }).clear();
+        track("resume:save");
         setState({ phase: "claimed", title: result.value.title, id: result.value.id });
         router.refresh();
       });

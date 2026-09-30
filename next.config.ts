@@ -44,9 +44,11 @@ function googleSignInOrigins(): string[] {
  *   worker a `blob:` URL often enough that omitting it is a coin flip.
  * - `img-src ... blob: data:` — preview pages are canvases rasterised to
  *   blobs, and the export links hand over object URLs.
- * - `connect-src 'self'` — no telemetry endpoint exists, and this is what
- *   makes that structural rather than a promise. Adding an analytics script
- *   later would have to change this line, which is the point (§9).
+ * - `connect-src 'self'` — no third-party telemetry can exist, and this is
+ *   what makes that structural rather than a promise. Adding an analytics
+ *   script would have to change this line, which is the point (§9). The one
+ *   counter there is, `POST /api/e`, is first-party and counts names rather
+ *   than people — see `src/lib/track.ts` and the privacy page.
  * - `frame-ancestors 'none'` — nobody frames a resume builder except to
  *   clickjack the download or the delete-account button.
  * - `object-src 'none'` — no plugins, ever. A PDF must be downloaded, not

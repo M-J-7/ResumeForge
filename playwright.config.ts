@@ -69,6 +69,11 @@ export default defineConfig({
       AUTH_GOOGLE_ID: OIDC_CLIENT_ID,
       AUTH_GOOGLE_SECRET: OIDC_CLIENT_SECRET,
       AUTH_GOOGLE_ISSUER: OIDC_ISSUER,
+      // The usage counter writes every five minutes in production, which is
+      // the right trade there (`src/server/events.ts`) and the whole of a
+      // test's patience here. `e2e/events.spec.ts` reads the table after a
+      // visit; a second is enough for the write to have happened.
+      EVENTS_FLUSH_MS: "1000",
     },
   },
 });

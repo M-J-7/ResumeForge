@@ -25,6 +25,7 @@ import { Button, Field, Textarea } from "@/components/ui/control";
 import { MatchReport } from "@/components/match/MatchReport";
 import { useMatchAnalysis } from "@/components/match/useMatchAnalysis";
 import { CHECK_HANDOFF_KEY } from "@/lib/import/handoff";
+import { track } from "@/lib/track";
 import { MAX_JOB_DESCRIPTION_LENGTH } from "@/lib/match/job-target";
 import type { ResumeDocument } from "@/lib/resume/schema";
 
@@ -59,6 +60,7 @@ export function KeywordScanner() {
     const { parseResumeText } = await import("@/lib/import/parse-resume");
     const { document } = parseResumeText(resumeText);
     setCompared({ posting, resumeText, document });
+    track("scanner:compare");
     void analyse(document, posting);
   };
 
@@ -69,6 +71,7 @@ export function KeywordScanner() {
 
   const stashForBuilder = () => {
     if (!compared) return;
+    track("scanner:handoff");
     try {
       sessionStorage.setItem(CHECK_HANDOFF_KEY, JSON.stringify(compared.document));
     } catch {

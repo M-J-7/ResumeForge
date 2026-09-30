@@ -35,6 +35,7 @@ import { withLocalLoad, type RemoteJobTargetStore } from "./jobTargetStore";
 import { createLocalJobTargetStore } from "@/store/job-targets";
 import { suggestJobTargetTitle, type JobTargetRecord } from "@/lib/match/job-target";
 import { useResumeStore } from "@/store/resume";
+import { track } from "@/lib/track";
 
 export function MatchPanel({
   active,
@@ -131,6 +132,7 @@ export function MatchPanel({
       return;
     }
     setError(null);
+    track("match:run");
     void analyse(resume, description);
   }, [analyse, description, resume]);
 

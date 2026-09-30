@@ -20,6 +20,7 @@ import { isValidEmail } from "@/lib/resume/schema";
 import { checkSignInAllowed, retryAfterMessage } from "@/server/rate-limit";
 import { logError } from "@/server/logging";
 import { clientIp } from "@/server/request";
+import { countServerEvent } from "@/server/count-server-event";
 import type { SignInState } from "./state";
 
 /** Where a successful sign-in lands. */
@@ -69,6 +70,8 @@ export async function requestMagicLinkAction(
   const failure = errorFromRedirectUrl(destination);
   if (failure) return { error: failure };
 
+  // A link was sent. The name of the event, never the address it went to.
+  await countServerEvent("signin:email");
   redirect(`/signin/check-email?email=${encodeURIComponent(email)}`);
 }
 
@@ -82,6 +85,7 @@ export async function signInWithGoogleAction(): Promise<SignInState> {
     logError("signin/google", error);
     return { error: FALLBACK_AUTH_ERROR };
   }
+  await countServerEvent("signin:google");
   redirect(destination);
 }
 
