@@ -20,9 +20,11 @@
  * drawn from. Change the emitter, a preset or the sample resume, and the
  * build says which pictures to regenerate.
  *
- * `fingerprint` is a hash of `pdfFingerprint(bytes)`: the canonical form that
- * ignores the two things react-pdf varies run to run (font subset tags and
- * object order) and keeps everything a page is made of.
+ * `fingerprint` is a hash of `pdfContentFingerprint(bytes)`: the canonical
+ * form that ignores the two things react-pdf varies run to run (font subset
+ * tags and object order) and the one thing that varies machine to machine
+ * (how zlib chose to compress), and keeps everything a page is made of. The
+ * pin is written on a laptop and checked in CI, so that last part matters.
  */
 
 import manifest from "./template-images.json";

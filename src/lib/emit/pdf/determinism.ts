@@ -27,6 +27,8 @@
  * retains its power to catch nondeterministic layout.
  */
 
+import { inflateSync } from "node:zlib";
+
 /** `/BaseFont /ABCDEF+Arimo` and `/FontName /ABCDEF+Arimo`. */
 const SUBSET_TAG = /\/([A-Z]{6})\+/g;
 const PLACEHOLDER_TAG = "/AAAAAA+";
@@ -77,6 +79,60 @@ function splitObjects(raw: string): PdfObject[] | null {
     number: start.number,
     body: raw.slice(start.index, starts[i + 1]?.index ?? raw.length),
   }));
+}
+
+/**
+ * `pdfFingerprint` with every Flate stream inflated and its compressed length
+ * dropped — the fingerprint to use when the two renders being compared did not
+ * happen on the same machine.
+ *
+ * `pdfFingerprint` compares renders within one process, and there it is
+ * exact. Across machines it is too strict: pdfkit deflates with Node's own
+ * zlib, and deflate output is not a function of its input alone — it can move
+ * with the zlib build and with the CPU features that build detects — so the
+ * same page may compress to different bytes in CI than on the laptop that
+ * wrote the pin. Inflating is exact everywhere. What remains is every drawing
+ * operator, every glyph and every font program the page is made of, so a real
+ * change still changes it; only the compressor's choices do not.
+ *
+ * Subset tags are normalized *after* inflation. Doing it first would rewrite
+ * any six capitals and a `+` that happened to occur inside compressed bytes,
+ * and the inflate would fail on the data it had corrupted.
+ */
+export function pdfContentFingerprint(bytes: Uint8Array): string {
+  const raw = stripTrailer(Buffer.from(bytes).toString("latin1"));
+  const objects = splitObjects(raw);
+  const body = objects
+    ? objects
+        .sort((a, b) => a.number - b.number)
+        .map((object) => inflateStream(object.body))
+        .join("\n")
+    : raw;
+  return body.replace(SUBSET_TAG, PLACEHOLDER_TAG);
+}
+
+/** How pdfkit ends a stream dictionary and starts its data. */
+const STREAM_HEAD = ">>\nstream\n";
+
+/** `/Length 123`, and not `/Length1`, which is a font's uncompressed size. */
+const STREAM_LENGTH = /\/Length (\d+) ?/;
+
+function inflateStream(body: string): string {
+  const at = body.indexOf(STREAM_HEAD);
+  if (at === -1) return body;
+  const dictionary = body.slice(0, at + 2);
+  const length = STREAM_LENGTH.exec(dictionary);
+  if (!length) return body;
+
+  // The length says where the data ends; scanning for `endstream` instead
+  // would stop early on compressed bytes that happen to spell it.
+  const start = at + STREAM_HEAD.length;
+  const end = start + Number(length[1]);
+  const data = body.slice(start, end);
+  const content = dictionary.includes("/Filter /FlateDecode")
+    ? inflateSync(Buffer.from(data, "latin1")).toString("latin1")
+    : data;
+  return `${dictionary.replace(STREAM_LENGTH, "")}\nstream\n${content}${body.slice(end)}`;
 }
 
 /**

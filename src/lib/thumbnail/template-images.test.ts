@@ -34,7 +34,7 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { pdfFingerprint } from "@/lib/emit/pdf/determinism";
+import { pdfContentFingerprint } from "@/lib/emit/pdf/determinism";
 import { renderPdf } from "@/lib/emit/pdf/render";
 import { nodeFontResolver } from "@/lib/fonts/paths.node";
 import { TEMPLATES } from "@/lib/resume/templates";
@@ -95,7 +95,7 @@ function regenerate(): void {
 beforeAll(async () => {
   for (const template of TEMPLATES) {
     const { bytes } = await renderPdf(templateSample(template), { resolveFont: nodeFontResolver });
-    const fingerprint = createHash("sha256").update(pdfFingerprint(bytes)).digest("hex");
+    const fingerprint = createHash("sha256").update(pdfContentFingerprint(bytes)).digest("hex");
     rendered.set(template.id, { bytes, fingerprint });
   }
   if (UPDATE) regenerate();
@@ -141,11 +141,12 @@ describe("the template gallery's pictures", () => {
 
   it("render the same PDF twice over", async () => {
     // The pin above is only meaningful if an unchanged template fingerprints
-    // the same on every run. `pdfFingerprint` exists for exactly this, and
-    // this holds it to it on the documents the pin depends on.
+    // the same on every run. `pdfContentFingerprint` exists for exactly this —
+    // and for the same run on another machine, which `determinism.test.ts`
+    // covers — and this holds it to it on the documents the pin depends on.
     const template = TEMPLATES[0]!;
     const { bytes } = await renderPdf(templateSample(template), { resolveFont: nodeFontResolver });
-    const again = createHash("sha256").update(pdfFingerprint(bytes)).digest("hex");
+    const again = createHash("sha256").update(pdfContentFingerprint(bytes)).digest("hex");
     expect(again).toBe(rendered.get(template.id)!.fingerprint);
   });
 });

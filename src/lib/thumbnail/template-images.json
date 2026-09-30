@@ -2,122 +2,122 @@
   "scale": 1,
   "images": {
     "atlas": {
-      "fingerprint": "076bcc00b2cece1c9691bb1c64a5ffb62a45ad6ff6d2376cd3268daa94bb0e81",
+      "fingerprint": "53915bbdb60a4d8ae0eefdb447709131503dc52fa17426f800e5c464e6663441",
       "width": 595,
       "height": 841
     },
     "beacon": {
-      "fingerprint": "e753efad51536b1f0460f54ba34f39294d0000cbaccddf448f024905ccbe4814",
+      "fingerprint": "8027daed3ba9d1bbf62ad98bc047aef23a5ebe37e5c0db960ad108ee1c8ed111",
       "width": 595,
       "height": 841
     },
     "campus": {
-      "fingerprint": "ea72a20552c951221d40a09b9d4b363efebd2a84667d2e6f860e3771d2bcc35e",
+      "fingerprint": "c0d1ccf96bd1a2ba353fed6e3158311059721391132d1f291029fade30378840",
       "width": 595,
       "height": 841
     },
     "chancery": {
-      "fingerprint": "a0b6a00a4872916018b17002a351bf6bf8e3ae6b573d204c637886f64dffc3b8",
+      "fingerprint": "4ea9da515de8cc940d91551fcf237191c40f0204c038806ac557a7bfc40b95ab",
       "width": 595,
       "height": 841
     },
     "civic": {
-      "fingerprint": "7b974d3625ef541fe8e18f5923dc953e12239e203e2572bb150270fc9cbc0323",
+      "fingerprint": "af5b4ebf89cd4fc4f69f77d963b80cf439d428a189ac32efd01bf0bfe49f724c",
       "width": 595,
       "height": 841
     },
     "clarion": {
-      "fingerprint": "d6edb1d6db1629c1aff8d61d07c407329504911d46a44cfc4dc7dec8557edce1",
+      "fingerprint": "4ae17f47746bc4ca3e798a1ce11d86b80e43b722a660106135e98c53228f889a",
       "width": 595,
       "height": 841
     },
     "cohort": {
-      "fingerprint": "6fe612da8f0e90367ee242fac36b556f1649ff5d74583af097a419a6c763370d",
+      "fingerprint": "1b832b60e70a085c3fe6f7bbcdfb4f825c981be0c0e3785aff4c9a6b16dae5bc",
       "width": 595,
       "height": 841
     },
     "ensign": {
-      "fingerprint": "d327a06cbae3bfbecd318f8045027ae5d06af6c7c79f09b2097c04146b192fe4",
+      "fingerprint": "9b77328731e6e0df50fc16daf45787d398ce426ade54c46ec94c7c3a7dc38d92",
       "width": 595,
       "height": 841
     },
     "foundry": {
-      "fingerprint": "e3710e60a04268cea3bb9a707c51feb10bd264d9cbdf49c839f0edfb954e9d8f",
+      "fingerprint": "c4090043552be2fb816dea08f75f4f906048d90a671c71271a90d7f1fddd61a1",
       "width": 595,
       "height": 841
     },
     "hansa": {
-      "fingerprint": "0663e3dca981f8c831a74469d18df6c53b548866e33fa5f38e47f5cabd62474b",
+      "fingerprint": "ba1196441a4cbcfe7ae2757323bcf916337defdcca771b97993cc9327ed0e3fc",
       "width": 595,
       "height": 841
     },
     "harbor": {
-      "fingerprint": "4fb6aa58489691e0ab60b3b17bb1c18912e49311760c62bb1b08c542a824abfd",
+      "fingerprint": "accb111b46d0eddae8b7b854501cc0e6b339167197e6ae53359c8ef739253c17",
       "width": 612,
       "height": 792
     },
     "lattice": {
-      "fingerprint": "6d8fd4565021c90c48733e0ddf78eb37df961b45f7ada0cedf93570b63b46d9e",
+      "fingerprint": "a904d362749bbf83635643aa356e637327b2c2258019a5bfefb15437e948fd94",
       "width": 595,
       "height": 841
     },
     "ledger": {
-      "fingerprint": "0a2005ec75a621b1698dbdfd4181014ad95574cf4e78c60c76e7d59758d57e9d",
+      "fingerprint": "0a356c31b8b5f30bbe8d4bfe92c372302c01d65a45a720a5640a78c4e3922b32",
       "width": 595,
       "height": 841
     },
     "meridian": {
-      "fingerprint": "f90c83f39acc61649206a515126ec3f98a8ff4a7b02223dd74ffaef893db8be9",
+      "fingerprint": "0a06a8998ba735b68b3794acf30352ab1f29be52032e01e39c57205401645f19",
       "width": 595,
       "height": 841
     },
     "monsoon": {
-      "fingerprint": "d6984853ba75a35d404b58daea33fd26b69786a5d730e9b52032b9de0be39990",
+      "fingerprint": "9bd635c46c02a8456acc399f80df3e46f21be0e4d3c4169b4e62f0c299b2a83d",
       "width": 595,
       "height": 841
     },
     "pivot": {
-      "fingerprint": "e44b7496e969b7f0a0ba169d4063e9047e32e4f67b09ec8e23e4ef4f10b42605",
+      "fingerprint": "79c41c1f48d7a2f987956e7db5454dc2c7f0b39c79557c35e4ef1d906c1a8d2a",
       "width": 595,
       "height": 841
     },
     "plainspoken": {
-      "fingerprint": "16c60773630448c224f340de3b5d0e7b3a59518a366dc2200c9aae2bd5907a8e",
+      "fingerprint": "b13390a70302d5edce84a0a6892f2c0e797f2a483046c4b210d11941ac2919d8",
       "width": 595,
       "height": 841
     },
     "quarto": {
-      "fingerprint": "15ec7f248a2e29328fcbc5a02072e8e2fa900a0e54345896c72328542ee2bc94",
+      "fingerprint": "158746bb10f66327a09ba095c2b48c64ebdfdf15550521a98de964442aec7331",
       "width": 595,
       "height": 841
     },
     "relay": {
-      "fingerprint": "81b7097d2ade5b161a05228d817ef23152ccaa20e8fcfc06daa5c72a218f6d28",
+      "fingerprint": "e28c030930b884823f15420952108350b0fdcf0ab0b66e0486b501d2b4e21d84",
       "width": 595,
       "height": 841
     },
     "scholar": {
-      "fingerprint": "3887a7611ea0b3277706ba0f7aa5608248e0def1c27c43c18f28a6e6d4d586cc",
+      "fingerprint": "d75e0401e199e6cdda755b497a1efe42e1985c11af8d00022b807ba4797e954d",
       "width": 595,
       "height": 841
     },
     "tasman": {
-      "fingerprint": "662e97d8e95da58b2360b5e42b8360de3549f47c481caff5b6d522a64198ec25",
+      "fingerprint": "f082b14b0ef5f7ff8f795c7ac69b849fec31f9b98f71dea28d4aad5dbe38fb06",
       "width": 595,
       "height": 841
     },
     "thames": {
-      "fingerprint": "60649946e89fdc16d925be787e44da120302cd1ba0829756ae59647c5dd629df",
+      "fingerprint": "f9ac0aa511225da2927a6a2e20889df70a6509e341a2a7f14dc61f042e753091",
       "width": 595,
       "height": 841
     },
     "vitals": {
-      "fingerprint": "3e763f7688e8d78c96f6799fc6f2d096477c394c18401c90fb1cc760b5936388",
+      "fingerprint": "bfc11e1c2316c33468e469056de05afc622f33cb675d351d2e99a290d9884da6",
       "width": 595,
       "height": 841
     },
     "workbench": {
-      "fingerprint": "787138a94e731a7d224f849d3fe280c6e56f6fadcc6f8a91840bee34b0d09738",
+      "fingerprint": "5b5bb27f7215d60d88ba0040371b9bc1e6637f21b80f87b771197e4c6142925f",
       "width": 595,
       "height": 841
     }
