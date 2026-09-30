@@ -1,9 +1,9 @@
 /**
  * `/guides/[slug]` — one guide (P36).
  *
- * Four of them, and the count is the decision. A thin page that ranks and
+ * Few of them, and the bar is the decision. A thin page that ranks and
  * disappoints costs the reader a click and costs us the one impression we
- * had; forty of those is worse than four that answer their question
+ * had; forty of those is worse than a handful that answer their question
  * completely.
  *
  * Content comes from `lib/guides/guides.ts` as structured blocks rather than
@@ -30,6 +30,13 @@ import { examplesForGuide, otherGuides } from "@/lib/related";
 import { formatContentDate } from "@/lib/content-dates";
 import { Breadcrumbs } from "@/components/marketing/Breadcrumbs";
 import { RelatedLinks } from "@/components/marketing/RelatedLinks";
+
+/**
+ * Which market a guide's conventions are for, when it has one. On the facts
+ * line rather than in a sentence of its own: a reader in the other market
+ * should see it before they start, not find it in the third paragraph.
+ */
+const MARKET_LABEL = { IN: "For India", US: "For the US" } as const;
 
 export function generateStaticParams() {
   return GUIDE_SLUGS.map((slug) => ({ slug }));
@@ -98,8 +105,9 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
             {/* Mono, because it is a measurement of the page rather than a
                 sentence we wrote about it. */}
             <p className="text-faint text-micro font-mono">
-              {guide.minutes} minute read · Updated{" "}
-              <time dateTime={guide.updated}>{formatContentDate(guide.updated)}</time>
+              {guide.minutes} minute read ·{" "}
+              {guide.market ? `${MARKET_LABEL[guide.market]} · ` : null}
+              Updated <time dateTime={guide.updated}>{formatContentDate(guide.updated)}</time>
             </p>
           </Built>
         </PageHeader>

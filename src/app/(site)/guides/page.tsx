@@ -1,9 +1,13 @@
 /**
  * `/guides` — the index (P36).
  *
- * Four guides, listed with what each one answers and how long it takes.
- * Reading time is there so somebody can decide not to read it, which is a
- * better outcome for both of us than a bounce three paragraphs in.
+ * The guides, listed with what each one answers, how long it takes, and the
+ * market it is written for when it is written for one. Reading time is there
+ * so somebody can decide not to read it, which is a better outcome for both
+ * of us than a bounce three paragraphs in.
+ *
+ * The lead does not state a count. It did — "Four of them" — and the count
+ * went stale the day the fifth was written.
  */
 
 import type { Metadata } from "next";
@@ -22,10 +26,13 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Resume guides",
   description:
-    "What an applicant tracking system actually does, writing a resume with no work experience, " +
-    "putting numbers on your bullets, and which file format to send.",
+    "Resume guides that answer one question each, completely: what an ATS does, the fresher " +
+    "format in India, summaries, numbers on bullets, and which file to send.",
   path: "/guides",
 });
+
+/** Worded as on the examples index, so the two lists label a market alike. */
+const MARKET_LABEL = { IN: "For India", US: "For the US" } as const;
 
 export default function GuidesIndexPage() {
   return (
@@ -46,10 +53,10 @@ export default function GuidesIndexPage() {
           </Built>
           <Built className="mt-5">
             <p className={PAGE_LEAD_CLASS}>
-              Four of them, and each answers its question completely or it would not be here. No
-              filler, and no advice repeated because everyone repeats it &mdash; where the honest
-              answer is &ldquo;it depends&rdquo;, it says so and then says what it depends on. Every
-              card carries a reading time, so you can decide not to start.
+              Each one answers its question completely or it would not be here. No filler, and no
+              advice repeated because everyone repeats it &mdash; where the honest answer is
+              &ldquo;it depends&rdquo;, it says so and then says what it depends on. Every card
+              carries a reading time, so you can decide not to start.
             </p>
           </Built>
         </PageHeader>
@@ -71,6 +78,7 @@ export default function GuidesIndexPage() {
                     <p className="text-muted text-small mt-2 leading-relaxed">{guide.summary}</p>
                     <p className="text-faint text-micro mt-3 font-mono">
                       {guide.minutes} minute read
+                      {guide.market ? ` · ${MARKET_LABEL[guide.market]}` : null}
                     </p>
                   </Card>
                 </li>

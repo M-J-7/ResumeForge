@@ -11,8 +11,8 @@
  * ## Chosen, not scored
  *
  * The guide ↔ example pairs are written out below rather than computed from
- * text similarity. There are four guides; a similarity score over them would
- * be a machine for producing surprising links. A table a person can read is
+ * text similarity. There are a handful of guides; a similarity score over them
+ * would be a machine for producing surprising links. A table a person can read is
  * one a person can correct, and `related.test.ts` fails the build if a slug in
  * it stops existing.
  *
@@ -41,6 +41,24 @@ const EXAMPLES_FOR_GUIDE: Readonly<Record<string, readonly string[]>> = {
   ],
   "how-to-quantify-a-bullet": ["sales-representative", "financial-analyst", "project-manager"],
   "resume-file-format": ["accountant", "teacher", "graphic-designer"],
+  "resume-format-for-freshers": ["software-engineer-fresher", "bcom-fresher", "mba-fresher"],
+  "how-to-write-a-resume-summary": [
+    "marketing-manager",
+    "human-resources-manager",
+    "medical-assistant",
+  ],
+  "resume-for-campus-placement": ["software-engineer-fresher", "mba-fresher", "graduate-no-experience"],
+  "how-long-should-a-resume-be": ["project-manager", "mechanical-engineer", "data-analyst"],
+  "cv-vs-resume-vs-biodata": ["bcom-fresher", "bpo-customer-support", "teacher"],
+  "employment-gap-on-resume": ["administrative-assistant", "warehouse-associate", "cashier"],
+  "resume-for-naukri": ["bpo-customer-support", "bcom-fresher", "mba-fresher"],
+  "career-change-resume": ["teacher", "retail-store-manager", "mechanical-engineer"],
+  "resume-for-us-jobs-from-india": ["software-engineer-fresher", "software-developer", "accountant"],
+  "federal-resume-vs-private-resume": [
+    "administrative-assistant",
+    "certified-nursing-assistant",
+    "project-manager",
+  ],
 };
 
 /**
@@ -88,9 +106,30 @@ export function examplesForGuide(guide: Guide): RoleExample[] {
   return bySlug(ROLE_EXAMPLES, EXAMPLES_FOR_GUIDE[guide.slug] ?? []);
 }
 
-/** The other guides, for the end of a guide. */
-export function otherGuides(guide: Guide): Guide[] {
-  return GUIDES.filter((candidate) => candidate.slug !== guide.slug);
+/**
+ * Up to `limit` other guides, for the end of a guide.
+ *
+ * It used to be every other guide, which was right at four and a wall of
+ * links by the tenth. Now the same rules as `relatedExamples`, for the same
+ * reasons. The list starts just after the current guide and wraps, so every
+ * guide is linked from another and none is the one every page happens to
+ * point at. A guide written for one market leads with up to two others for
+ * that market — a fresher in Pune wants the campus-placement guide next, not
+ * the federal one — then guides that hold anywhere, then the other market's.
+ * A guide that holds anywhere takes the rotation as it comes, which is what
+ * carries readers from the general guides into the market ones.
+ */
+export function otherGuides(guide: Guide, limit = 4): Guide[] {
+  const index = GUIDES.findIndex((candidate) => candidate.slug === guide.slug);
+  const rotated = [...GUIDES.slice(index + 1), ...GUIDES.slice(0, index)];
+  if (guide.market === undefined) return rotated.slice(0, limit);
+
+  const sameMarket = rotated.filter((candidate) => candidate.market === guide.market).slice(0, 2);
+  const anywhere = rotated.filter((candidate) => candidate.market === undefined);
+  const otherMarket = rotated.filter(
+    (candidate) => candidate.market !== undefined && candidate.market !== guide.market,
+  );
+  return [...sameMarket, ...anywhere, ...otherMarket].slice(0, limit);
 }
 
 /** Tests only: the hand-written table, so a stale slug can be named. */

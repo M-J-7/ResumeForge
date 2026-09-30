@@ -31,6 +31,41 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-09-30",
     kind: "new",
+    title: "Ten new guides, for India and the US",
+    body:
+      "For India: the resume format for freshers, resumes for campus placement, CV versus resume " +
+      "versus biodata, Naukri and other job portals, and applying to US jobs from India. For " +
+      "anywhere: writing a summary, how long a resume should be, explaining a gap, and changing " +
+      "careers. And for US federal jobs, what USAJOBS needs now that resumes there are capped at " +
+      "two pages. Reading times are now counted from the words instead of estimated, which " +
+      "shortened every earlier guide's.",
+    link: { href: "/guides", label: "Read the guides" },
+  },
+  {
+    date: "2026-09-30",
+    kind: "improved",
+    title: "Match reads the headings real postings use",
+    body:
+      "Job postings arrive with their own headings — “About you”, “What you'll bring”, “A typical " +
+      "day”, “Nice to have”. The Match tab now recognises many more of them, so requirements " +
+      "written under an unusual heading count as requirements, preferences as preferences, and a " +
+      "company's paragraph about itself, its benefits and its office locations stay out of the " +
+      "comparison.",
+  },
+  {
+    date: "2026-09-30",
+    kind: "improved",
+    title: "Imports read resumes made in Word more completely",
+    body:
+      "A resume written in Word and saved as a PDF now imports with its phone number, bullet " +
+      "points, university names and single-date entries intact, and headings such as " +
+      "“Employment”, “Clinical Experience” or “Computer Skills” land in the right section instead " +
+      "of a custom one.",
+    link: { href: "/builder", label: "Import a resume" },
+  },
+  {
+    date: "2026-09-30",
+    kind: "new",
     title: "Every template downloads free as Word or PDF",
     body:
       "Each template on the templates page now has Word and PDF buttons. The file is made in your " +
