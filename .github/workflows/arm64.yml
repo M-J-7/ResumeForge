@@ -1,0 +1,52 @@
+name: arm64 image
+
+# The arm64 build, in a workflow of its own (moved out of CI on 2026-10-01).
+#
+# It proves the image still builds for arm64 — better-sqlite3's native binding
+# and the Next standalone output are exactly the kind of thing that builds on
+# one architecture and not the other — for the day the instance moves to an
+# Ampere A1. The live instance is an E2.1.Micro, which is x86, so nothing is
+# deployed from this build.
+#
+# Inside CI it cost every master run about twenty minutes under QEMU, and CI's
+# master runs are serialized (they publish the image a deploy pulls), so each
+# deploy waited for the previous commit's arm64 build as well as its own
+# checks. Here it runs only when something that can break an arm64 build
+# changes, and a newer run supersedes an older one: it publishes nothing, so a
+# cancelled run loses nothing.
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package.json
+      - pnpm-lock.yaml
+      - prisma/**
+      - .github/workflows/arm64.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-arm64:
+    name: Docker image builds for arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          build-args: |
+            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://sixseconds.tech' }}
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64

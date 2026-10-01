@@ -115,9 +115,10 @@ jobs:
   #
   # amd64 only, deliberately. The E2 micro is x86_64, and adding linux/arm64
   # here would put a twenty-minute QEMU build on the path of every push to
-  # master for an architecture nothing is currently deployed on. The
-  # `docker-arm64` job below still proves arm64 compiles; add the platform here
-  # on the day this moves to A1.
+  # master for an architecture nothing is currently deployed on.
+  # `.github/workflows/arm64.yml` still proves arm64 compiles whenever the
+  # Dockerfile or the dependencies change; add the platform here on the day
+  # this moves to A1.
   publish:
     name: Publish the runtime image
     if: github.event_name == 'push'
@@ -152,33 +153,3 @@ jobs:
             ${{ steps.image.outputs.ref }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-  # The deploy target is an Oracle Ampere A1, which is arm64, and the two
-  # things this image builds from source — better-sqlite3's native binding and
-  # the Next standalone output — are exactly the kind that build on one
-  # architecture and not the other. Finding that out on the instance means
-  # finding it out after provisioning, DNS and TLS, which is the worst place.
-  #
-  # Kept off pull requests deliberately. Under QEMU this takes about twenty
-  # minutes, and paying that on every PR to verify a target that only changes
-  # when the Dockerfile does would make the fast checks above useless. Master
-  # is where a deploy is cut from, so master is where it has to hold.
-  docker-arm64:
-    name: Docker image builds for arm64 (the deploy target)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          build-args: |
-            NEXT_PUBLIC_SITE_URL=${{ vars.SITE_URL || 'https://sixseconds.tech' }}
-          platforms: linux/arm64
-          push: false
-          cache-from: type=gha,scope=arm64
-          cache-to: type=gha,mode=max,scope=arm64
