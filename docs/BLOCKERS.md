@@ -52,6 +52,14 @@ hand (`docker-compose.yml`, `litestream.yml`, both scripts) matched `master`
 in everything but comments, so the reset lost nothing; Litestream kept
 replicating through the restart.
 
+**Redeployed 2026-09-30 and 2026-10-01**, each with plain `sudo
+./deploy/oracle/deploy.sh` after CI was green: `5d02a33` → `3e03e00` (Word
+imports, posting headings) → `48dc55e` (ten guides) → `e459445` (Interview
+tab, lighter builder, search titles) → `8c02b2e` (two-column measurement,
+`/about`, 36 examples). The backup job's first run on the new image swept 800
+orphaned `-wal`/`-shm` files. CI's arm64 build moved to its own workflow on
+2026-10-01, so a deploy no longer waits for it.
+
 **Known risk, not yet a blocker.** Brevo rewrites every link in transactional
 mail through its click tracker and offers no way to disable it over SMTP. The
 sign-in links here are single-use with a 15-minute lifetime, so a mail scanner

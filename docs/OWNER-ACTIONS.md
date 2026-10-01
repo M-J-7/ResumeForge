@@ -20,6 +20,11 @@ this list.
 1. <https://search.google.com/search-console> → **Add property** → **Domain** →
    `sixseconds.tech`. It shows a `TXT` record. Add it at your domain registrar
    (DNS settings for `sixseconds.tech`), wait a few minutes, press **Verify**.
+   *No access to DNS right now?* Choose **URL prefix** →
+   `https://sixseconds.tech/` → **HTML tag** instead, and send me the `content`
+   value of the `google-site-verification` tag (it is not a secret — it is
+   published in the page by design). I add it to the site's metadata, deploy,
+   and you press **Verify**. Bing's `msvalidate.01` tag works the same way.
 2. **Sitemaps** → submit `https://sixseconds.tech/sitemap.xml`.
 3. **URL inspection** → paste each of these, then **Request indexing**:
    `/guides/two-column-resume-ats` (the measurement — the page most likely to earn links), `/`, `/check`, `/templates`, `/examples`, `/guides`, `/resume-keyword-scanner`,
