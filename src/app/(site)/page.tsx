@@ -113,7 +113,7 @@ export const metadata: Metadata = pageMetadata({
   absoluteTitle: `Free ATS resume builder — ${SITE_NAME}`,
   description:
     "Build a resume that parses cleanly, then see exactly what a machine reads back from it. " +
-    "PDF, Word, plain text and JSON Resume, free permanently. No account needed.",
+    "PDF, Word and plain text, free permanently. No account needed.",
   path: "/",
 });
 

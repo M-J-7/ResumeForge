@@ -29,8 +29,8 @@ export const metadata: Metadata = pageMetadata({
   // every line" to the truncation — which is the only part of it a competitor
   // with five hundred generated examples cannot also write.
   description:
-    "Complete resume examples across technology, healthcare, finance, education and sales — " +
-    "each with the plain text a parser reads from it, and why every line is written that way.",
+    "Resume examples for India and the US, from freshers to trades — each with the plain " +
+    "text a parser reads from it, and why every line is written that way.",
   path: "/examples",
 });
 
