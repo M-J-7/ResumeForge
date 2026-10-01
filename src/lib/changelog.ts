@@ -31,6 +31,17 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-10-01",
     kind: "new",
+    title: "Four more: civil engineer fresher, sales executive, truck driver, dental assistant",
+    body:
+      "For India, a B.Tech civil engineering fresher with a site internship and a field sales " +
+      "executive in FMCG distribution. For the US, a Class A CDL truck driver and a certified " +
+      "dental assistant. That makes 36 example resumes, and the two-column measurement covers " +
+      "all of them.",
+    link: { href: "/examples", label: "See the examples" },
+  },
+  {
+    date: "2026-10-01",
+    kind: "new",
     title: "Four more: digital marketing, staff nurse, server, electrician",
     body:
       "For India, a digital marketing executive at a direct-to-consumer brand and a staff nurse on " +

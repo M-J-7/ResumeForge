@@ -21,7 +21,7 @@ Rules every draft follows, because the product's credibility is the pitch:
 Facts you can quote (true on 2026-09-30): free PDF, Word and plain-text
 downloads with no watermark; no sign-up needed; the builder runs in the
 browser and the resume is not uploaded unless you choose to save it to an
-account; 32 example resumes and 15 guides for India and the US; 2,300+ unit
+account; 36 example resumes and 15 guides for India and the US; 2,300+ unit
 tests and 116 end-to-end tests.
 
 ---
@@ -72,19 +72,19 @@ posts below lead with something useful and mention the tool once.
 
 ### r/resumes (US-leaning)
 
-**Title:** I measured what two-column layouts do to resume parsing (32 resumes, two ways of reading a PDF)
+**Title:** I measured what two-column layouts do to resume parsing (36 resumes, two ways of reading a PDF)
 
 > A lot of advice here is "never use two columns, the ATS can't read it". I
-> wanted a number, so I laid out the same 32 resumes in one column and with a
+> wanted a number, so I laid out the same 36 resumes in one column and with a
 > sidebar on either side, and read every PDF back the two ways parsers read a
 > page: in the order the file stores its text, and line by line across it.
 >
 > - One column: every name, email, phone, title, employer and date, and all
->   158 bullets, came through both ways.
+>   174 bullets, came through both ways.
 > - Sidebar, read line by line: about half the bullets came out in two pieces,
 >   with sidebar text glued into the middle.
 > - Sidebar on the left, read in stored order: bullets fine, but the name was
->   misread on all 32, because the sidebar is read first.
+>   misread on all 36, because the sidebar is read first.
 >
 > It's two reading strategies, not any vendor's ATS (those are private); the
 > method and the limits are on the page:

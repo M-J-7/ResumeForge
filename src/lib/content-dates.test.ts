@@ -64,7 +64,7 @@ const PINNED: Readonly<Record<string, string>> = {
   "sales-representative": "2026-09-10@bdaee7676e3a",
   "software-developer": "2026-09-10@01fd55ad4319",
   teacher: "2026-09-10@c8cbf19a77fd",
-  "two-column-resume-ats": "2026-10-01@314d64434b16",
+  "two-column-resume-ats": "2026-10-01@0c18720a302f",
   "what-an-ats-actually-does": "2026-10-01@a4a5bf4c4b94",
   "resume-format-for-freshers": "2026-10-01@94e90db46b97",
   "how-to-write-a-resume-summary": "2026-10-01@756066ca43db",
@@ -80,6 +80,10 @@ const PINNED: Readonly<Record<string, string>> = {
   electrician: "2026-10-01@ea7945bee6b1",
   server: "2026-10-01@d0f8d6c77951",
   "staff-nurse": "2026-10-01@b235dcd7c4ba",
+  "civil-engineer-fresher": "2026-10-01@79a3ebfdbd98",
+  "dental-assistant": "2026-10-01@cceefb1586f2",
+  "sales-executive": "2026-10-01@9303203765e8",
+  "truck-driver": "2026-10-01@fed9c5b95ca0",
 };
 
 const PAGES = [

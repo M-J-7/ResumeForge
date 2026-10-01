@@ -2824,6 +2824,364 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
       settings: { pageSize: "LETTER" },
     }),
   },
+
+  {
+    slug: "civil-engineer-fresher",
+    updated: "2026-10-01",
+    market: "IN",
+    role: "Civil Engineer (Fresher)",
+    occupationTitle: "Civil Engineers",
+    field: "Early career",
+    summary:
+      "A B.Tech civil fresher's first resume — a site internship with checks that caught real errors, and two projects with measured results, for site engineer and QA/QC trainee roles.",
+    notes: [
+      {
+        title: "The site internship leads",
+        body: "Eight weeks on a working site is the closest thing to the job, so it goes above education. Errors caught before a concrete pour are exactly what a site engineer is hired to catch.",
+      },
+      {
+        title: "Projects carry measurements, not just titles",
+        body: "Cube strengths, permeability and litres a year make a final-year project read as engineering. “Project on pervious concrete” alone reads as a topic that was assigned.",
+      },
+      {
+        title: "Software named inside the work",
+        body: "AutoCAD and STAAD.Pro appear in the sentences where they were used, so the skills list has evidence behind it rather than standing alone.",
+      },
+      {
+        title: "No photo, date of birth or declaration",
+        body: "Most private construction firms no longer expect them. Government and PSU recruitment that needs them asks on its own form; the guide to the fresher format explains why they cost more than they give.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "civil-engineer-fresher",
+      contact: contact({
+        fullName: "Karthik Reddy",
+        email: "karthik@example.com",
+        phone: "+91 40 5555 0172",
+        location: "Hyderabad, India",
+      }),
+      summary:
+        "Final-year B.Tech civil engineering student with an eight-week site internship on a 14-storey residential project. Looking for a site engineer or QA/QC trainee role.",
+      experience: [
+        role({
+          id: "cef-r1",
+          title: "Site Engineering Intern",
+          organization: "Godavari Constructions",
+          location: "Hyderabad, India",
+          from: "2025-05",
+          to: "2025-07",
+          bullets: [
+            "Checked reinforcement against drawings before 6 slab pours, catching 3 bar-spacing errors that were corrected before concrete was placed.",
+            "Prepared daily progress and material reports for a 14-storey tower, reconciling cement and steel use to within 2% of the estimate.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "cef-edu",
+          institution: "Deccan Institute of Technology",
+          credential: "B.Tech",
+          field: "Civil Engineering",
+          location: "Hyderabad, India",
+          from: "2022-08",
+          to: "2026-05",
+          result: "8.0 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("cef-sk-1", "Software", ["AutoCAD", "STAAD.Pro", "MS Project", "Excel"]),
+        skills("cef-sk-2", "Site", [
+          "Quantity estimation",
+          "Bar bending schedules",
+          "Concrete testing",
+          "Site documentation",
+        ]),
+      ],
+      projects: [
+        project({
+          id: "cef-p1",
+          name: "Pervious Concrete with Fly Ash",
+          role: "Team of four; mix design and testing",
+          from: "2025-08",
+          to: "2026-03",
+          bullets: [
+            "Tested 36 cube samples of a fly-ash pervious mix, reaching 21 MPa at 28 days while keeping permeability above 4 mm/s.",
+          ],
+        }),
+        project({
+          id: "cef-p2",
+          name: "Hostel Rainwater Harvesting Design",
+          role: "Solo",
+          from: "2024-08",
+          to: "2024-11",
+          bullets: [
+            "Designed a rooftop harvesting system in AutoCAD for the college hostel, sized to collect an estimated 1.4 million litres a year.",
+          ],
+        }),
+      ],
+    }),
+  },
+
+  {
+    slug: "sales-executive",
+    updated: "2026-10-01",
+    market: "IN",
+    role: "Sales Executive",
+    occupationTitle:
+      "Sales Representatives, Wholesale and Manufacturing, Except Technical and Scientific Products",
+    field: "Sales",
+    summary:
+      "A field sales executive three years into FMCG distribution — targets, outlets, collections and new accounts, in the units an area sales manager tracks every month.",
+    notes: [
+      {
+        title: "Target achievement in percent and in rupees",
+        body: "The percentage shows consistency; the crore figure shows the size of the territory behind it. Either alone leaves the area sales manager guessing.",
+      },
+      {
+        title: "Outlets and beats are the territory",
+        body: "How many outlets, on how many weekly beats, and how many new ones were opened is how general trade measures coverage. It is also what an interviewer asks next.",
+      },
+      {
+        title: "Collections count too",
+        body: "A salesperson who collects on time is worth more to a distributor than one who only books orders, so overdue dues brought down get a bullet with the amounts.",
+      },
+      {
+        title: "Languages are listed because the job needs them",
+        body: "Field sales means talking to retailers in their own language, so Marathi and Hindi are in the skills. A two-wheeler and a licence belong on the application form if it asks.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "sales-executive",
+      contact: contact({
+        fullName: "Imran Shaikh",
+        email: "imran@example.com",
+        phone: "+91 20 5555 0148",
+        location: "Pune, India",
+      }),
+      summary:
+        "Sales executive with three years in FMCG general trade, covering 180 outlets across two territories for a national beverage brand's distributor.",
+      experience: [
+        role({
+          id: "sle-r1",
+          title: "Sales Executive",
+          organization: "Sahyadri Distributors",
+          location: "Pune, India",
+          from: "2023-04",
+          bullets: [
+            "Achieved 112% of a ₹1.8 crore annual target in 2025 across 180 outlets on 6 weekly beats.",
+            "Added 42 new outlets in 2025 by mapping unserved streets in the territory, lifting numeric distribution from 61% to 74%.",
+            "Cut dues older than 30 days from ₹9 lakh to ₹2.5 lakh by collecting payment on the same visit as the next order.",
+          ],
+        }),
+        role({
+          id: "sle-r2",
+          title: "Sales Trainee",
+          organization: "Sahyadri Distributors",
+          location: "Pune, India",
+          from: "2022-10",
+          to: "2023-03",
+          bullets: [
+            "Ran a six-week sampling drive at 60 outlets that converted 23 of them into regular stockists.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "sle-edu",
+          institution: "Shivneri College of Commerce",
+          credential: "BBA",
+          field: "Marketing",
+          location: "Pune, India",
+          from: "2019-08",
+          to: "2022-05",
+          result: "7.6 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("sle-sk-1", "Sales", [
+          "Beat planning",
+          "Retail execution",
+          "Order booking",
+          "Collections",
+          "Distributor management",
+        ]),
+        skills("sle-sk-2", "Tools and languages", ["SFA app", "Excel", "Marathi", "Hindi", "English"]),
+      ],
+    }),
+  },
+
+  {
+    slug: "truck-driver",
+    updated: "2026-10-01",
+    market: "US",
+    role: "Truck Driver",
+    occupationTitle: "Heavy and Tractor-Trailer Truck Drivers",
+    field: "Skilled trades",
+    summary:
+      "A Class A CDL driver's resume — loads, on-time rate, safety record and inspections, with the license class and endorsements a carrier's recruiter screens for first.",
+    notes: [
+      {
+        title: "License class and endorsements in the first line",
+        body: "Class A, Hazmat and Tanker are screening requirements, and a recruiter filters on them before reading anything else, so they open the summary.",
+      },
+      {
+        title: "Safety is a record, so it is written as one",
+        body: "Accident-free miles and roadside inspections with no violations are the numbers a carrier's safety department checks. “Safe and reliable driver” says nothing it can verify.",
+      },
+      {
+        title: "Freight and equipment are named",
+        body: "Dry van, reefer and the electronic logging systems used tell a recruiter which loads you can take tomorrow, which is the question behind every driving job posting.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth. The page is set on Letter paper, and the home terminal city tells a recruiter which lanes fit.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "truck-driver",
+      contact: contact({
+        fullName: "Dale Peterson",
+        email: "dale@example.com",
+        phone: "(479) 555-0115",
+        location: "Fort Smith, AR",
+      }),
+      summary:
+        "Class A CDL driver with seven years over the road and regional, 640,000 accident-free miles, and Hazmat and Tanker endorsements. Clean MVR and experienced on ELDs.",
+      experience: [
+        role({
+          id: "trk-r1",
+          title: "Regional Truck Driver",
+          organization: "Ozark Freight Lines",
+          location: "Fort Smith, AR",
+          from: "2022-03",
+          bullets: [
+            "Delivered 2,300 dry-van and reefer loads to distribution centers across 6 states with a 98.6% on-time rate.",
+            "Passed 11 roadside DOT inspections with zero violations by running a 15-point pre-trip check on every dispatch.",
+            "Cut idle time from 22% to 9% of engine hours by planning rest stops around shipper windows, saving about 1,100 gallons of fuel a year.",
+          ],
+        }),
+        role({
+          id: "trk-r2",
+          title: "OTR Truck Driver",
+          organization: "Prairie Line Transport",
+          location: "Fort Smith, AR",
+          from: "2019-02",
+          to: "2022-02",
+          bullets: [
+            "Drove 118,000 miles a year across 48 states with no accidents or cargo claims in 3 years.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "trk-edu",
+          institution: "Arkansas Valley Driving Academy",
+          credential: "CDL Class A Certificate",
+          location: "Fort Smith, AR",
+          from: "2018-10",
+          to: "2019-01",
+        }),
+      ],
+      skillGroups: [
+        skills("trk-sk-1", "Driving", [
+          "Class A CDL",
+          "Hazmat endorsement",
+          "Tanker endorsement",
+          "Dry van",
+          "Reefer",
+          "Pre-trip inspections",
+        ]),
+        skills("trk-sk-2", "Systems", ["Samsara ELD", "Omnitracs", "Trip planning"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "dental-assistant",
+    updated: "2026-10-01",
+    market: "US",
+    role: "Dental Assistant",
+    occupationTitle: "Dental Assistants",
+    field: "Healthcare",
+    summary:
+      "A certified dental assistant's resume — chairside volume, radiographs, sterilization results and the certification a dentist checks before anything else.",
+    notes: [
+      {
+        title: "Certification comes first",
+        body: "DANB certification and a current BLS card are what a practice screens on, so they open the summary. State rules on radiography differ, so name the state's when you hold one.",
+      },
+      {
+        title: "Chairside work in numbers",
+        body: "Patients assisted a day, operatory turnaround and the radiograph retake rate are what a dentist and an office manager actually notice. “Assisted the dentist” is the job title restated.",
+      },
+      {
+        title: "Infection control is evidence when it is tested",
+        body: "Weekly spore tests either pass or they do not, so two years of passes is a fact a practice can rely on. It earns a bullet of its own.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth. The page is set on Letter paper.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "dental-assistant",
+      contact: contact({
+        fullName: "Alyssa Nguyen",
+        email: "alyssa@example.com",
+        phone: "(303) 555-0187",
+        location: "Denver, CO",
+      }),
+      summary:
+        "DANB Certified Dental Assistant with four years chairside in a busy general practice, assisting 14 patients a day across restorative, endodontic and surgical procedures. BLS current.",
+      experience: [
+        role({
+          id: "dna-r1",
+          title: "Dental Assistant",
+          organization: "Cherry Creek Family Dentistry",
+          location: "Denver, CO",
+          from: "2022-06",
+          bullets: [
+            "Prepared and staffed 14 chairside appointments a day across fillings, crowns, root canals and extractions, turning each operatory around in under 8 minutes.",
+            "Took and processed 40 digital radiographs a week in Dexis with a retake rate under 3%.",
+            "Kept every weekly spore test passing for 2 years by rebuilding the sterilization log and checklist the practice now uses.",
+          ],
+        }),
+        role({
+          id: "dna-r2",
+          title: "Dental Assistant Extern",
+          organization: "Front Range Dental Clinic",
+          location: "Denver, CO",
+          from: "2022-02",
+          to: "2022-05",
+          bullets: [
+            "Charted 300 periodontal exams in Dentrix under supervision, with every chart passing the clinic's records audit.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "dna-edu",
+          institution: "Mile High Career College",
+          credential: "Dental Assisting Certificate",
+          location: "Denver, CO",
+          from: "2021-08",
+          to: "2022-05",
+        }),
+      ],
+      skillGroups: [
+        skills("dna-sk-1", "Chairside", [
+          "Four-handed dentistry",
+          "Radiography",
+          "Impressions",
+          "Sterilization",
+          "Patient education",
+        ]),
+        skills("dna-sk-2", "Software and certification", ["Dentrix", "Dexis", "DANB CDA", "BLS"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
 ];
 
 export function getRoleExample(slug: string): RoleExample | null {
