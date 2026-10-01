@@ -28,6 +28,8 @@
  * `/guides` is where it goes.
  */
 
+import COLUMNS from "@/lib/measured/columns.json";
+
 export interface FaqItem {
   /** The question, phrased the way it is searched. */
   question: string;
@@ -44,7 +46,7 @@ export const FAQ: readonly FaqItem[] = [
   {
     question: "Does a two-column resume break ATS parsing?",
     answer:
-      "Often, and in a way you cannot see on the page. We measured it: the same 24 resumes laid out in one column and with a sidebar, each PDF read back the two ways parsers read text. One column came through both intact. With a sidebar, reading line by line across the page glued the columns together and broke about half the bullets, and reading in the order the file stores its text lost the name whenever the sidebar came first. Which way an employer's system reads, it does not say. Single-column text is the only layout that survived both, which is why this tool only makes that kind — and you can check any file you already have, without an account.",
+      `Often, and in a way you cannot see on the page. We measured it: the same ${COLUMNS.resumes} resumes laid out in one column and with a sidebar, each PDF read back the two ways parsers read text. One column came through both intact. With a sidebar, reading line by line across the page glued the columns together and broke about half the bullets, and reading in the order the file stores its text lost the name whenever the sidebar came first. Which way an employer's system reads, it does not say. Single-column text is the only layout that survived both, which is why this tool only makes that kind — and you can check any file you already have, without an account.`,
     link: { href: "/guides/two-column-resume-ats", label: "The measurement, and its limits" },
   },
   {

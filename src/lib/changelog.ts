@@ -31,10 +31,21 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-09-30",
     kind: "new",
+    title: "Four more example resumes: Java developer, HR executive, pharmacy technician, receptionist",
+    body:
+      "For India, a Java developer three years into a product career and an HR executive at a " +
+      "manufacturing plant, both on A4. For the US, a certified pharmacy technician and a " +
+      "front-desk receptionist, on Letter. Each shows the plain text a parser reads from it and " +
+      "why every line is written the way it is.",
+    link: { href: "/examples", label: "See the examples" },
+  },
+  {
+    date: "2026-09-30",
+    kind: "new",
     title: "Measured: what a two-column layout does to parsing",
     body:
-      "We laid out all 24 example resumes in one column and with a sidebar on either side, and " +
-      "read every PDF back the two ways parsers read a page. One column came through both " +
+      "We laid out every example resume on the site in one column and with a sidebar on either " +
+      "side, and read every PDF back the two ways parsers read a page. One column came through both " +
       "intact. With a sidebar, reading line by line broke about half the bullets, and reading " +
       "in stored order lost the name whenever the sidebar came first. The table, the method and " +
       "what it does not show are on the guide.",

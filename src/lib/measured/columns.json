@@ -1,70 +1,70 @@
 {
-  "resumes": 24,
+  "resumes": 28,
   "results": [
     {
       "layout": "one-column",
       "strategy": "pdf-stream-order",
-      "fieldsRecovered": 244,
-      "fieldsTotal": 244,
-      "bulletsIntact": 124,
-      "bulletsTotal": 124,
-      "resumesClean": 24,
+      "fieldsRecovered": 288,
+      "fieldsTotal": 288,
+      "bulletsIntact": 142,
+      "bulletsTotal": 142,
+      "resumesClean": 28,
       "lostByField": {}
     },
     {
       "layout": "one-column",
       "strategy": "pdf-geometric",
-      "fieldsRecovered": 244,
-      "fieldsTotal": 244,
-      "bulletsIntact": 124,
-      "bulletsTotal": 124,
-      "resumesClean": 24,
+      "fieldsRecovered": 288,
+      "fieldsTotal": 288,
+      "bulletsIntact": 142,
+      "bulletsTotal": 142,
+      "resumesClean": 28,
       "lostByField": {}
     },
     {
       "layout": "sidebar-left",
       "strategy": "pdf-stream-order",
-      "fieldsRecovered": 220,
-      "fieldsTotal": 244,
-      "bulletsIntact": 124,
-      "bulletsTotal": 124,
+      "fieldsRecovered": 260,
+      "fieldsTotal": 288,
+      "bulletsIntact": 142,
+      "bulletsTotal": 142,
       "resumesClean": 0,
       "lostByField": {
-        "name": 24
+        "name": 28
       }
     },
     {
       "layout": "sidebar-left",
       "strategy": "pdf-geometric",
-      "fieldsRecovered": 236,
-      "fieldsTotal": 244,
-      "bulletsIntact": 62,
-      "bulletsTotal": 124,
+      "fieldsRecovered": 279,
+      "fieldsTotal": 288,
+      "bulletsIntact": 70,
+      "bulletsTotal": 142,
       "resumesClean": 0,
       "lostByField": {
-        "role.organization": 8
+        "role.organization": 9
       }
     },
     {
       "layout": "sidebar-right",
       "strategy": "pdf-stream-order",
-      "fieldsRecovered": 244,
-      "fieldsTotal": 244,
-      "bulletsIntact": 124,
-      "bulletsTotal": 124,
-      "resumesClean": 24,
+      "fieldsRecovered": 288,
+      "fieldsTotal": 288,
+      "bulletsIntact": 142,
+      "bulletsTotal": 142,
+      "resumesClean": 28,
       "lostByField": {}
     },
     {
       "layout": "sidebar-right",
       "strategy": "pdf-geometric",
-      "fieldsRecovered": 236,
-      "fieldsTotal": 244,
-      "bulletsIntact": 61,
-      "bulletsTotal": 124,
+      "fieldsRecovered": 279,
+      "fieldsTotal": 288,
+      "bulletsIntact": 71,
+      "bulletsTotal": 142,
       "resumesClean": 1,
       "lostByField": {
-        "role.organization": 8
+        "role.organization": 9
       }
     }
   ],

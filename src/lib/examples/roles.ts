@@ -2118,6 +2118,368 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
       settings: { pageSize: "LETTER" },
     }),
   },
+
+  /* --------------------------------------------------------------------- */
+  /* Second batch, India and the US (2026-09-30).                           */
+  /*                                                                        */
+  /* Two experienced Indian roles with heavy portal search — a Java         */
+  /* developer three years in and a plant HR executive — and two US roles   */
+  /* with large demand: a certified pharmacy technician and a front-desk    */
+  /* receptionist. Same bar as every example: lint-clean, the coach         */
+  /* answered on every bullet, invented names and numbers.                  */
+  /* --------------------------------------------------------------------- */
+
+  {
+    slug: "java-developer",
+    updated: "2026-09-30",
+    market: "IN",
+    role: "Java Developer",
+    occupationTitle: "Software Developers",
+    field: "Technology",
+    summary:
+      "A Java developer three years into a product career in Pune — Spring Boot services, with the latency, throughput and incident numbers an engineering manager asks about.",
+    notes: [
+      {
+        title: "The stack lives inside the bullets",
+        body: "Spring Boot, Kafka and PostgreSQL appear in sentences that say what they did, so the skills list is backed by evidence. A portal search for “Spring Boot” finds the word either way; an interviewer can only ask about the bullet.",
+      },
+      {
+        title: "Numbers an engineering manager recognises",
+        body: "Latency, throughput, incidents and test coverage are how backend work is measured. “Worked on microservices” would describe a hundred other profiles in the same search.",
+      },
+      {
+        title: "Notice period and CTC stay on the portal",
+        body: "They are filter fields on Naukri and similar sites, and a resume is forwarded far beyond the recruiter who needed them. Fill them in where the portal asks, not on the page.",
+      },
+      {
+        title: "Education shrinks to one line",
+        body: "Three years in, the degree and CGPA stay, while school marks and the final-year project make way for the work. A campus resume and an experienced one are different documents.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "java-developer",
+      contact: contact({
+        fullName: "Rohan Kulkarni",
+        email: "rohan@example.com",
+        phone: "+91 20 5555 0187",
+        location: "Pune, India",
+      }),
+      summary:
+        "Java developer with three years on order and payment services for a B2B commerce platform. Builds Spring Boot services on Kafka and PostgreSQL, and is on call for them.",
+      experience: [
+        role({
+          id: "jvd-r1",
+          title: "Software Engineer II",
+          organization: "Tradewind Commerce",
+          location: "Pune, India",
+          from: "2024-04",
+          bullets: [
+            "Cut p95 latency on the order-placement API from 820 ms to 190 ms by replacing per-item database calls with one batched PostgreSQL query.",
+            "Rebuilt invoice generation on Kafka consumers, raising throughput from 40 to 300 invoices a minute during month-end peaks.",
+            "Reduced production incidents on the payments service from 9 a quarter to 2 by adding contract tests and idempotent retries.",
+          ],
+        }),
+        role({
+          id: "jvd-r2",
+          title: "Software Engineer",
+          organization: "Tradewind Commerce",
+          location: "Pune, India",
+          from: "2022-07",
+          to: "2024-03",
+          bullets: [
+            "Built the GST e-invoicing integration in Spring Boot that now registers 45,000 invoices a month with the government portal.",
+            "Wrote 160 JUnit and Testcontainers tests for the catalogue service, lifting line coverage from 38% to 81%.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "jvd-edu",
+          institution: "Deccan College of Engineering",
+          credential: "BE",
+          field: "Computer Engineering",
+          location: "Pune, India",
+          from: "2018-08",
+          to: "2022-05",
+          result: "8.1 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("jvd-sk-1", "Languages", ["Java", "SQL", "Kotlin"]),
+        skills("jvd-sk-2", "Frameworks and tools", [
+          "Spring Boot",
+          "Kafka",
+          "PostgreSQL",
+          "Redis",
+          "Docker",
+          "Kubernetes",
+          "JUnit",
+          "Testcontainers",
+        ]),
+      ],
+    }),
+  },
+
+  {
+    slug: "hr-executive",
+    updated: "2026-09-30",
+    market: "IN",
+    role: "HR Executive",
+    occupationTitle: "Human Resources Specialists",
+    field: "Operations",
+    summary:
+      "An HR executive two years into a manufacturing plant role — hiring, induction, statutory compliance and payroll inputs, each with the number a plant HR head checks.",
+    notes: [
+      {
+        title: "Compliance becomes evidence when it has a count",
+        body: "PF and ESI returns are routine, so the bullet says what changed: every filing on time for a full year, after clearing a backlog. Routine done reliably is worth saying once, with its scale.",
+      },
+      {
+        title: "Hiring is measured in volume and days",
+        body: "Positions closed and days to fill are how a plant judges recruitment, and they answer an interviewer's first question before it is asked.",
+      },
+      {
+        title: "The tools are named where they were used",
+        body: "Naukri RMS and greytHR appear in the bullets as well as the skills list. A portal search finds the name; an interviewer gets something specific to ask about.",
+      },
+      {
+        title: "The MBA stays, the school marks go",
+        body: "Two years into the job, the postgraduate degree remains on one line and the 10th and 12th rows are gone. The work is now the stronger evidence.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "hr-executive",
+      contact: contact({
+        fullName: "Sneha Pillai",
+        email: "sneha@example.com",
+        phone: "+91 44 5555 0123",
+        location: "Chennai, India",
+      }),
+      summary:
+        "HR executive with two years at an automotive components plant of 650 people, covering recruitment, induction, statutory compliance and payroll inputs.",
+      experience: [
+        role({
+          id: "hre-r1",
+          title: "HR Executive",
+          organization: "Sriram Auto Components",
+          location: "Chennai, India",
+          from: "2024-06",
+          bullets: [
+            "Closed 140 shop-floor and staff positions in 2025, cutting average time to fill from 38 days to 21 by screening on Naukri RMS against a fixed checklist.",
+            "Filed all 24 monthly PF and ESI returns on time for 650 employees in 2025, after clearing a four-month backlog in the first quarter.",
+            "Rebuilt the induction programme as a two-day plan with a named buddy, lowering 90-day attrition among new operators from 24% to 11%.",
+          ],
+        }),
+        role({
+          id: "hre-r2",
+          title: "HR Trainee",
+          organization: "Sriram Auto Components",
+          location: "Chennai, India",
+          from: "2023-12",
+          to: "2024-05",
+          bullets: [
+            "Reconciled biometric attendance into greytHR for 3 payroll cycles, resolving 210 mismatches before each payroll cut-off.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "hre-edu",
+          institution: "Coromandel School of Management",
+          credential: "MBA",
+          field: "Human Resource Management",
+          location: "Chennai, India",
+          from: "2022-07",
+          to: "2024-05",
+          result: "7.9 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("hre-sk-1", "HR operations", [
+          "Recruitment",
+          "Induction",
+          "PF and ESI compliance",
+          "Payroll inputs",
+          "Employee records",
+        ]),
+        skills("hre-sk-2", "Tools", ["Naukri RMS", "greytHR", "Excel", "Google Workspace"]),
+      ],
+    }),
+  },
+
+  {
+    slug: "pharmacy-technician",
+    updated: "2026-09-30",
+    market: "US",
+    role: "Pharmacy Technician",
+    occupationTitle: "Pharmacy Technicians",
+    field: "Healthcare",
+    summary:
+      "A certified pharmacy technician's resume from a busy retail pharmacy — prescription volume, accuracy, and the insurance work that keeps the pickup line moving.",
+    notes: [
+      {
+        title: "Certification and registration come first",
+        body: "PTCB certification and the state board registration are screening requirements, so they are in the first line of the summary. A hiring pharmacist checks them before reading anything else.",
+      },
+      {
+        title: "Volume and accuracy, not duties",
+        body: "Prescriptions filled a day, the error rate on audits and rejected claims resolved are what a pharmacy manager is measured on. “Assisted the pharmacist” describes every applicant.",
+      },
+      {
+        title: "Insurance work earns its own bullet",
+        body: "Fixing rejected claims and chasing prior authorizations saves the pharmacist time, and it is a real reason to choose one technician over another, so it gets a number.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth. The page is set on Letter paper, and the state of registration is spelled out because a multi-state employer checks it.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "pharmacy-technician",
+      contact: contact({
+        fullName: "Jasmine Carter",
+        email: "jasmine@example.com",
+        phone: "(602) 555-0163",
+        location: "Phoenix, AZ",
+      }),
+      summary:
+        "PTCB-certified pharmacy technician with three years in a high-volume retail pharmacy, registered with the Arizona State Board of Pharmacy.",
+      experience: [
+        role({
+          id: "pht-r1",
+          title: "Certified Pharmacy Technician",
+          organization: "Desert Bloom Pharmacy",
+          location: "Phoenix, AZ",
+          from: "2023-08",
+          bullets: [
+            "Filled 280 prescriptions a day for pharmacist verification with a 0.2% error rate on quarterly audits.",
+            "Resolved 60 rejected insurance claims a week by correcting billing codes and requesting prior authorizations, cutting the average wait at pickup by 10 minutes.",
+            "Reorganized will-call bins by pickup date, reducing return-to-stock work from 6 hours a week to 2.",
+          ],
+        }),
+        role({
+          id: "pht-r2",
+          title: "Pharmacy Technician Trainee",
+          organization: "Desert Bloom Pharmacy",
+          location: "Phoenix, AZ",
+          from: "2022-11",
+          to: "2023-07",
+          bullets: [
+            "Counted and packaged 150 prescriptions a day under supervision, then passed the PTCB exam on the first attempt in July 2023.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "pht-edu",
+          institution: "Saguaro Community College",
+          credential: "Pharmacy Technician Certificate",
+          location: "Phoenix, AZ",
+          from: "2022-01",
+          to: "2022-10",
+        }),
+      ],
+      skillGroups: [
+        skills("pht-sk-1", "Pharmacy", [
+          "Prescription filling",
+          "Insurance billing",
+          "Prior authorizations",
+          "Inventory control",
+          "Controlled substance counts",
+        ]),
+        skills("pht-sk-2", "Systems", ["PioneerRx", "Pyxis", "Microsoft Excel"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "receptionist",
+    updated: "2026-09-30",
+    market: "US",
+    role: "Receptionist",
+    occupationTitle: "Receptionists and Information Clerks",
+    field: "Operations",
+    summary:
+      "A front-desk resume from a busy dental practice and a property office — calls, scheduling, no-shows and payments, written as the numbers an office manager watches.",
+    notes: [
+      {
+        title: "The front desk is measured in calls and empty chairs",
+        body: "Calls answered, appointments booked and the no-show rate are what an office manager watches each week. A bullet that moves one of them says more than “greeted patients warmly”.",
+      },
+      {
+        title: "Software is named, because postings name it",
+        body: "Dentrix, RingCentral and Microsoft 365 appear because front-desk postings ask for them by name, and a recruiter's search for one should find this resume.",
+      },
+      {
+        title: "Two desks, two kinds of work",
+        body: "A dental practice and a property office ask for different things, so each role keeps the bullets that show its own work rather than repeating “answered phones” twice.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth — US employers do not expect them. The page is set on Letter paper.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "receptionist",
+      contact: contact({
+        fullName: "Taylor Brooks",
+        email: "taylor@example.com",
+        phone: "(919) 555-0178",
+        location: "Raleigh, NC",
+      }),
+      summary:
+        "Front-desk receptionist with four years across a six-chair dental practice and a property management office, handling 90 calls a day, scheduling and patient payments.",
+      experience: [
+        role({
+          id: "rcp-r1",
+          title: "Front Desk Receptionist",
+          organization: "Oakwood Family Dental",
+          location: "Raleigh, NC",
+          from: "2023-02",
+          bullets: [
+            "Answered 90 calls a day and scheduled 6 dental chairs in Dentrix, keeping 2 emergency slots open every day of the week.",
+            "Cut the no-show rate from 14% to 6% by replacing a single reminder call with a text two days ahead and a call the day before.",
+            "Reduced balances more than 60 days overdue from $18,000 to $7,500 in a year by collecting co-pays and balances at checkout.",
+          ],
+        }),
+        role({
+          id: "rcp-r2",
+          title: "Receptionist",
+          organization: "Capitol Property Group",
+          location: "Raleigh, NC",
+          from: "2021-06",
+          to: "2023-01",
+          bullets: [
+            "Logged 40 maintenance requests a week from 300 rental units into the work-order system, routing each to a technician within 2 hours.",
+            "Rebuilt the package log in Microsoft 365, ending the 15 lost-package complaints the office had averaged each quarter.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "rcp-edu",
+          institution: "Capital Area Community College",
+          credential: "Certificate",
+          field: "Office Administration",
+          location: "Raleigh, NC",
+          from: "2020-08",
+          to: "2021-05",
+        }),
+      ],
+      skillGroups: [
+        skills("rcp-sk-1", "Front desk", [
+          "Multi-line phones",
+          "Appointment scheduling",
+          "Patient check-in",
+          "Payment collection",
+          "Insurance verification",
+        ]),
+        skills("rcp-sk-2", "Software", ["Dentrix", "RingCentral", "Microsoft 365"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
 ];
 
 export function getRoleExample(slug: string): RoleExample | null {

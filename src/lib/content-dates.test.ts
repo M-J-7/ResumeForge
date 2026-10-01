@@ -32,6 +32,10 @@ function contentHash(entry: { updated: string }): string {
 
 /** `slug` → `updated@hash`, true when written. */
 const PINNED: Readonly<Record<string, string>> = {
+  "java-developer": "2026-09-30@4c4b52de4f5b",
+  "hr-executive": "2026-09-30@feb55ec2fcaf",
+  "pharmacy-technician": "2026-09-30@c2b82d6b779d",
+  "receptionist": "2026-09-30@0e94a2287024",
   cashier: "2026-09-29@009c19066838",
   "medical-assistant": "2026-09-29@7dc4d23ae958",
   "warehouse-associate": "2026-09-29@d4270f4e611d",
@@ -60,7 +64,7 @@ const PINNED: Readonly<Record<string, string>> = {
   "sales-representative": "2026-09-10@bdaee7676e3a",
   "software-developer": "2026-09-10@01fd55ad4319",
   teacher: "2026-09-10@c8cbf19a77fd",
-  "two-column-resume-ats": "2026-09-30@bd52a248e320",
+  "two-column-resume-ats": "2026-09-30@31f76208379e",
   "what-an-ats-actually-does": "2026-09-30@a4a5bf4c4b94",
   "resume-format-for-freshers": "2026-09-30@94e90db46b97",
   "how-to-write-a-resume-summary": "2026-09-30@756066ca43db",

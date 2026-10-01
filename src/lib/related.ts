@@ -42,16 +42,12 @@ const EXAMPLES_FOR_GUIDE: Readonly<Record<string, readonly string[]>> = {
   "how-to-quantify-a-bullet": ["sales-representative", "financial-analyst", "project-manager"],
   "resume-file-format": ["accountant", "teacher", "graphic-designer"],
   "resume-format-for-freshers": ["software-engineer-fresher", "bcom-fresher", "mba-fresher"],
-  "how-to-write-a-resume-summary": [
-    "marketing-manager",
-    "human-resources-manager",
-    "medical-assistant",
-  ],
+  "how-to-write-a-resume-summary": ["marketing-manager", "pharmacy-technician", "receptionist"],
   "resume-for-campus-placement": ["software-engineer-fresher", "mba-fresher", "graduate-no-experience"],
   "how-long-should-a-resume-be": ["project-manager", "mechanical-engineer", "data-analyst"],
   "cv-vs-resume-vs-biodata": ["bcom-fresher", "bpo-customer-support", "teacher"],
   "employment-gap-on-resume": ["administrative-assistant", "warehouse-associate", "cashier"],
-  "resume-for-naukri": ["bpo-customer-support", "bcom-fresher", "mba-fresher"],
+  "resume-for-naukri": ["java-developer", "hr-executive", "bpo-customer-support"],
   "career-change-resume": ["teacher", "retail-store-manager", "mechanical-engineer"],
   "resume-for-us-jobs-from-india": ["software-engineer-fresher", "software-developer", "accountant"],
   "two-column-resume-ats": [
