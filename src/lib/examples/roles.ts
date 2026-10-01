@@ -2480,6 +2480,350 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
       settings: { pageSize: "LETTER" },
     }),
   },
+
+  {
+    slug: "digital-marketing-executive",
+    updated: "2026-10-01",
+    market: "IN",
+    role: "Digital Marketing Executive",
+    occupationTitle: "Search Marketing Strategists",
+    field: "Marketing",
+    summary:
+      "A digital marketing executive two years into a direct-to-consumer brand — paid search, Meta ads and SEO, written as the cost, return and traffic numbers a growth lead reviews every week.",
+    notes: [
+      {
+        title: "Every channel carries its own number",
+        body: "Return on ad spend for Shopping, cost per purchase for Meta, organic sessions for SEO: each bullet uses the measure its channel is judged on, so a reader can compare like with like.",
+      },
+      {
+        title: "No vanity metrics",
+        body: "Impressions, reach and follower counts are left out. A reader cannot tell what they were worth, and an interviewer will ask what they turned into.",
+      },
+      {
+        title: "Budgets in lakh, as the brand reports them",
+        body: "An Indian D2C team speaks in lakh a month, and written that way the budget reads as fluent. For an application abroad, convert it to the local currency at the rate of the time.",
+      },
+      {
+        title: "The tools are named where they were used",
+        body: "Google Ads, Meta Ads Manager, GA4 and Looker Studio appear in the bullets as well as the skills list, so each claim in the list has a sentence behind it.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "digital-marketing-executive",
+      contact: contact({
+        fullName: "Aditi Sharma",
+        email: "aditi@example.com",
+        phone: "+91 22 5555 0164",
+        location: "Mumbai, India",
+      }),
+      summary:
+        "Digital marketing executive with two years at a direct-to-consumer skincare brand, running Google Ads, Meta ads and SEO on a monthly budget of ₹18 lakh.",
+      experience: [
+        role({
+          id: "dme-r1",
+          title: "Digital Marketing Executive",
+          organization: "Kesar & Co. Skincare",
+          location: "Mumbai, India",
+          from: "2024-04",
+          bullets: [
+            "Raised return on ad spend on Google Shopping from 2.1 to 3.4 by regrouping 40 product groups by margin instead of category.",
+            "Cut Meta cost per purchase from ₹610 to ₹380 by testing 24 new creatives a month and pausing any that missed target within 4 days.",
+            "Grew organic sessions from 18,000 to 52,000 a month in a year by publishing 30 ingredient guides written for queries customers already searched.",
+          ],
+        }),
+        role({
+          id: "dme-r2",
+          title: "Digital Marketing Intern",
+          organization: "Brightlane Media",
+          location: "Mumbai, India",
+          from: "2023-10",
+          to: "2024-03",
+          bullets: [
+            "Built weekly performance dashboards in Looker Studio for 6 clients, replacing a manual report that took 5 hours a week.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "dme-edu",
+          institution: "Western Suburbs College of Commerce",
+          credential: "BMS",
+          field: "Marketing",
+          location: "Mumbai, India",
+          from: "2020-08",
+          to: "2023-05",
+          result: "8.2 CGPA",
+        }),
+      ],
+      skillGroups: [
+        skills("dme-sk-1", "Channels", ["Google Ads", "Meta Ads Manager", "SEO", "Email marketing"]),
+        skills("dme-sk-2", "Tools", ["Google Analytics 4", "Looker Studio", "Shopify", "Semrush"]),
+      ],
+    }),
+  },
+
+  {
+    slug: "staff-nurse",
+    updated: "2026-10-01",
+    market: "IN",
+    role: "Staff Nurse",
+    occupationTitle: "Registered Nurses",
+    field: "Healthcare",
+    summary:
+      "A B.Sc Nursing graduate three years on an adult medical ward in India — patients a shift, audit results and emergencies handled, with the registration a nursing superintendent checks first.",
+    notes: [
+      {
+        title: "The council registration is in the first lines",
+        body: "A hospital verifies state nursing council registration before anything else, so the summary names the council. The registration number itself goes on the application form, where it is asked for.",
+      },
+      {
+        title: "A ward is measured in patients, audits and errors",
+        body: "Patients a shift, the documentation audit score and medication errors are what a nursing superintendent reviews. “Provided compassionate care” is true of every applicant and checkable for none.",
+      },
+      {
+        title: "BLS and ACLS appear with the clinical skills",
+        body: "Life-support certification is a screening item for ward and ICU roles, so it sits where a recruiter scans for it, beside the clinical skills.",
+      },
+      {
+        title: "For an application abroad",
+        body: "Overseas employers screen on their own licensing first: the NCLEX for the US, registration with the UK's Nursing and Midwifery Council, a licensing exam in the Gulf. Add the one you have passed to the summary's first line.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "staff-nurse",
+      contact: contact({
+        fullName: "Divya Menon",
+        email: "divya@example.com",
+        phone: "+91 80 5555 0139",
+        location: "Bengaluru, India",
+      }),
+      summary:
+        "Staff nurse with three years on a 30-bed adult medical ward at a NABH-accredited hospital. B.Sc Nursing, registered with the Karnataka State Nursing Council, and certified in BLS and ACLS.",
+      experience: [
+        role({
+          id: "stn-r1",
+          title: "Staff Nurse",
+          organization: "Sahyadri Multispeciality Hospital",
+          location: "Bengaluru, India",
+          from: "2023-07",
+          bullets: [
+            "Cared for 6 to 8 patients a shift on a 30-bed medical ward, including 2 high-dependency beds, with no medication errors found in 2025 audits.",
+            "Raised the ward's NABH documentation audit score from 78% to 94% by introducing a bedside checklist at every shift handover.",
+            "Led the first response on 14 rapid-response calls in 2025, starting basic life support within a minute of each alarm.",
+          ],
+        }),
+        role({
+          id: "stn-r2",
+          title: "Nursing Intern",
+          organization: "Sahyadri Multispeciality Hospital",
+          location: "Bengaluru, India",
+          from: "2022-08",
+          to: "2023-06",
+          bullets: [
+            "Logged 1,040 supervised clinical hours across medicine, surgery, paediatrics and the ICU, with every competency signed off by the ward in-charge.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "stn-edu",
+          institution: "Cauvery College of Nursing",
+          credential: "B.Sc Nursing",
+          location: "Bengaluru, India",
+          from: "2019-08",
+          to: "2023-06",
+          result: "76%",
+        }),
+      ],
+      skillGroups: [
+        skills("stn-sk-1", "Clinical", [
+          "Medication administration",
+          "IV cannulation",
+          "Patient assessment",
+          "Wound care",
+          "Infection control",
+        ]),
+        skills("stn-sk-2", "Certifications", ["BLS", "ACLS"]),
+      ],
+    }),
+  },
+
+  {
+    slug: "server",
+    updated: "2026-10-01",
+    market: "US",
+    role: "Server",
+    occupationTitle: "Waiters and Waitresses",
+    field: "Retail and hospitality",
+    summary:
+      "A restaurant server's resume with the numbers a general manager knows — covers, check average, add-on sales — and the alcohol and food-handler cards a hiring manager checks first.",
+    notes: [
+      {
+        title: "Covers and check average are a server's numbers",
+        body: "They show volume and selling, which is what a general manager is hiring for. “Provided excellent customer service” is on every application in the pile and proves nothing.",
+      },
+      {
+        title: "Cards go in the summary, with their state",
+        body: "A seller-server certification and a food handler card are required to work a shift, so they sit in the first lines where a manager screening for them will look.",
+      },
+      {
+        title: "Training new hires signals trust",
+        body: "Being asked to train new servers says the manager relies on you. It gets its own bullet, with a count and what changed because of it.",
+      },
+      {
+        title: "US conventions: Letter, city and state",
+        body: "No street address, photo or date of birth — US employers do not expect them. The page is set on Letter paper.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "server",
+      contact: contact({
+        fullName: "Jordan Reyes",
+        email: "jordan@example.com",
+        phone: "(512) 555-0191",
+        location: "Austin, TX",
+      }),
+      summary:
+        "Server with four years in full-service restaurants, including two at a 180-seat steakhouse. TABC seller-server certified, with a current Texas food handler card.",
+      experience: [
+        role({
+          id: "srv-r1",
+          title: "Server",
+          organization: "Copper Oak Steakhouse",
+          location: "Austin, TX",
+          from: "2024-03",
+          bullets: [
+            "Served 45 to 60 covers a night in a 6-table section, with a $94 check average against a house average of $81.",
+            "Raised dessert and after-dinner drink orders to 31% of tables by suggesting a pairing with each entrée, the highest rate on the floor in 2025.",
+            "Trained 9 new servers on the menu, the POS and wine service with a two-shift shadowing plan the manager now uses for every hire.",
+          ],
+        }),
+        role({
+          id: "srv-r2",
+          title: "Server",
+          organization: "Lakeview Diner",
+          location: "Austin, TX",
+          from: "2022-01",
+          to: "2024-02",
+          bullets: [
+            "Ran 20 tables an hour at weekend brunch peaks on Toast POS, keeping average ticket times under 14 minutes.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "srv-edu",
+          institution: "Barton Ridge High School",
+          credential: "High School Diploma",
+          location: "Austin, TX",
+          from: "2017-08",
+          to: "2021-05",
+        }),
+      ],
+      skillGroups: [
+        skills("srv-sk-1", "Service", [
+          "Fine dining service",
+          "Wine pairing",
+          "Large-party service",
+          "Upselling",
+        ]),
+        skills("srv-sk-2", "Systems and cards", [
+          "Toast POS",
+          "OpenTable",
+          "TABC seller-server",
+          "Texas food handler card",
+        ]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
+
+  {
+    slug: "electrician",
+    updated: "2026-10-01",
+    market: "US",
+    role: "Electrician",
+    occupationTitle: "Electricians",
+    field: "Skilled trades",
+    summary:
+      "A licensed journeyman electrician's resume — commercial fit-outs and service work measured in jobs, first-time inspections and callbacks, with the license and its state up front.",
+    notes: [
+      {
+        title: "License and state first",
+        body: "A journeyman license is a legal requirement for the work, and it is issued by a state, so both are in the first line. An employer checks them before reading anything else.",
+      },
+      {
+        title: "Inspections and callbacks are the quality numbers",
+        body: "First-time inspection passes and the callback rate are how a contractor judges an electrician's work, and they answer the interview's first question before it is asked.",
+      },
+      {
+        title: "The code edition is named",
+        body: "Jurisdictions adopt the National Electrical Code on their own schedule, so “works to NEC 2023” tells an employer exactly which rules you build to.",
+      },
+      {
+        title: "The apprenticeship is its own role",
+        body: "Four years of supervised hours are what the license rests on. Listing them as a role, with the hours, shows the path to the license rather than leaving a gap before it.",
+      },
+    ],
+    resume: exampleResume({
+      slug: "electrician",
+      contact: contact({
+        fullName: "Marcus Hill",
+        email: "marcus.hill@example.com",
+        phone: "(817) 555-0126",
+        location: "Fort Worth, TX",
+      }),
+      summary:
+        "Licensed journeyman electrician (Texas) with eight years in commercial fit-outs and service work, the last four leading a two-person crew. OSHA 30 certified; works to NEC 2023.",
+      experience: [
+        role({
+          id: "elc-r1",
+          title: "Journeyman Electrician",
+          organization: "Lone Star Electrical Contractors",
+          location: "Fort Worth, TX",
+          from: "2022-05",
+          bullets: [
+            "Led a 2-person crew on 38 commercial tenant fit-outs, passing 36 of 38 city inspections on the first visit.",
+            "Cut service callbacks from 7% to 2% of jobs by adding a torque and labeling check to every panel before close-out.",
+            "Installed and commissioned 14 EV charging stations across 3 retail sites, finishing each site within its quoted 3 days.",
+          ],
+        }),
+        role({
+          id: "elc-r2",
+          title: "Apprentice Electrician",
+          organization: "Lone Star Electrical Contractors",
+          location: "Fort Worth, TX",
+          from: "2018-03",
+          to: "2022-04",
+          bullets: [
+            "Logged 8,000 supervised hours on conduit runs, wire pulls and panel work, qualifying for the journeyman exam and passing it on the first attempt.",
+          ],
+        }),
+      ],
+      education: [
+        study({
+          id: "elc-edu",
+          institution: "North Texas Electrical Training Center",
+          credential: "Apprenticeship Certificate",
+          field: "Electrical Construction",
+          location: "Fort Worth, TX",
+          from: "2018-03",
+          to: "2022-04",
+        }),
+      ],
+      skillGroups: [
+        skills("elc-sk-1", "Electrical", [
+          "Commercial wiring",
+          "Panel installation",
+          "Conduit bending",
+          "Troubleshooting",
+          "EV charger installation",
+        ]),
+        skills("elc-sk-2", "Codes and safety", ["NEC 2023", "OSHA 30", "Lockout/tagout"]),
+      ],
+      settings: { pageSize: "LETTER" },
+    }),
+  },
 ];
 
 export function getRoleExample(slug: string): RoleExample | null {

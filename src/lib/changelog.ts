@@ -31,6 +31,17 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-10-01",
     kind: "new",
+    title: "Four more: digital marketing, staff nurse, server, electrician",
+    body:
+      "For India, a digital marketing executive at a direct-to-consumer brand and a staff nurse on " +
+      "a hospital medical ward. For the US, a restaurant server and a licensed journeyman " +
+      "electrician. The two-column measurement now covers all 32 example resumes, with the same " +
+      "result.",
+    link: { href: "/examples", label: "See the examples" },
+  },
+  {
+    date: "2026-10-01",
+    kind: "new",
     title: "Four more example resumes: Java developer, HR executive, pharmacy technician, receptionist",
     body:
       "For India, a Java developer three years into a product career and an HR executive at a " +
