@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import { SITE_DESCRIPTION, SITE_NAME, siteOrigin } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, searchVerification, siteOrigin } from "@/lib/site";
 import { THEME_SCRIPT } from "@/lib/theme";
 import { PageViews } from "@/components/shell/PageViews";
 import "./globals.css";
@@ -90,6 +90,8 @@ export const metadata: Metadata = {
    * is full of dates that qualify.
    */
   formatDetection: { telephone: false },
+  /** Search Console and Bing ownership tags, once the owner has pasted them. */
+  verification: searchVerification(),
 };
 
 /** See the `<noscript>` block below. Kept out of the JSX so it stays one line. */

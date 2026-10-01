@@ -59,6 +59,31 @@ export function isPublicDeployment(): boolean {
 export const REPO_URL = "https://github.com/M-J-7/ResumeForge";
 
 /**
+ * Site-ownership codes for Google Search Console and Bing Webmaster Tools
+ * (`docs/OWNER-ACTIONS.md`, item 1), for the meta-tag way of verifying.
+ *
+ * Not secrets: each search engine reads its code out of every page's
+ * `<head>`, which is the whole method. An empty string prints nothing. The
+ * owner pastes the `content` value of the tag the console shows — the code,
+ * not the whole `<meta>` element — and the next deploy carries it.
+ */
+export const SEARCH_VERIFICATION = {
+  google: "",
+  bing: "",
+} as const;
+
+/** The `verification` block for the root metadata, or nothing to print. */
+export function searchVerification(): { google?: string; other?: Record<string, string> } | undefined {
+  const google = SEARCH_VERIFICATION.google.trim();
+  const bing = SEARCH_VERIFICATION.bing.trim();
+  if (!google && !bing) return undefined;
+  return {
+    ...(google ? { google } : {}),
+    ...(bing ? { other: { "msvalidate.01": bing } } : {}),
+  };
+}
+
+/**
  * A repository-relative path as a URL on the default branch.
  *
  * Segments are encoded because one of the files this links to is

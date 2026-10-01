@@ -1,0 +1,55 @@
+name: Uptime
+
+# A free uptime check that needs no account anywhere (OWNER-ACTIONS item 3).
+#
+# Every ten minutes a runner asks the live site whether it is up: the health
+# endpoint, which reaches the database, and the home page, which is what a
+# visitor gets. Each gets three tries twenty seconds apart, so the half-minute
+# restart of a deploy does not raise an alarm. When all three fail the job
+# fails, and GitHub emails whoever last changed the schedule below — the
+# repository owner — about a failed scheduled run.
+#
+# What it is not: a five-minute pager. GitHub delays scheduled runs when it is
+# busy, sometimes by a quarter of an hour, and disables schedules in a public
+# repository after sixty days with no commits. UptimeRobot (OWNER-ACTIONS)
+# still pages faster; this is the floor that exists without anyone signing up.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: sixseconds.tech answers
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Health endpoint and home page
+        run: |
+          check() {
+            url="$1"
+            expect="$2"
+            for attempt in 1 2 3; do
+              status=$(curl -s -o body.txt -w "%{http_code}" --max-time 20 "$url" || true)
+              if [ "$status" = "200" ] && grep -q "$expect" body.txt; then
+                echo "ok    $url"
+                return 0
+              fi
+              echo "try $attempt: $url answered $status"
+              sleep 20
+            done
+            echo "::error title=Site down::$url did not answer 200 with \"$expect\" in three tries"
+            return 1
+          }
+          failed=0
+          check "https://sixseconds.tech/api/health" '"status":"ok"' || failed=1
+          check "https://sixseconds.tech/" "Six Seconds Resume" || failed=1
+          exit "$failed"

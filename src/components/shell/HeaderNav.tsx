@@ -169,7 +169,10 @@ export function HeaderNav({ links, showCta = true }: HeaderNavProps) {
             // applies. `items-stretch` is what lets a link fill the bar, so
             // its marker can land on the hairline with no magic number.
             "lg:visible lg:static lg:h-full lg:translate-y-0 lg:flex-row lg:items-stretch",
-            "lg:gap-0.5 lg:border-0 lg:p-0 lg:opacity-100 lg:shadow-none",
+            // `lg:bg-transparent` too: without it the mobile panel's solid
+            // ground stayed on the desktop row, and showed as a white box
+            // whenever a page scrolled colour under the translucent header.
+            "lg:gap-0.5 lg:border-0 lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none",
           )}
         >
           {links.map((link) => {

@@ -219,7 +219,9 @@ function Block({ block }: { block: GuideBlock }) {
 
     case "table":
       // A real table: a caption a screen reader announces, header cells
-      // scoped to their columns. Scrolls sideways on a phone rather than
+      // scoped to their columns. Headers wrap and cells are padded tightly, so
+      // five columns fit the reading column on a desktop without scrolling —
+      // the last one was cut off at 1280px wide (2026-10-01). Scrolls sideways on a phone rather than
       // squeezing five columns of numbers into an unreadable stack — and a
       // region that scrolls has to be reachable by keyboard to be scrolled
       // without a mouse (axe: scrollable-region-focusable), so it is a
@@ -241,7 +243,7 @@ function Block({ block }: { block: GuideBlock }) {
                   <th
                     key={cell}
                     scope="col"
-                    className="text-text text-small px-4 py-2 font-semibold whitespace-nowrap"
+                    className="text-text text-small px-3 py-2 align-bottom leading-snug font-semibold"
                   >
                     {cell}
                   </th>
@@ -258,8 +260,8 @@ function Block({ block }: { block: GuideBlock }) {
                         // Labels in the body face, measurements in mono — the
                         // same split the rest of the site makes.
                         index < 2
-                          ? "text-text text-small px-4 py-2 whitespace-nowrap"
-                          : "text-muted text-small px-4 py-2 font-mono whitespace-nowrap tabular-nums"
+                          ? "text-text text-small px-3 py-2 whitespace-nowrap"
+                          : "text-muted text-small px-3 py-2 font-mono whitespace-nowrap tabular-nums"
                       }
                     >
                       {cell}
