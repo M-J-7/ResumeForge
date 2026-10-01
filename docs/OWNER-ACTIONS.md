@@ -12,8 +12,10 @@ it takes, and exactly what to do. Tick them off here as they land.
 
 ### 1. Google Search Console and Bing Webmaster Tools (ROADMAP Phase 1.1) — 20 minutes
 
-The site is live and fast, and Google has still not indexed it. This is the
-single highest-value thing on this list.
+The site is live and fast, and Google has still not indexed it — checked again
+on 2026-09-30: a `site:sixseconds.tech` search returns nothing. No amount of
+content ranks until this is done. This is the single highest-value thing on
+this list.
 
 1. <https://search.google.com/search-console> → **Add property** → **Domain** →
    `sixseconds.tech`. It shows a `TXT` record. Add it at your domain registrar
@@ -22,10 +24,21 @@ single highest-value thing on this list.
 3. **URL inspection** → paste each of these, then **Request indexing**:
    `/`, `/check`, `/templates`, `/examples`, `/guides`, `/resume-keyword-scanner`,
    `/bullet-point-checker`, `/examples/software-engineer-fresher`,
-   `/examples/registered-nurse`, `/guides/what-an-ats-actually-does`.
+   `/guides/resume-format-for-freshers`, `/guides/how-to-write-a-resume-summary`,
+   `/guides/how-long-should-a-resume-be`, `/guides/cv-vs-resume-vs-biodata`.
+   (Search Console allows roughly ten requests a day; the sitemap covers the rest.)
 4. <https://www.bing.com/webmasters> → **Import from Google Search Console**
    (one click once step 1 is done). Bing also feeds ChatGPT search and Copilot.
    IndexNow already pings Bing on every deploy.
+
+### 1b. Fill in the GitHub repository's "About" box — 1 minute
+
+The repository is public and GitHub is crawled constantly, but it has no
+website, description or topics. On <https://github.com/M-J-7/ResumeForge> →
+the gear beside **About**: website `https://sixseconds.tech`; description
+"Free resume builder that runs in the browser — PDF/DOCX/TXT, X-Ray parse view,
+no signup"; topics `resume`, `resume-builder`, `cv`, `nextjs`, `privacy`.
+(The README now links the live site.)
 
 ### 2. Move sign-in email to Resend (A4) — 15 minutes
 
@@ -113,8 +126,11 @@ Nothing is charged until you create one; the code for checkout waits on it.
 
 ## Distribution — no code, 4–6 hours a week (ROADMAP Phase 5)
 
-Drafts of every post are in `docs/LAUNCH.md` once written. Do these only after
-items 1, 2 and 4 above.
+**Paste-ready drafts of every post are in `docs/LAUNCH.md`** — Show HN, Reddit
+(US and India), Product Hunt, AlternativeTo, five directories, a placement-cell
+email and a LinkedIn post. Do these after item 1. A new domain ranks on links
+far more than on page count, so this section is now the second most valuable
+thing on this list.
 
 - [ ] Show HN (lead with the engineering, not the product).
 - [ ] Product Hunt.
