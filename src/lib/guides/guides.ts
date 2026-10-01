@@ -140,7 +140,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "what-an-ats-actually-does",
     searchTitle: "What an applicant tracking system (ATS) actually does",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "What an applicant tracking system actually does",
     summary:
       "What the software does, what it does not do, and which of the advice you have read is folklore.",
@@ -200,7 +200,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-with-no-experience",
     searchTitle: "How to write a resume with no work experience",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "Writing a resume when you have no work experience",
     summary:
       "The evidence is almost always there. The problem is that it has not been counted as work.",
@@ -258,7 +258,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "how-to-quantify-a-bullet",
     searchTitle: "How to quantify resume bullets without hard numbers",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "How to put a number on a bullet when you do not have one",
     summary:
       "The advice is always “quantify your achievements”. Here is what to do when the number is not written down anywhere.",
@@ -344,7 +344,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-file-format",
     searchTitle: "Resume file format: PDF, Word or plain text?",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "PDF, Word, or plain text: which file to send",
     summary: "Three formats, three different situations, and one rule that covers most of them.",
     sections: [
@@ -420,7 +420,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-format-for-freshers",
     searchTitle: "Resume format for freshers in India: what goes where",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     title: "Resume format for freshers: what goes where, and what to leave off",
     summary:
@@ -554,7 +554,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "how-to-write-a-resume-summary",
     searchTitle: "How to write a resume summary, with examples",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "How to write a resume summary that says something",
     summary:
       "Three lines at the top of the page: what goes in them, what to cut, and when to leave the section out.",
@@ -662,7 +662,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-for-campus-placement",
     searchTitle: "Resume for campus placement: how to write it",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     title: "Resume for campus placement: what the drive does with it",
     summary:
@@ -745,7 +745,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "how-long-should-a-resume-be",
     searchTitle: "How long should a resume be? One page or two",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "How long should a resume be? One page, two, and when the limit is a rule",
     summary:
       "The conventions in the US, India and the UK, the places where a page limit is enforced rather than advised, and what to cut first.",
@@ -828,7 +828,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "cv-vs-resume-vs-biodata",
     searchTitle: "CV vs resume vs biodata: the difference in India",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     title: "CV, resume or biodata: which one an employer means",
     summary:
@@ -905,7 +905,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "employment-gap-on-resume",
     searchTitle: "How to explain an employment gap on your resume",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "A gap in your resume: what to write, and where",
     summary:
       "Months or years out of work — a layoff, caregiving, illness, study, a search that took a while — and how to account for it in one honest line.",
@@ -995,7 +995,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-for-naukri",
     searchTitle: "Resume for Naukri: the profile fields and the file",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     title: "Resume for Naukri and other job portals: the profile is searched, the file is read",
     summary:
@@ -1075,7 +1075,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "career-change-resume",
     searchTitle: "Career change resume: how to write one honestly",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "A resume for a career change, without pretending",
     summary:
       "How to make a history in one field read as evidence for another: say the move, find the overlap, build the missing proof — and keep the real job titles.",
@@ -1167,7 +1167,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "resume-for-us-jobs-from-india",
     searchTitle: "Resume for US jobs from India: what to change",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     title: "Applying to US jobs from India: what to change on your resume",
     summary:
@@ -1247,7 +1247,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "federal-resume-vs-private-resume",
     searchTitle: "Federal resume vs private resume: the USAJOBS rules",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "US",
     title: "Federal resume vs private-sector resume: what USAJOBS needs now",
     summary:
@@ -1341,7 +1341,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "two-column-resume-ats",
     searchTitle: "Can an ATS read a two-column resume? We measured it",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     title: "Does a two-column resume break parsing? We measured it",
     summary: `The same ${COLUMNS.resumes} resumes in one column and in two, read back the two ways parsers read a page — what came through, what broke, and why.`,
     dataset: {

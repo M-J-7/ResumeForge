@@ -2131,7 +2131,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "java-developer",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     role: "Java Developer",
     occupationTitle: "Software Developers",
@@ -2222,7 +2222,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "hr-executive",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "IN",
     role: "HR Executive",
     occupationTitle: "Human Resources Specialists",
@@ -2309,7 +2309,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "pharmacy-technician",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "US",
     role: "Pharmacy Technician",
     occupationTitle: "Pharmacy Technicians",
@@ -2395,7 +2395,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
 
   {
     slug: "receptionist",
-    updated: "2026-09-30",
+    updated: "2026-10-01",
     market: "US",
     role: "Receptionist",
     occupationTitle: "Receptionists and Information Clerks",

@@ -29,7 +29,7 @@ export interface ChangelogEntry {
 /** Newest first. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
-    date: "2026-09-30",
+    date: "2026-10-01",
     kind: "new",
     title: "Four more example resumes: Java developer, HR executive, pharmacy technician, receptionist",
     body:
@@ -40,7 +40,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     link: { href: "/examples", label: "See the examples" },
   },
   {
-    date: "2026-09-30",
+    date: "2026-10-01",
     kind: "new",
     title: "Measured: what a two-column layout does to parsing",
     body:
@@ -52,7 +52,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     link: { href: "/guides/two-column-resume-ats", label: "Read the measurement" },
   },
   {
-    date: "2026-09-30",
+    date: "2026-10-01",
     kind: "new",
     title: "The Interview tab: every number you will be asked about",
     body:
@@ -64,7 +64,7 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     link: { href: "/builder", label: "Open the builder" },
   },
   {
-    date: "2026-09-30",
+    date: "2026-10-01",
     kind: "improved",
     title: "The builder opens with less to download",
     body:
