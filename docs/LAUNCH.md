@@ -72,12 +72,23 @@ posts below lead with something useful and mention the tool once.
 
 ### r/resumes (US-leaning)
 
-**Title:** What actually breaks resume parsing, and which of the usual advice is folklore
+**Title:** I measured what two-column layouts do to resume parsing (24 resumes, two ways of reading a PDF)
 
-> A lot of advice here is "never use two columns, the ATS can't read it". That
-> is half true, and the half that matters is checkable: a parser that reads
-> line by line interleaves the two columns, one that reads by position doesn't.
-> You can't know which one an employer uses.
+> A lot of advice here is "never use two columns, the ATS can't read it". I
+> wanted a number, so I laid out the same 24 resumes in one column and with a
+> sidebar on either side, and read every PDF back the two ways parsers read a
+> page: in the order the file stores its text, and line by line across it.
+>
+> - One column: every name, email, phone, title, employer and date, and all
+>   124 bullets, came through both ways.
+> - Sidebar, read line by line: about half the bullets came out in two pieces,
+>   with sidebar text glued into the middle.
+> - Sidebar on the left, read in stored order: bullets fine, but the name was
+>   misread on all 24, because the sidebar is read first.
+>
+> It's two reading strategies, not any vendor's ATS (those are private); the
+> method and the limits are on the page:
+> https://sixseconds.tech/guides/two-column-resume-ats
 >
 > The failures I'd actually worry about, in order:
 > 1. A PDF that is an image (exported from a design tool as a picture). No text

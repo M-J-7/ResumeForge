@@ -209,6 +209,30 @@ export function guideArticleJsonLd(guide: Guide): JsonLd {
 }
 
 /**
+ * A guide built on a measurement of ours, as a schema.org `Dataset`.
+ *
+ * The table on the page is data somebody may want to cite, and Google indexes
+ * datasets separately (Dataset Search). Only a guide that declares a
+ * `dataset` gets one — the description of what was measured is written by
+ * hand beside the guide, never inferred from a table.
+ */
+export function guideDatasetJsonLd(guide: Guide): JsonLd | null {
+  if (!guide.dataset) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    name: guide.dataset.name,
+    description: guide.dataset.description,
+    url: siteUrl(`/guides/${guide.slug}`),
+    creator: publisher(),
+    isAccessibleForFree: true,
+    dateModified: guide.updated,
+    variableMeasured: guide.dataset.variables,
+    measurementTechnique: "PDF text extraction in stream order and by position, graded against the source document",
+  };
+}
+
+/**
  * A guide whose sections read as questions, as an `FAQPage`.
  *
  * Only for guides that genuinely pose questions — `FAQPage` markup on a page

@@ -1,0 +1,84 @@
+{
+  "resumes": 24,
+  "results": [
+    {
+      "layout": "one-column",
+      "strategy": "pdf-stream-order",
+      "fieldsRecovered": 244,
+      "fieldsTotal": 244,
+      "bulletsIntact": 124,
+      "bulletsTotal": 124,
+      "resumesClean": 24,
+      "lostByField": {}
+    },
+    {
+      "layout": "one-column",
+      "strategy": "pdf-geometric",
+      "fieldsRecovered": 244,
+      "fieldsTotal": 244,
+      "bulletsIntact": 124,
+      "bulletsTotal": 124,
+      "resumesClean": 24,
+      "lostByField": {}
+    },
+    {
+      "layout": "sidebar-left",
+      "strategy": "pdf-stream-order",
+      "fieldsRecovered": 220,
+      "fieldsTotal": 244,
+      "bulletsIntact": 124,
+      "bulletsTotal": 124,
+      "resumesClean": 0,
+      "lostByField": {
+        "name": 24
+      }
+    },
+    {
+      "layout": "sidebar-left",
+      "strategy": "pdf-geometric",
+      "fieldsRecovered": 236,
+      "fieldsTotal": 244,
+      "bulletsIntact": 62,
+      "bulletsTotal": 124,
+      "resumesClean": 0,
+      "lostByField": {
+        "role.organization": 8
+      }
+    },
+    {
+      "layout": "sidebar-right",
+      "strategy": "pdf-stream-order",
+      "fieldsRecovered": 244,
+      "fieldsTotal": 244,
+      "bulletsIntact": 124,
+      "bulletsTotal": 124,
+      "resumesClean": 24,
+      "lostByField": {}
+    },
+    {
+      "layout": "sidebar-right",
+      "strategy": "pdf-geometric",
+      "fieldsRecovered": 236,
+      "fieldsTotal": 244,
+      "bulletsIntact": 61,
+      "bulletsTotal": 124,
+      "resumesClean": 1,
+      "lostByField": {
+        "role.organization": 8
+      }
+    }
+  ],
+  "sample": {
+    "slug": "customer-service-representative",
+    "lines": [
+      "Marcus Bell",
+      "Contact",
+      "marcus.bell@example.com",
+      "(216) 555-0148 Summary",
+      "Cleveland, OH Support specialist with five years in high-volume retail and SaaS queues. Most",
+      "recently raised first-contact resolution from 61% to 78% while handling 70 contacts",
+      "Education",
+      "a day."
+    ]
+  }
+}

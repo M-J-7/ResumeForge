@@ -20,6 +20,7 @@
  * flash; `aria-hidden`, because `<summary>` already announces its own state.
  */
 
+import Link from "next/link";
 import { BuiltListItem } from "./Build";
 import { PlusIcon } from "@/components/ui/icons";
 import type { FaqItem } from "@/lib/faq";
@@ -37,7 +38,18 @@ export function Faq({ items }: { items: readonly FaqItem[] }) {
                 className="text-accent mt-1 h-4 w-4 shrink-0 transition-transform duration-[var(--dur)] ease-[var(--ease)] group-open:rotate-45"
               />
             </summary>
-            <p className="text-muted text-body max-w-read pb-6 leading-relaxed">{item.answer}</p>
+            <p className="text-muted text-body max-w-read leading-relaxed">{item.answer}</p>
+            {item.link ? (
+              <p className="pt-3">
+                <Link
+                  href={item.link.href}
+                  className="text-accent rule-grow text-small rounded-sm font-medium"
+                >
+                  {item.link.label}
+                </Link>
+              </p>
+            ) : null}
+            <div aria-hidden className="pb-6" />
           </details>
         </BuiltListItem>
       ))}

@@ -31,6 +31,18 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-09-30",
     kind: "new",
+    title: "Measured: what a two-column layout does to parsing",
+    body:
+      "We laid out all 24 example resumes in one column and with a sidebar on either side, and " +
+      "read every PDF back the two ways parsers read a page. One column came through both " +
+      "intact. With a sidebar, reading line by line broke about half the bullets, and reading " +
+      "in stored order lost the name whenever the sidebar came first. The table, the method and " +
+      "what it does not show are on the guide.",
+    link: { href: "/guides/two-column-resume-ats", label: "Read the measurement" },
+  },
+  {
+    date: "2026-09-30",
+    kind: "new",
     title: "The Interview tab: every number you will be asked about",
     body:
       "A new tab beside the preview lists every figure and strong claim on your resume — " +

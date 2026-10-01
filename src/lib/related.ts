@@ -54,6 +54,11 @@ const EXAMPLES_FOR_GUIDE: Readonly<Record<string, readonly string[]>> = {
   "resume-for-naukri": ["bpo-customer-support", "bcom-fresher", "mba-fresher"],
   "career-change-resume": ["teacher", "retail-store-manager", "mechanical-engineer"],
   "resume-for-us-jobs-from-india": ["software-engineer-fresher", "software-developer", "accountant"],
+  "two-column-resume-ats": [
+    "customer-service-representative",
+    "graphic-designer",
+    "software-developer",
+  ],
   "federal-resume-vs-private-resume": [
     "administrative-assistant",
     "certified-nursing-assistant",

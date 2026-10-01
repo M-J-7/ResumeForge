@@ -29,10 +29,60 @@
  * without JavaScript and are what the crawler reads.
  */
 
+import COLUMNS from "@/lib/measured/columns.json";
+
+/* -------------------------------------------------------------------------- */
+/* The two-column measurement, as the guide prints it                         */
+/* -------------------------------------------------------------------------- */
+
+type ColumnResult = (typeof COLUMNS.results)[number];
+
+/** One row of `columns.json`: a layout read one way. */
+function measured(layout: string, strategy: string): ColumnResult {
+  const row = COLUMNS.results.find((r) => r.layout === layout && r.strategy === strategy);
+  if (!row) throw new Error(`columns.json has no ${layout} / ${strategy} row`);
+  return row;
+}
+
+const COL = {
+  oneStream: measured("one-column", "pdf-stream-order"),
+  leftStream: measured("sidebar-left", "pdf-stream-order"),
+  leftLines: measured("sidebar-left", "pdf-geometric"),
+  rightLines: measured("sidebar-right", "pdf-geometric"),
+};
+
+/** A count of lost fields by kind; absent kinds were never lost. */
+function lost(row: ColumnResult, field: string): number {
+  return (row.lostByField as Record<string, number | undefined>)[field] ?? 0;
+}
+
+const LAYOUT_NAME: Record<string, string> = {
+  "one-column": "One column",
+  "sidebar-left": "Sidebar on the left",
+  "sidebar-right": "Sidebar on the right",
+};
+const READER_NAME: Record<string, string> = {
+  "pdf-stream-order": "In stored order",
+  "pdf-geometric": "Line by line",
+};
+
+const of = (n: number, total: number) => `${n} of ${total}`;
+
 export type GuideBlock =
   | { readonly kind: "prose"; readonly text: string }
   | { readonly kind: "list"; readonly items: readonly string[] }
-  | { readonly kind: "callout"; readonly text: string };
+  | { readonly kind: "callout"; readonly text: string }
+  | {
+      readonly kind: "table";
+      /**
+       * The caption, as a sentence. Named `text` like the other prose kinds
+       * so anything that reads a guide's words — the reading time, the D14
+       * scan — gets the table's sentence without knowing tables exist.
+       */
+      readonly text: string;
+      readonly head: readonly string[];
+      readonly rows: readonly (readonly string[])[];
+    };
 
 export interface GuideSection {
   readonly heading: string;
@@ -63,6 +113,16 @@ export interface Guide {
    * that holds wherever the resume is sent.
    */
   readonly market?: "IN" | "US";
+  /**
+   * A guide built on a measurement of ours describes it here, and the page
+   * publishes it as a schema.org `Dataset` beside the `Article`: the table
+   * is data somebody can cite, and saying so is what lets it be found as data.
+   */
+  readonly dataset?: {
+    readonly name: string;
+    readonly description: string;
+    readonly variables: readonly string[];
+  };
   readonly sections: readonly GuideSection[];
   /**
    * When what this page says last changed, as YYYY-MM-DD. It is the sitemap's
@@ -1277,6 +1337,105 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
       },
     ],
   },
+
+  {
+    slug: "two-column-resume-ats",
+    searchTitle: "Can an ATS read a two-column resume? We measured it",
+    updated: "2026-09-30",
+    title: "Does a two-column resume break parsing? We measured it",
+    summary: `The same ${COLUMNS.resumes} resumes in one column and in two, read back the two ways parsers read a page — what came through, what broke, and why.`,
+    dataset: {
+      name: "Two-column resume parsing measurement",
+      description: `Field recovery and bullet integrity for ${COLUMNS.resumes} example resumes rendered in one-column, sidebar-left and sidebar-right layouts, each read back by stream-order and position-aware PDF text extraction.`,
+      variables: ["Fields recovered", "Bullets in one piece", "Resumes fully intact"],
+    },
+    sections: [
+      {
+        heading: "Can an ATS read a two-column resume?",
+        blocks: [
+          {
+            kind: "prose",
+            text: `Sometimes, and you cannot tell which time yours will be. We laid out the same ${COLUMNS.resumes} resumes in one column and in two, and read every PDF back the two ways parsers read a page: in the order the file stores its text, and line by line across the page. One column came through both readers intact — all ${COL.oneStream.fieldsTotal} fields and all ${COL.oneStream.bulletsTotal} bullets. With a sidebar, each reader broke something different, and which one an employer's software uses is not something it tells you.`,
+          },
+        ],
+      },
+      {
+        heading: "The results",
+        blocks: [
+          {
+            kind: "table",
+            text: `Fields recovered and bullets left in one piece, by layout and by reader, across ${COLUMNS.resumes} example resumes.`,
+            head: ["Layout", "Reader", "Fields recovered", "Bullets in one piece", "Resumes fully intact"],
+            rows: COLUMNS.results.map((r) => [
+              LAYOUT_NAME[r.layout] ?? r.layout,
+              READER_NAME[r.strategy] ?? r.strategy,
+              of(r.fieldsRecovered, r.fieldsTotal),
+              of(r.bulletsIntact, r.bulletsTotal),
+              of(r.resumesClean, COLUMNS.resumes),
+            ]),
+          },
+          {
+            kind: "prose",
+            text: "The fields are the ones a recruiter needs to reach you and read your history: name, email, phone, and each role's title, employer and dates, graded by the same scorecard the builder's X-Ray tab uses. A bullet counts as in one piece when its whole sentence appears unbroken in the extracted text. The words, the font and the page size were identical across the three layouts; only the arrangement changed.",
+          },
+        ],
+      },
+      {
+        heading: "What broke, and why",
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              `Read line by line, both sidebar layouts broke about half the bullets — ${of(COL.leftLines.bulletsIntact, COL.leftLines.bulletsTotal)} and ${of(COL.rightLines.bulletsIntact, COL.rightLines.bulletsTotal)} survived. The reader goes straight across the page, so each line of the sidebar is glued to the line of the main column beside it, and a bullet that wraps comes out in two pieces with sidebar text in between. The same thing misread ${lost(COL.leftLines, "role.organization")} employer names.`,
+              `Read in stored order with the sidebar on the left, every bullet survived but the name did not. The file holds the whole sidebar first, so the name was no longer the first thing read, and it was misread on ${lost(COL.leftStream, "name")} of the ${COLUMNS.resumes} resumes.`,
+              "Read in stored order with the sidebar on the right, the result was identical to one column — because these PDFs happen to store the main column first. A different design tool can store the two columns in either order, and nothing on the page shows which.",
+            ],
+          },
+        ],
+      },
+      {
+        heading: "What the mix looks like",
+        blocks: [
+          {
+            kind: "prose",
+            text: "These are the first lines of the customer service example, with the sidebar on the left, exactly as the line-by-line reader returned them.",
+          },
+          { kind: "list", items: COLUMNS.sample.lines },
+          {
+            kind: "prose",
+            text: "The phone number and the word “Summary” share a line, the city runs straight into the first sentence of the summary, and “Education” lands in the middle of a sentence about contacts a day. A person looking at the PDF sees none of it, which is why the problem survives so many proofreads.",
+          },
+        ],
+      },
+      {
+        heading: "What this measurement does not tell you",
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              "It tests two reading strategies, not any vendor's applicant tracking system. Those are private and configured per employer, and nobody outside them can run this test on them.",
+              "Every PDF came from one PDF library. A file from Word, Google Docs or a design tool can store its text in a different order, and the stored-order results would change with it.",
+              "Some parsers detect columns and read each one separately. Where one does, a sidebar costs nothing — but you do not get to choose which parser reads your file.",
+              "It did not test headers and footers, tables, text boxes or images, each of which some parsers handle differently again.",
+            ],
+          },
+        ],
+      },
+      {
+        heading: "What to do with it",
+        blocks: [
+          {
+            kind: "prose",
+            text: `If you want the result that holds across every reader, use one column: it was the only layout that came through both readers intact on all ${COLUMNS.resumes} resumes. If you prefer a two-column design, check the exact file you are going to send rather than trusting the template's description of itself.`,
+          },
+          {
+            kind: "callout",
+            text: "/check reads your PDF both ways, in your browser with nothing uploaded, and shows the lines where the two readings disagree. Every template in the builder is one column, for the reason above.",
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 /** A careful reading pace for advice somebody means to act on. */
@@ -1294,7 +1453,13 @@ export function readingMinutes(sections: readonly GuideSection[]): number {
   const words = sections
     .flatMap((section) => [
       section.heading,
-      ...section.blocks.map((block) => (block.kind === "list" ? block.items.join(" ") : block.text)),
+      ...section.blocks.map((block) =>
+        block.kind === "list"
+          ? block.items.join(" ")
+          : block.kind === "table"
+            ? [block.text, ...block.head, ...block.rows.flat()].join(" ")
+            : block.text,
+      ),
     ])
     .join(" ")
     .split(/\s+/)

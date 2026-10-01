@@ -60,6 +60,7 @@ const PINNED: Readonly<Record<string, string>> = {
   "sales-representative": "2026-09-10@bdaee7676e3a",
   "software-developer": "2026-09-10@01fd55ad4319",
   teacher: "2026-09-10@c8cbf19a77fd",
+  "two-column-resume-ats": "2026-09-30@bd52a248e320",
   "what-an-ats-actually-does": "2026-09-30@a4a5bf4c4b94",
   "resume-format-for-freshers": "2026-09-30@94e90db46b97",
   "how-to-write-a-resume-summary": "2026-09-30@756066ca43db",
