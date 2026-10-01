@@ -22,7 +22,7 @@ this list.
    (DNS settings for `sixseconds.tech`), wait a few minutes, press **Verify**.
 2. **Sitemaps** → submit `https://sixseconds.tech/sitemap.xml`.
 3. **URL inspection** → paste each of these, then **Request indexing**:
-   `/`, `/check`, `/templates`, `/examples`, `/guides`, `/resume-keyword-scanner`,
+   `/guides/two-column-resume-ats` (the measurement — the page most likely to earn links), `/`, `/check`, `/templates`, `/examples`, `/guides`, `/resume-keyword-scanner`,
    `/bullet-point-checker`, `/examples/software-engineer-fresher`,
    `/guides/resume-format-for-freshers`, `/guides/how-to-write-a-resume-summary`,
    `/guides/how-long-should-a-resume-be`, `/guides/cv-vs-resume-vs-biodata`.
