@@ -25,6 +25,7 @@ const PAGES = [
   "/bullet-point-checker",
   "/resume-keyword-scanner",
   "/changelog",
+  "/about",
   ACTION_VERBS_PATH,
 ];
 

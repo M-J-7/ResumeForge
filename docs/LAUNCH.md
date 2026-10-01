@@ -22,7 +22,7 @@ Facts you can quote (true on 2026-09-30): free PDF, Word and plain-text
 downloads with no watermark; no sign-up needed; the builder runs in the
 browser and the resume is not uploaded unless you choose to save it to an
 account; 28 example resumes and 15 guides for India and the US; 2,300+ unit
-tests and 115 end-to-end tests.
+tests and 116 end-to-end tests.
 
 ---
 

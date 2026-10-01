@@ -104,6 +104,7 @@ export const FOOTER_SECTIONS: readonly { title: string; links: readonly NavLink[
   {
     title: "About",
     links: [
+      { href: "/about", label: "About" },
       PRICING,
       { href: "/changelog", label: "What changed" },
       { href: "/privacy", label: "Privacy" },

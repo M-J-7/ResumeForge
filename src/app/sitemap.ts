@@ -97,6 +97,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.4,
     },
 
+    { url: siteUrl("/about"), changeFrequency: "yearly", priority: 0.5 },
     { url: siteUrl("/privacy"), changeFrequency: "yearly", priority: 0.3 },
     { url: siteUrl("/terms"), changeFrequency: "yearly", priority: 0.3 },
   ];

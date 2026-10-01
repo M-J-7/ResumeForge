@@ -107,7 +107,7 @@ export const MEASURED = {
    * deleted while the landing page goes on claiming the old total.
    */
   testDeclarations: 1221,
-  e2eTests: 115,
+  e2eTests: 116,
   lintRules: 14,
   skillTerms: 7432,
 } as const;
