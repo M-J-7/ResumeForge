@@ -6,13 +6,13 @@
 >
 > **What to build next now lives in `ROADMAP.md`** (2026-09-28); this file stays the record of what is built and what binds new work — §2 above all.
 >
-> **Last updated:** 2026-09-29 · **Owner:** solo, part-time.
+> **Last updated:** 2026-09-30 · **Owner:** solo, part-time.
 
 ---
 
 ## 1. Status
 
-The build is feature-complete through P37 — every package in the roadmap — and **live at `https://sixseconds.tech`**, last deployed 2026-09-29 at `5d02a33`. **2,121 unit tests and 119 Playwright tests pass** (2026-09-29). Everything below the line is either deferred by decision or blocked on hardware, credentials or third-party software — not on code. `docs/BLOCKERS.md` holds those blockers in full, with what would clear each.
+The build is feature-complete through P37 — every package in the roadmap — and **live at `https://sixseconds.tech`**, last deployed 2026-09-30. **2,326 unit tests and 136 Playwright tests pass** (2026-09-30). Since the roadmap began: 28 example resumes, 15 guides (one a reproducible measurement), the Six-Second View, the Interview tab, `/changelog`, `/about`, three free tools and a first-party usage counter — `ROADMAP.md` Progress has the detail. Everything below the line is either deferred by decision or blocked on hardware, credentials or third-party software — not on code. `docs/BLOCKERS.md` holds those blockers in full, with what would clear each.
 
 | Milestone                                                       | Delivered                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
