@@ -1,5 +1,7 @@
 # Six Seconds Resume
 
+**Live at <https://sixseconds.tech>** — a free resume builder that runs in your browser: [build a resume](https://sixseconds.tech/builder), [check one](https://sixseconds.tech/check), [templates](https://sixseconds.tech/templates), [examples](https://sixseconds.tech/examples) and [guides](https://sixseconds.tech/guides).
+
 > A recruiter spends about six seconds on a resume before deciding. Everything
 > here — one column, no decoration, parseable by machine first — exists to
 > survive that.

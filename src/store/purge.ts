@@ -45,6 +45,7 @@ import { JOB_TARGETS_KEY } from "./job-targets";
 import { GUEST_OWNER, namespacedKey, ownerOf } from "./owner";
 import { idbBackend, STORAGE_KEY, type KeyValueBackend } from "./persistence";
 import { EXPERIENCE_LEVEL_STORAGE_KEY } from "@/lib/resume/experience-level";
+import { INTERVIEW_READY_STORAGE_KEY } from "@/lib/defend/ready";
 import { purgeForeignThumbnails } from "@/lib/thumbnail/cache";
 
 /**
@@ -73,6 +74,7 @@ export const CLAIM_DRAFT_DISMISSED_KEY = "claim-draft-dismissed";
 export const NAMESPACED_LOCAL_STORAGE_BASES: readonly string[] = [
   EXPERIENCE_LEVEL_STORAGE_KEY,
   CLAIM_DRAFT_DISMISSED_KEY,
+  INTERVIEW_READY_STORAGE_KEY,
 ];
 
 /**

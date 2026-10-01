@@ -42,6 +42,12 @@ export interface GuideSection {
 export interface Guide {
   readonly slug: string;
   readonly title: string;
+  /**
+   * The page's `<title>`: what somebody types, first, in under sixty
+   * characters, because a results page cuts the rest. `title` stays the
+   * heading — written for the reader who has already arrived.
+   */
+  readonly searchTitle: string;
   /** The meta description, and the line under the title. */
   readonly summary: string;
   /**
@@ -73,6 +79,7 @@ type GuideSource = Omit<Guide, "minutes">;
 const GUIDE_SOURCES: readonly GuideSource[] = [
   {
     slug: "what-an-ats-actually-does",
+    searchTitle: "What an applicant tracking system (ATS) actually does",
     updated: "2026-09-30",
     title: "What an applicant tracking system actually does",
     summary:
@@ -132,6 +139,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-with-no-experience",
+    searchTitle: "How to write a resume with no work experience",
     updated: "2026-09-30",
     title: "Writing a resume when you have no work experience",
     summary:
@@ -189,6 +197,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "how-to-quantify-a-bullet",
+    searchTitle: "How to quantify resume bullets without hard numbers",
     updated: "2026-09-30",
     title: "How to put a number on a bullet when you do not have one",
     summary:
@@ -274,6 +283,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-file-format",
+    searchTitle: "Resume file format: PDF, Word or plain text?",
     updated: "2026-09-30",
     title: "PDF, Word, or plain text: which file to send",
     summary: "Three formats, three different situations, and one rule that covers most of them.",
@@ -349,6 +359,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-format-for-freshers",
+    searchTitle: "Resume format for freshers in India: what goes where",
     updated: "2026-09-30",
     market: "IN",
     title: "Resume format for freshers: what goes where, and what to leave off",
@@ -482,6 +493,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "how-to-write-a-resume-summary",
+    searchTitle: "How to write a resume summary, with examples",
     updated: "2026-09-30",
     title: "How to write a resume summary that says something",
     summary:
@@ -589,6 +601,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-for-campus-placement",
+    searchTitle: "Resume for campus placement: how to write it",
     updated: "2026-09-30",
     market: "IN",
     title: "Resume for campus placement: what the drive does with it",
@@ -671,6 +684,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "how-long-should-a-resume-be",
+    searchTitle: "How long should a resume be? One page or two",
     updated: "2026-09-30",
     title: "How long should a resume be? One page, two, and when the limit is a rule",
     summary:
@@ -753,6 +767,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "cv-vs-resume-vs-biodata",
+    searchTitle: "CV vs resume vs biodata: the difference in India",
     updated: "2026-09-30",
     market: "IN",
     title: "CV, resume or biodata: which one an employer means",
@@ -829,6 +844,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "employment-gap-on-resume",
+    searchTitle: "How to explain an employment gap on your resume",
     updated: "2026-09-30",
     title: "A gap in your resume: what to write, and where",
     summary:
@@ -918,6 +934,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-for-naukri",
+    searchTitle: "Resume for Naukri: the profile fields and the file",
     updated: "2026-09-30",
     market: "IN",
     title: "Resume for Naukri and other job portals: the profile is searched, the file is read",
@@ -997,6 +1014,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "career-change-resume",
+    searchTitle: "Career change resume: how to write one honestly",
     updated: "2026-09-30",
     title: "A resume for a career change, without pretending",
     summary:
@@ -1088,6 +1106,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "resume-for-us-jobs-from-india",
+    searchTitle: "Resume for US jobs from India: what to change",
     updated: "2026-09-30",
     market: "IN",
     title: "Applying to US jobs from India: what to change on your resume",
@@ -1167,6 +1186,7 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
 
   {
     slug: "federal-resume-vs-private-resume",
+    searchTitle: "Federal resume vs private resume: the USAJOBS rules",
     updated: "2026-09-30",
     market: "US",
     title: "Federal resume vs private-sector resume: what USAJOBS needs now",

@@ -43,6 +43,7 @@ export const ACTION_EVENTS = [
   "template:pdf",
   "six-seconds:open",
   "xray:open",
+  "interview:open",
   "match:run",
   "letter:compose",
   // A file leaving the builder, by format — the thing the product is for.
@@ -108,6 +109,7 @@ export const ACTION_DESCRIPTIONS: Record<ActionEvent, string> = {
   "template:pdf": "a template was downloaded as a PDF",
   "six-seconds:open": "the Six seconds tab was opened",
   "xray:open": "the X-Ray tab was opened",
+  "interview:open": "the Interview tab was opened",
   "match:run": "a resume was matched against a job description",
   "letter:compose": "a cover letter was composed",
   "export:pdf": "a PDF was downloaded",

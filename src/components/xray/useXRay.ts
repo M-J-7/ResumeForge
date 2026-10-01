@@ -9,13 +9,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  extractPdfGeometric,
-  extractPdfStreamOrder,
-  strategyDisagreements,
-  type ExtractedDocument,
-} from "@/lib/xray/extract-browser";
-import { recoverFields, scoreRecovery, type Scorecard } from "@/lib/xray/scorecard";
+import type { ExtractedDocument } from "@/lib/xray/extract-browser";
+import type { Scorecard } from "@/lib/xray/scorecard";
 import { useResumeStore } from "@/store/resume";
 
 export interface XRayState {
@@ -54,6 +49,13 @@ export function useXRay(bytes: Uint8Array | null, active: boolean): XRayState {
       // work has genuinely started here, and setting it synchronously in the
       // effect triggers a second render pass for no benefit.
       setState((prev) => ({ ...prev, loading: true }));
+      // Loaded the first time the tab opens, not with the builder: the
+      // extractor brings pdfjs's text layer and the scorecard brings
+      // libphonenumber, and most sessions never open X-Ray at all.
+      const [
+        { extractPdfGeometric, extractPdfStreamOrder, strategyDisagreements },
+        { recoverFields, scoreRecovery },
+      ] = await Promise.all([import("@/lib/xray/extract-browser"), import("@/lib/xray/scorecard")]);
       const streamOrder = await extractPdfStreamOrder(bytes);
       const geometric = await extractPdfGeometric(bytes);
       // Graded on the geometric read: it is what a competent parser does, so

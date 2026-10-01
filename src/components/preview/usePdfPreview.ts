@@ -18,7 +18,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { renderPdf } from "@/lib/emit/pdf/render";
 import { browserFontResolver } from "@/lib/fonts/paths.browser";
 import { useResumeStore } from "@/store/resume";
 import type { ResumeDocument } from "@/lib/resume/schema";
@@ -123,6 +122,11 @@ async function renderOnMainThread(
   setState: (updater: (prev: PreviewState) => PreviewState) => void,
 ): Promise<void> {
   try {
+    // Imported here rather than at the top: the worker has its own copy of
+    // react-pdf, and a static import put a second one — the largest library
+    // in the app — on the main thread of every builder load, for a fallback
+    // most browsers never take.
+    const { renderPdf } = await import("@/lib/emit/pdf/render");
     const { bytes, pageCount } = await renderPdf(resume, { resolveFont: browserFontResolver });
     if (id <= appliedId.current) return;
     appliedId.current = id;

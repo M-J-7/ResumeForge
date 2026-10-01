@@ -11,7 +11,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/control";
 import { DESTINATION_ADVICE, resumeFileName, type ExportFormat } from "@/lib/emit/filename";
-import { renderDocx } from "@/lib/emit/docx/render";
 import { renderText } from "@/lib/emit/text/render";
 import { toJsonResume } from "@/lib/interop/json-resume";
 import { track } from "@/lib/track";
@@ -52,6 +51,9 @@ export function ExportPanel({ pdfBytes }: { pdfBytes: Uint8Array | null }) {
   const exportDocx = async () => {
     setBusy("docx");
     try {
+      // The Word emitter and its `docx` library load on the click, not with
+      // the builder: most exports are the PDF the preview already made.
+      const { renderDocx } = await import("@/lib/emit/docx/render");
       const { blob } = await renderDocx(resume);
       deliver(blob, "docx");
     } finally {

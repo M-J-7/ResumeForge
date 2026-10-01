@@ -47,8 +47,11 @@ export async function generateMetadata({ params }: PageProps<"/guides/[slug]">):
   const guide = getGuide(slug);
   if (!guide) return { title: "Guide not found" };
 
+  // The search title, without the site name: it is written to fit a results
+  // page, and the name would push the words somebody searched for off it.
   return pageMetadata({
-    title: guide.title,
+    title: guide.searchTitle,
+    absoluteTitle: guide.searchTitle,
     description: guide.summary,
     path: `/guides/${guide.slug}`,
   });

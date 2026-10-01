@@ -31,6 +31,27 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-09-30",
     kind: "new",
+    title: "The Interview tab: every number you will be asked about",
+    body:
+      "A new tab beside the preview lists every figure and strong claim on your resume — " +
+      "percentages, money, before-and-afters, team sizes, “the first”, “expert” — grouped by " +
+      "role, each with the question an interviewer is most likely to ask about it. Tick one off " +
+      "when you could answer it without notes. It writes nothing for you, and nothing leaves " +
+      "your browser.",
+    link: { href: "/builder", label: "Open the builder" },
+  },
+  {
+    date: "2026-09-30",
+    kind: "improved",
+    title: "The builder opens with less to download",
+    body:
+      "The Word exporter, the resume importer and the X-Ray reader now load when you first use " +
+      "them instead of with the builder, so opening it on a phone or a slow connection fetches " +
+      "a good deal less before you can start typing.",
+  },
+  {
+    date: "2026-09-30",
+    kind: "new",
     title: "Ten new guides, for India and the US",
     body:
       "For India: the resume format for freshers, resumes for campus placement, CV versus resume " +

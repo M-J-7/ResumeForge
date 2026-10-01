@@ -32,11 +32,8 @@ import { Button } from "@/components/ui/control";
 import { Dialog } from "@/components/ui/dialog";
 import { ImportReview } from "@/components/import/ImportReview";
 import { fromJsonResume } from "@/lib/interop/json-resume";
-import {
-  importKindFromFilename,
-  parseResumeFile,
-  type ImportResult,
-} from "@/lib/import/parse-resume";
+import { importKindFromFilename } from "@/lib/import/kind";
+import type { ImportResult } from "@/lib/import/parse-resume";
 import { track } from "@/lib/track";
 import { useResumeStore } from "@/store/resume";
 
@@ -112,7 +109,12 @@ export function ImportResumeFile({
     setBusy(true);
     // Read in this tab. Nothing is uploaded — the whole parse runs here, which
     // is what lets a guest import without an account (D6).
+    //
+    // Loaded here, when a file has actually been chosen: the parser brings
+    // pdfjs's text layer, the DOCX reader and libphonenumber, and a builder
+    // that imported it statically paid for all of it on every open.
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const { parseResumeFile } = await import("@/lib/import/parse-resume");
     const result = await parseResumeFile(bytes, kind);
 
     importDocument(result.document);

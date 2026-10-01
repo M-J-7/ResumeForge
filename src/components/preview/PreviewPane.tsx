@@ -7,6 +7,7 @@ import { usePdfPreview } from "./usePdfPreview";
 import { XRayPanel } from "@/components/xray/XRayPanel";
 import { MatchPanel } from "@/components/match/MatchPanel";
 import { SixSecondPanel } from "@/components/six-seconds/SixSecondPanel";
+import { InterviewPanel } from "@/components/defend/InterviewPanel";
 import { Button, Select } from "@/components/ui/control";
 import { Tab, TabList, Tabs } from "@/components/ui/tabs";
 import { DesignPanel } from "@/components/builder/DesignPanel";
@@ -22,9 +23,11 @@ type ZoomMode = "fit-width" | "fit-page" | "actual";
  * The preview shows the document; Six seconds shows where the facts a
  * recruiter's first read looks for landed on it (F1); X-Ray shows what a
  * parser reads from it; Match shows what one specific posting asks for and how
- * the document answers it (P27). A person, then a machine, then a posting.
+ * the document answers it (P27); Interview lists every figure and claim on it
+ * with the question each invites (F9). A person, a machine, a posting, and the
+ * person across the table.
  */
-type ViewMode = "preview" | "scan" | "xray" | "match";
+type ViewMode = "preview" | "scan" | "xray" | "match" | "interview";
 
 /** A4 and Letter are both ~600pt wide; used to size fit-width before measuring. */
 const NOMINAL_PAGE_WIDTH_PT = 595;
@@ -53,6 +56,7 @@ export function PreviewPane({
     if (next === viewMode) return;
     if (next === "scan") track("six-seconds:open");
     if (next === "xray") track("xray:open");
+    if (next === "interview") track("interview:open");
   };
   const [zoomMode, setZoomMode] = useState<ZoomMode>("fit-width");
   const [containerWidth, setContainerWidth] = useState(0);
@@ -146,6 +150,7 @@ export function PreviewPane({
             <Tab value="scan">Six seconds</Tab>
             <Tab value="xray">X-Ray</Tab>
             <Tab value="match">Match</Tab>
+            <Tab value="interview">Interview</Tab>
           </TabList>
         </Tabs>
 
@@ -248,6 +253,11 @@ export function PreviewPane({
           signedIn={signedIn}
           onNavigateToStep={onNavigateToStep}
         />
+      </div>
+
+      {/* Computes only while open; see the panel for why. */}
+      <div className={cn("min-h-0 flex-1", viewMode !== "interview" && "hidden")}>
+        <InterviewPanel active={viewMode === "interview"} />
       </div>
 
       <div className="border-line border-t px-4 py-3">
