@@ -29,6 +29,28 @@ export interface ChangelogEntry {
 /** Newest first. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: "2026-10-02",
+    kind: "new",
+    title: "Every example resume downloads free as Word or PDF",
+    body:
+      "Each of the 36 example resumes now has Word and PDF buttons at the top of its page. The " +
+      "file is made in your browser by the same code the builder downloads with, so it opens as " +
+      "a real document to write over — not a picture of one. The ATS checker page also now says " +
+      "what it reads from your file, field by field, and answers the questions people ask " +
+      "before handing one over.",
+    link: { href: "/examples", label: "Pick an example" },
+  },
+  {
+    date: "2026-10-02",
+    kind: "new",
+    title: "A guide: is any resume builder really free?",
+    body:
+      "Where the price usually appears in a “free” resume builder — at the download, as a " +
+      "watermark, as a trial that renews — and a two-minute check that tells you which kind you " +
+      "are using before you write anything. It ends by running the same check on this site.",
+    link: { href: "/guides/is-any-resume-builder-really-free", label: "Read the guide" },
+  },
+  {
     date: "2026-10-01",
     kind: "new",
     title: "Four more: civil engineer fresher, sales executive, truck driver, dental assistant",
@@ -53,7 +75,8 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
   {
     date: "2026-10-01",
     kind: "new",
-    title: "Four more example resumes: Java developer, HR executive, pharmacy technician, receptionist",
+    title:
+      "Four more example resumes: Java developer, HR executive, pharmacy technician, receptionist",
     body:
       "For India, a Java developer three years into a product career and an HR executive at a " +
       "manufacturing plant, both on A4. For the US, a certified pharmacy technician and a " +

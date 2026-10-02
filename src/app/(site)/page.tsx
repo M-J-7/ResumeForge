@@ -105,15 +105,22 @@ import { MEASURED, REFUSED_CLAIMS, TRUST_SIGNALS } from "@/lib/trust-signals";
  * for what people actually type — "free resume builder" — and carries the
  * name along in the tail, where it starts being recognised.
  *
+ * "No sign-up" since 2026-10-02. The results page for "free resume builder"
+ * is a list of builders that each say free, and the ones a searcher picks say
+ * *which* free — no sign-up, no watermark, the Word file as well as the PDF —
+ * because a builder that stops you at the download is what they have learned
+ * to expect. Every one of those is true here (D13), so the title and the
+ * description say them.
+ *
  * `absoluteTitle` because the root layout's `%s — <product name>` template
  * would otherwise append the name to a title that already ends with it.
  */
 export const metadata: Metadata = pageMetadata({
   title: "Free resume builder",
-  absoluteTitle: `Free ATS resume builder — ${SITE_NAME}`,
+  absoluteTitle: `Free ATS resume builder, no sign-up — ${SITE_NAME}`,
   description:
-    "Build a resume that parses cleanly, then see exactly what a machine reads back from it. " +
-    "PDF, Word and plain text, free permanently. No account needed.",
+    "Build a resume and download it free as PDF or Word — no sign-up, no watermark, no paywall. " +
+    "Then see exactly what an ATS reads back from it.",
   path: "/",
 });
 

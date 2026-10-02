@@ -1365,7 +1365,13 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
           {
             kind: "table",
             text: `Fields recovered and bullets left in one piece, by layout and by reader, across ${COLUMNS.resumes} example resumes.`,
-            head: ["Layout", "Reader", "Fields recovered", "Bullets in one piece", "Resumes fully intact"],
+            head: [
+              "Layout",
+              "Reader",
+              "Fields recovered",
+              "Bullets in one piece",
+              "Resumes fully intact",
+            ],
             rows: COLUMNS.results.map((r) => [
               LAYOUT_NAME[r.layout] ?? r.layout,
               READER_NAME[r.strategy] ?? r.strategy,
@@ -1431,6 +1437,101 @@ const GUIDE_SOURCES: readonly GuideSource[] = [
           {
             kind: "callout",
             text: "/check reads your PDF both ways, in your browser with nothing uploaded, and shows the lines where the two readings disagree. Every template in the builder is one column, for the reason above.",
+          },
+        ],
+      },
+    ],
+  },
+
+  {
+    slug: "is-any-resume-builder-really-free",
+    searchTitle: "Is any resume builder really free? How to check first",
+    updated: "2026-10-02",
+    title: "Is any resume builder really free? How to find out before you type",
+    summary:
+      "Most say free and charge at the download. A two-minute check tells you which kind you are using, before you spend an evening on it.",
+    sections: [
+      {
+        heading: "The short answer",
+        blocks: [
+          {
+            kind: "prose",
+            text: "Some are, and many that say so are free to type in and paid to get out of. The price usually appears at the last step: you write the whole resume, press download, and meet a payment screen, a watermark, or a trial that turns into a subscription. That is not an accident of design. The moment you have most invested is the moment you are most likely to pay.",
+          },
+          {
+            kind: "prose",
+            text: "You can find out which kind of builder you are using in about two minutes, before you write anything, and the check below works on any of them — including this one.",
+          },
+        ],
+      },
+      {
+        heading: "Where the price usually appears",
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              "At the download. The editor and the preview are free, and the button that gets you a PDF or a Word file is not.",
+              "As a watermark. The free file carries the builder's name across the page, which no one can send to an employer.",
+              "As a trial. A small first charge buys a few days, and the line under the price says what it renews into and how often.",
+              "As a format. Plain text is free and the PDF or Word file is paid, or the only free output is a link to a page on the builder's own site.",
+              "As a limit. One resume, one template, or one download, and the second costs money.",
+              "As an account. Signing up comes first, and the privacy policy decides what happens to the work history you then type in.",
+            ],
+          },
+          {
+            kind: "prose",
+            text: "None of these is dishonest on its own: building software costs money, and a builder is entitled to charge. The problem is finding out after the work is done, when the choice is to pay or to start again somewhere else.",
+          },
+        ],
+      },
+      {
+        heading: "A two-minute check before you type anything",
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              "Open the pricing page and read the small print under each figure. Look for the words trial, renews, every four weeks, and cancel anytime — the last is only said about things that continue unless you stop them.",
+              "Search the help pages for “download” and “watermark”. A builder that is free at the download usually says so in as many words, because it is the reason people choose it.",
+              "Type your name and nothing else, then press download. If a payment screen, a sign-up wall or a watermark appears, you have found out in two minutes rather than two hours.",
+              "Check which formats the free download includes. You want a PDF for sending and a Word .docx for the recruiter or portal that asks for one.",
+              "Look for a way to take your data with you — a Word file you can edit, or an export another tool can read — so that leaving later does not mean retyping everything.",
+              "Read what the privacy policy says about your resume's content: whether it is stored, shared with partners, or used to train a model.",
+            ],
+          },
+          {
+            kind: "callout",
+            text: "The test download is the one that settles it. A pricing page can be read two ways; a file either arrives or it does not.",
+          },
+        ],
+      },
+      {
+        heading: "What free should mean for a resume",
+        blocks: [
+          {
+            kind: "prose",
+            text: "A resume is not finished once. You will change it for the next application, and the one after that, so a builder that is free once and paid for every revision is not free in the way that matters. The useful definition is narrower and stricter.",
+          },
+          {
+            kind: "list",
+            items: [
+              "PDF and Word downloads with no watermark, every time, not just the first.",
+              "No account required to get your own work back out.",
+              "An export in a form another tool can read, so you are never locked in.",
+              "Nothing that renews. If there is a paid tier, it is paid once and it says when it ends.",
+            ],
+          },
+        ],
+      },
+      {
+        heading: "How this builder answers the same check",
+        blocks: [
+          {
+            kind: "prose",
+            text: "Every download here is free and stays free: PDF, Word, plain text and JSON Resume, with no watermark, no account, and no limit on how many times. The builder runs in your browser, so a resume written without an account is stored on your device and never sent to us. A paid Pass for keeping many versions in an account is described on the pricing page; it is a single payment that does not renew, it is not on sale yet, and no download has ever depended on it.",
+          },
+          {
+            kind: "callout",
+            text: "Run the two-minute check on this site too: /builder, type your name, press download. The pricing page lists what is free and what never will be paid for.",
           },
         ],
       },

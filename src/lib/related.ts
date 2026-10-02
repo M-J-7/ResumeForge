@@ -53,7 +53,11 @@ const EXAMPLES_FOR_GUIDE: Readonly<Record<string, readonly string[]>> = {
   "employment-gap-on-resume": ["administrative-assistant", "server", "staff-nurse"],
   "resume-for-naukri": ["java-developer", "hr-executive", "bpo-customer-support"],
   "career-change-resume": ["teacher", "retail-store-manager", "mechanical-engineer"],
-  "resume-for-us-jobs-from-india": ["software-engineer-fresher", "software-developer", "accountant"],
+  "resume-for-us-jobs-from-india": [
+    "software-engineer-fresher",
+    "software-developer",
+    "accountant",
+  ],
   "two-column-resume-ats": [
     "customer-service-representative",
     "graphic-designer",
@@ -64,6 +68,7 @@ const EXAMPLES_FOR_GUIDE: Readonly<Record<string, readonly string[]>> = {
     "certified-nursing-assistant",
     "project-manager",
   ],
+  "is-any-resume-builder-really-free": ["cashier", "bcom-fresher", "warehouse-associate"],
 };
 
 /**

@@ -37,6 +37,8 @@ import { MotionProvider } from "@/components/marketing/MotionProvider";
 import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { ResumePaper } from "@/components/marketing/ResumePaper";
 import { EXAMPLE_SLUGS, getRoleExample } from "@/lib/examples/roles";
+import { exampleSearchDescription, exampleSearchTitle } from "@/lib/examples/search";
+import { ExampleDownloads } from "@/components/examples/ExampleDownloads";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, roleExampleJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
@@ -64,18 +66,13 @@ export async function generateMetadata({
   const example = getRoleExample(role);
   if (!example) return { title: "Example not found" };
 
-  /*
-   * The summary carries the role-specific half, and the fixed clause carries
-   * the differentiator. Built this way round because it is the only shape
-   * that fits: the summaries run to 105 characters and the sentence this used
-   * to append ran to 80, so the longest of these descriptions reached 185 and
-   * was cut off in the result at "the plain text a parser reads f…" — losing
-   * exactly the phrase that distinguishes this page from five hundred
-   * generated ones.
-   */
+  // Written for the results page, by market and within its limits — see
+  // `lib/examples/search.ts`. Without the site name, like the guides.
+  const title = exampleSearchTitle(example);
   return pageMetadata({
-    title: `${example.role} resume example`,
-    description: `${example.summary} With the plain text a parser recovers from it.`,
+    title,
+    absoluteTitle: title,
+    description: exampleSearchDescription(example),
     path: `/examples/${example.slug}`,
   });
 }
@@ -148,6 +145,11 @@ export default async function ExamplePage({ params }: PageProps<"/examples/[role
             <p className="text-faint text-micro font-mono">
               Updated <time dateTime={example.updated}>{formatContentDate(example.updated)}</time>
             </p>
+          </Built>
+          <Built className="mt-6">
+            {/* In the masthead, because for most people who search for a
+                role's resume "format" the file is what they came for. */}
+            <ExampleDownloads role={example.role} resume={example.resume} />
           </Built>
         </PageHeader>
 

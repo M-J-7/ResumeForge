@@ -84,6 +84,7 @@ const PINNED: Readonly<Record<string, string>> = {
   "dental-assistant": "2026-10-01@cceefb1586f2",
   "sales-executive": "2026-10-01@9303203765e8",
   "truck-driver": "2026-10-01@fed9c5b95ca0",
+  "is-any-resume-builder-really-free": "2026-10-02@855282a5c8da",
 };
 
 const PAGES = [

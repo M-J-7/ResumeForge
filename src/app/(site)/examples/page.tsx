@@ -23,14 +23,20 @@ import { JsonLdScript } from "@/components/seo/JsonLd";
 import { itemListJsonLd } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
 
+/*
+ * "Formats" beside "examples" because that is the Indian query, and the
+ * download because since 2026-10-02 every example is one — see
+ * `lib/examples/search.ts`. Under sixty without the site name, like the
+ * example pages themselves; under 160 for the description.
+ */
+const TITLE = "Resume examples and formats by role — free Word & PDF";
+
 export const metadata: Metadata = pageMetadata({
-  title: "Resume examples by role",
-  // Trimmed under 160. The old one ran to 171 and lost "the reasoning behind
-  // every line" to the truncation — which is the only part of it a competitor
-  // with five hundred generated examples cannot also write.
+  title: TITLE,
+  absoluteTitle: TITLE,
   description:
-    "Resume examples for India and the US, from freshers to trades — each with the plain " +
-    "text a parser reads from it, and why every line is written that way.",
+    `${ROLE_EXAMPLES.length} resume examples and formats for India and the US, freshers to ` +
+    "trades. Each downloads free in Word or PDF, with the text a parser reads from it.",
   path: "/examples",
 });
 

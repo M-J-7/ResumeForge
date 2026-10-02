@@ -25,6 +25,11 @@ import { AppFooter } from "@/components/shell/AppFooter";
 import { Built } from "@/components/marketing/Build";
 import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { pageMetadata } from "@/lib/seo";
+import { Faq } from "@/components/marketing/Faq";
+import { MotionProvider } from "@/components/marketing/MotionProvider";
+import { JsonLdScript } from "@/components/seo/JsonLd";
+import { CHECK_FAQ, CHECK_READS } from "@/lib/check-page";
+import { faqPageJsonLd, webApplicationJsonLd } from "@/lib/structured-data";
 
 /**
  * "ATS resume checker" is the query; "Check what a resume parser reads" was
@@ -32,17 +37,27 @@ import { pageMetadata } from "@/lib/seo";
  * typed into a search box — so the title carries the query and the first line
  * of the page carries the honest version of what it does.
  */
+const DESCRIPTION =
+  "Check your resume the way an ATS reads it: drop in a PDF or Word file and see the text " +
+  "and fields a parser recovers. Free, no sign-up, nothing uploaded.";
+
 export const metadata: Metadata = pageMetadata({
   title: "Free ATS resume checker",
-  description:
-    "Drop in a PDF or Word resume and see the text and fields a parser recovers from it. " +
-    "Free, no account, and the file never leaves your browser.",
+  description: DESCRIPTION,
   path: "/check",
 });
 
 export default function CheckPage() {
   return (
     <>
+      <JsonLdScript
+        data={webApplicationJsonLd({
+          name: "ATS resume checker",
+          description: DESCRIPTION,
+          path: "/check",
+        })}
+      />
+      <JsonLdScript data={faqPageJsonLd(CHECK_FAQ)} />
       {/*
         A dark stage throughout. This is the highest-value acquisition surface
         on the site — a stranger arrives with a file and a question — and it
@@ -75,6 +90,27 @@ export default function CheckPage() {
         <div className="py-band-tight mx-auto flex w-full max-w-3xl flex-col gap-8 px-6">
           <CheckTool />
 
+          {/* What the check reads, from what the parser reports — the page's
+              account of itself, for a visitor deciding whether to trust it
+              with a file and for a crawler deciding what it is. */}
+          <section aria-labelledby="reads-heading" className="flex flex-col gap-4">
+            <h2 id="reads-heading" className="text-text text-display-3 font-semibold">
+              What the check reads from your resume
+            </h2>
+            <p className="text-muted text-body max-w-read leading-relaxed">
+              The same things an applicant tracking system tries to pull out of a file before a
+              person sees it. Each comes back marked as read cleanly, worth a look, or not found.
+            </p>
+            <dl className="grid gap-3 sm:grid-cols-2">
+              {CHECK_READS.map((read) => (
+                <div key={read.name} className="border-line bg-surface-0 rounded-lg border p-4">
+                  <dt className="text-text text-body font-semibold">{read.name}</dt>
+                  <dd className="text-muted text-small mt-1 leading-relaxed">{read.body}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+
           <section className="border-line flex flex-col gap-3 border-t pt-8">
             <h2 className="text-text text-display-3 font-semibold">What this does not tell you</h2>
             <p className="text-muted text-body max-w-read leading-relaxed">
@@ -95,6 +131,17 @@ export default function CheckPage() {
               </Link>
               .
             </p>
+          </section>
+
+          <section aria-labelledby="check-faq-heading" className="border-line border-t pt-8">
+            <h2 id="check-faq-heading" className="text-text text-display-3 font-semibold">
+              Questions about the checker
+            </h2>
+            {/* `Faq`'s rows are `m.*` components, which `LazyMotion strict`
+                refuses outside a provider. */}
+            <MotionProvider>
+              <Faq items={CHECK_FAQ} />
+            </MotionProvider>
           </section>
         </div>
       </main>

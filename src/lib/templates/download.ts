@@ -16,6 +16,7 @@
 
 import { renderDocx } from "@/lib/emit/docx/render";
 import type { TemplateDefinition } from "@/lib/resume/templates";
+import { saveFile } from "@/lib/save-file";
 import { renderPdfBytes } from "@/lib/thumbnail/render";
 import { templateSample } from "@/lib/thumbnail/template-sample";
 
@@ -41,14 +42,5 @@ export async function downloadTemplate(
   template: TemplateDefinition,
   format: TemplateFormat,
 ): Promise<void> {
-  const blob = await templateFile(template, format);
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = templateFileName(template, format);
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  // Revoking at once can cancel the download in some browsers.
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  saveFile(await templateFile(template, format), templateFileName(template, format));
 }
