@@ -29,7 +29,9 @@ import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/mark
 import { RelatedLinks } from "@/components/marketing/RelatedLinks";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { KeywordScanner } from "@/components/tools/KeywordScanner";
-import { webApplicationJsonLd } from "@/lib/structured-data";
+import { faqPageJsonLd, webApplicationJsonLd } from "@/lib/structured-data";
+import { Faq } from "@/components/marketing/Faq";
+import { SCANNER_FAQ } from "@/lib/tool-faq";
 import { pageMetadata } from "@/lib/seo";
 import { SECTION_WEIGHTS } from "@/lib/jd/parse";
 import { GUIDES } from "@/lib/guides/guides";
@@ -76,6 +78,7 @@ export default function KeywordScannerPage() {
       <JsonLdScript
         data={webApplicationJsonLd({ name: TITLE, description: DESCRIPTION, path: PATH })}
       />
+      <JsonLdScript data={faqPageJsonLd(SCANNER_FAQ)} />
 
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <PageHeader stage containerClassName="max-w-5xl">
@@ -183,6 +186,17 @@ export default function KeywordScannerPage() {
               office, finance, retail, HR and sales work. It is not exhaustive: where a posting
               names nothing it knows, it says so, rather than inventing a result.
             </p>
+          </section>
+
+          <section aria-labelledby="scanner-faq-heading" className="flex max-w-3xl flex-col">
+            <h2 id="scanner-faq-heading" className="text-text text-title font-semibold">
+              Questions about the keyword scanner
+            </h2>
+            {/* `Faq`'s rows are `m.*` components, which `LazyMotion strict`
+                refuses outside a provider. */}
+            <MotionProvider>
+              <Faq items={SCANNER_FAQ} />
+            </MotionProvider>
           </section>
 
           <RelatedLinks

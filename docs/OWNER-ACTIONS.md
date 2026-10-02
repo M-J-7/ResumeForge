@@ -4,7 +4,7 @@ Everything in `ROADMAP.md` that needs an account, a device, a decision or a
 signature that the code cannot supply. Each item says why it is yours, how long
 it takes, and exactly what to do. Tick them off here as they land.
 
-**Kept current by whoever changes the plan.** Last updated 2026-09-30.
+**Kept current by whoever changes the plan.** Last updated 2026-10-02.
 
 ---
 
@@ -13,9 +13,13 @@ it takes, and exactly what to do. Tick them off here as they land.
 ### 1. Google Search Console and Bing Webmaster Tools (ROADMAP Phase 1.1) — 20 minutes
 
 The site is live and fast, and Google has still not indexed it — checked again
-on 2026-09-30: a `site:sixseconds.tech` search returns nothing. No amount of
-content ranks until this is done. This is the single highest-value thing on
-this list.
+on 2026-10-02: `site:sixseconds.tech` returns nothing on Google **or Bing**.
+A full audit that day (`docs/SEO.md` §1) found no technical cause: every page
+returns 200, names itself as canonical, and is served as a static file, and
+Bing accepts the IndexNow pings. Search engines simply have no way to find a
+site that is not in Search Console and that no crawled page links to. No
+amount of content ranks until this is done. This is the single highest-value
+thing on this list.
 
 1. <https://search.google.com/search-console> → **Add property** → **Domain** →
    `sixseconds.tech`. It shows a `TXT` record. Add it at your domain registrar
@@ -27,7 +31,7 @@ this list.
    and you press **Verify**. Bing's `msvalidate.01` tag works the same way.
 2. **Sitemaps** → submit `https://sixseconds.tech/sitemap.xml`.
 3. **URL inspection** → paste each of these, then **Request indexing**:
-   `/guides/two-column-resume-ats` (the measurement — the page most likely to earn links), `/`, `/check`, `/templates`, `/examples`, `/guides`, `/resume-keyword-scanner`,
+   `/guides/two-column-resume-ats` (the measurement — the page most likely to earn links), `/`, `/check`, `/templates`, `/examples`, `/guides/is-any-resume-builder-really-free`, `/guides`, `/resume-keyword-scanner`,
    `/bullet-point-checker`, `/examples/software-engineer-fresher`,
    `/guides/resume-format-for-freshers`, `/guides/how-to-write-a-resume-summary`,
    `/guides/how-long-should-a-resume-be`, `/guides/cv-vs-resume-vs-biodata`.

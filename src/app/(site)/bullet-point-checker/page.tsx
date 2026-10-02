@@ -27,7 +27,9 @@ import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/mark
 import { RelatedLinks } from "@/components/marketing/RelatedLinks";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { BulletChecker } from "@/components/tools/BulletChecker";
-import { webApplicationJsonLd } from "@/lib/structured-data";
+import { faqPageJsonLd, webApplicationJsonLd } from "@/lib/structured-data";
+import { Faq } from "@/components/marketing/Faq";
+import { BULLETS_FAQ } from "@/lib/tool-faq";
 import { pageMetadata } from "@/lib/seo";
 import { GUIDES } from "@/lib/guides/guides";
 import { ACTION_VERBS_PATH, ALL_ACTION_VERBS } from "@/lib/verbs/action-verbs";
@@ -70,6 +72,7 @@ export default function BulletCheckerPage() {
       <JsonLdScript
         data={webApplicationJsonLd({ name: TITLE, description: DESCRIPTION, path: PATH })}
       />
+      <JsonLdScript data={faqPageJsonLd(BULLETS_FAQ)} />
 
       <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col">
         <PageHeader stage containerClassName="max-w-3xl">
@@ -128,6 +131,17 @@ export default function BulletCheckerPage() {
               It also does not keep anything. The check runs in this tab as you type; nothing is
               sent to a server and nothing is saved.
             </p>
+          </section>
+
+          <section aria-labelledby="bullets-faq-heading" className="flex max-w-3xl flex-col">
+            <h2 id="bullets-faq-heading" className="text-text text-title font-semibold">
+              Questions about the bullet checker
+            </h2>
+            {/* `Faq`'s rows are `m.*` components, which `LazyMotion strict`
+                refuses outside a provider. */}
+            <MotionProvider>
+              <Faq items={BULLETS_FAQ} />
+            </MotionProvider>
           </section>
 
           <RelatedLinks

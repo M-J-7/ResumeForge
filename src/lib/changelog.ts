@@ -51,6 +51,17 @@ export const CHANGELOG: readonly ChangelogEntry[] = [
     link: { href: "/guides/is-any-resume-builder-really-free", label: "Read the guide" },
   },
   {
+    date: "2026-10-02",
+    kind: "improved",
+    title: "The keyword scanner and the bullet checker answer the usual questions",
+    body:
+      "How the scanner weighs a posting, why it shows no match percentage, and whether to add " +
+      "every missing keyword; what makes a bullet good, why the checker will not rewrite yours, " +
+      "and how to add numbers when you have none. Each answer is read from the code that does " +
+      "the work where it can be, so the page cannot describe an engine the site does not run.",
+    link: { href: "/resume-keyword-scanner", label: "Open the keyword scanner" },
+  },
+  {
     date: "2026-10-01",
     kind: "new",
     title: "Four more: civil engineer fresher, sales executive, truck driver, dental assistant",
