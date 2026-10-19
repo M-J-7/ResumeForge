@@ -26,7 +26,7 @@ import type { TextItem } from "pdfjs-dist/types/src/display/api";
 // between extraction working and pdfjs throwing on the first call.
 import "@/lib/pdf/worker";
 
-export type ExtractionStrategy = "pdf-stream-order" | "pdf-geometric" | "docx";
+export type ExtractionStrategy = "pdf-stream-order" | "pdf-geometric" | "docx" | "doc";
 
 export interface ExtractedDocument {
   strategy: ExtractionStrategy;
@@ -177,31 +177,141 @@ export interface DocxParagraph {
  */
 export function extractDocxStructure(bytes: Uint8Array): DocxParagraph[] {
   const files = unzipSync(bytes);
-  const documentXml = files["word/document.xml"];
+  const documentXml = files[mainDocumentPart(files)];
   if (!documentXml) return [];
+  const stylesXml = files["word/styles.xml"];
+  return paragraphsFromWordXml(
+    strFromU8(documentXml),
+    stylesXml ? listStyleIds(strFromU8(stylesXml)) : undefined,
+  );
+}
 
-  const xml = strFromU8(documentXml);
+/**
+ * The paragraph styles that make a paragraph a list item.
+ *
+ * A bullet can be the paragraph's own numbering or its style's: Word's "List
+ * Bullet", and most templates' bullet styles, carry the numbering in the
+ * style, and the paragraph says only which style it is. Reading the
+ * paragraph alone missed every one of those bullets, so each was read as a
+ * line of its own (2026-10-19). A style inherits numbering from the style it
+ * is based on, and `numId` 0 is a style switching it off.
+ */
+export function listStyleIds(stylesXml: string): Set<string> {
+  const own = new Map<string, boolean>();
+  const basedOn = new Map<string, string>();
+  for (const match of stylesXml.matchAll(/<w:style\b([^>]*)>([\s\S]*?)<\/w:style>/g)) {
+    const attributes = match[1] ?? "";
+    const body = match[2] ?? "";
+    if (!/w:type="paragraph"/.test(attributes)) continue;
+    const id = attributes.match(/w:styleId="([^"]+)"/)?.[1];
+    if (!id) continue;
+    const base = body.match(/<w:basedOn\s+w:val="([^"]+)"/)?.[1];
+    if (base) basedOn.set(id, base);
+    const numbering = body.match(/<w:numPr>([\s\S]*?)<\/w:numPr>/)?.[1];
+    if (numbering !== undefined) own.set(id, !/<w:numId\s+w:val="0"/.test(numbering));
+  }
+
+  const lists = new Set<string>();
+  for (const id of new Set([...own.keys(), ...basedOn.keys()])) {
+    let current: string | undefined = id;
+    for (let depth = 0; current !== undefined && depth < 16; depth += 1) {
+      const value = own.get(current);
+      if (value !== undefined) {
+        if (value) lists.add(id);
+        break;
+      }
+      current = basedOn.get(current);
+    }
+  }
+  return lists;
+}
+
+/**
+ * Where the package says its body is. Word writes `word/document.xml`, but
+ * the name is the package's to choose — `_rels/.rels` names it — and some
+ * tools write `word/document2.xml`, which used to read as an empty document.
+ */
+function mainDocumentPart(files: Record<string, Uint8Array>): string {
+  const rels = files["_rels/.rels"];
+  if (rels) {
+    for (const match of strFromU8(rels).matchAll(/<Relationship\b[^>]*>/g)) {
+      const tag = match[0];
+      if (!/Type="[^"]*\/officeDocument"/.test(tag)) continue;
+      const target = tag.match(/Target="([^"]+)"/)?.[1];
+      if (target) return target.replace(/^\.?\//, "");
+    }
+  }
+  return "word/document.xml";
+}
+
+/**
+ * Paragraphs out of WordprocessingML, wherever it came from: a DOCX's
+ * `document.xml`, or one of the single-file XML forms Word also saves —
+ * Word 2003 XML and Flat OPC — which arrive with a `.doc` or `.xml` name.
+ * Word 2003 marks a list paragraph with `<w:listPr>` rather than `<w:numPr>`.
+ *
+ * `listStyles` are the styles that make a paragraph a list item by
+ * themselves (`listStyleIds`); a paragraph's own numbering overrides them.
+ */
+export function paragraphsFromWordXml(
+  xml: string,
+  listStyles: ReadonlySet<string> = new Set(),
+): DocxParagraph[] {
   const paragraphs: DocxParagraph[] = [];
 
-  for (const match of xml.matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)) {
-    const body = match[1] ?? "";
-    const style = body.match(/<w:pStyle\s+w:val="([^"]+)"/)?.[1] ?? "";
-    const isListItem = body.includes("<w:numPr>");
-    // Tabs and breaks are whitespace the paragraph genuinely contains, and
-    // dropping them glues two fields into one word: an entry heading sets
-    // its date at a right tab stop, so ignoring `<w:tab/>` yields
-    // "Senior Backend EngineerMar 2022 – Present" and every downstream
-    // reader sees one unparseable string where the document has two fields.
-    const text = normalize(
-      [...body.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:tab|br|cr)\b[^>]*>/g)]
-        .map((t) => (t[1] === undefined ? " " : decodeXmlEntities(t[1])))
-        .join(""),
+  // A table row, or a paragraph outside one, in document order. A row whose
+  // cells each hold one paragraph is one line — "Data Analyst, Globex" in one
+  // cell and "Jan 2022 – Present" in the next is the dated line an entry
+  // starts with, which is how it looks and how a PDF of it reads. A row with
+  // fuller cells stays as its paragraphs, since joining those would
+  // interleave them.
+  for (const match of xml.matchAll(
+    /<w:tr\b[^>]*>([\s\S]*?)<\/w:tr>|<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g,
+  )) {
+    if (match[1] === undefined) {
+      const paragraph = wordParagraph(match[2] ?? "", listStyles);
+      if (paragraph) paragraphs.push(paragraph);
+      continue;
+    }
+    const cells = [...match[1].matchAll(/<w:tc\b[^>]*>([\s\S]*?)<\/w:tc>/g)].map((cell) =>
+      [...(cell[1] ?? "").matchAll(/<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g)]
+        .map((p) => wordParagraph(p[1] ?? "", listStyles))
+        .filter((p): p is DocxParagraph => p !== null),
     );
-    if (text.length === 0) continue;
-    paragraphs.push({ style, text, isListItem });
+    const flat = cells.flat();
+    if (cells.length > 1 && cells.every((cell) => cell.length <= 1) && flat[0]) {
+      paragraphs.push({
+        style: flat[0].style,
+        text: flat.map((p) => p.text).join(" "),
+        isListItem: flat.some((p) => p.isListItem),
+      });
+    } else {
+      paragraphs.push(...flat);
+    }
   }
 
   return paragraphs;
+}
+
+/** One `<w:p>`'s body as a paragraph, or null when it holds no text. */
+function wordParagraph(body: string, listStyles: ReadonlySet<string>): DocxParagraph | null {
+  const style = body.match(/<w:pStyle\s+w:val="([^"]+)"/)?.[1] ?? "";
+  const numbering = body.match(/<w:numPr>([\s\S]*?)<\/w:numPr>/)?.[1];
+  const isListItem =
+    numbering !== undefined
+      ? !/<w:numId\s+w:val="0"/.test(numbering)
+      : body.includes("<w:listPr>") || listStyles.has(style);
+  // Tabs and breaks are whitespace the paragraph genuinely contains, and
+  // dropping them glues two fields into one word: an entry heading sets
+  // its date at a right tab stop, so ignoring `<w:tab/>` yields
+  // "Senior Backend EngineerMar 2022 – Present" and every downstream
+  // reader sees one unparseable string where the document has two fields.
+  const text = normalize(
+    [...body.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:(?:tab|br|cr)\b[^>]*>/g)]
+      .map((t) => (t[1] === undefined ? " " : decodeXmlEntities(t[1])))
+      .join(""),
+  );
+  return text.length === 0 ? null : { style, text, isListItem };
 }
 
 /**

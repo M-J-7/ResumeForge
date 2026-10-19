@@ -30,6 +30,7 @@
 export const ACTION_EVENTS = [
   // The free tools, used rather than merely viewed.
   "check:read",
+  "check:failed",
   "check:handoff",
   "scanner:compare",
   "scanner:handoff",
@@ -37,7 +38,9 @@ export const ACTION_EVENTS = [
   // The builder.
   "import:pdf",
   "import:docx",
+  "import:doc",
   "import:json",
+  "import:failed",
   "template:apply",
   "template:word",
   "template:pdf",
@@ -99,13 +102,16 @@ export const SOURCES = [
  */
 export const ACTION_DESCRIPTIONS: Record<ActionEvent, string> = {
   "check:read": "a file was read by the free ATS check",
+  "check:failed": "a file could not be read by the free ATS check",
   "check:handoff": "the ATS check's result was taken into the builder",
   "scanner:compare": "the keyword scanner compared a posting with a resume",
   "scanner:handoff": "the keyword scanner's resume was taken into the builder",
   "bullets:check": "the bullet checker checked something (once per visit)",
   "import:pdf": "a PDF was imported into the builder",
   "import:docx": "a Word file was imported into the builder",
+  "import:doc": "an older Word (.doc) or RTF file was imported into the builder",
   "import:json": "a JSON Resume file was imported into the builder",
+  "import:failed": "a file could not be imported into the builder",
   "template:apply": "a template was applied",
   "template:word": "a template was downloaded as a Word file",
   "template:pdf": "a template was downloaded as a PDF",

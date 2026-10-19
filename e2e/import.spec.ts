@@ -202,8 +202,70 @@ test("says what to do when a file cannot be read at all", async ({ page }) => {
   // Matched by its text rather than by `role="alert"`: Next's route
   // announcer carries that role on every page, so the role alone is
   // ambiguous (landmine 17). The assertion is also that the message is the
-  // one written for a person, not pdfjs's "Invalid PDF structure".
-  await expect(page.getByText(/could not be read as a PDF/i)).toBeVisible({ timeout: 30_000 });
+  // one written for a person, not pdfjs's "Invalid PDF structure" — and that
+  // it says what the file actually is.
+  await expect(page.getByText(/not a PDF, whatever its name says/i)).toBeVisible({
+    timeout: 30_000,
+  });
+});
+
+/**
+ * The failure every iPhone had until 2026-10-19: pdfjs reads text with a
+ * `for await` over a `ReadableStream`, which no shipping Safari supports, and
+ * the visitor was told their PDF "could not be read as a PDF". Playwright's
+ * WebKit is a trunk build that already has the feature, so the WebKit engine
+ * would not show it either; taking the features away from Chromium does.
+ * (The worker gets the same polyfills from its entry file — next test.)
+ */
+test("/check reads a PDF in a browser that cannot iterate a stream — every Safari", async ({
+  page,
+}) => {
+  const pdf = await buildAndDownloadPdf(page);
+
+  await page.context().addInitScript(() => {
+    const stream = ReadableStream.prototype as unknown as Record<PropertyKey, unknown>;
+    delete stream[Symbol.asyncIterator];
+    delete stream.values;
+    delete (Promise as unknown as Record<string, unknown>).withResolvers;
+  });
+  await page.goto("/check");
+  expect(
+    await page.evaluate(
+      () => Symbol.asyncIterator in ReadableStream.prototype && "withResolvers" in Promise,
+    ),
+    "the page starts without either feature, as Safari does",
+  ).toBe(false);
+
+  await page.locator('input[type="file"]').setInputFiles(pdf);
+  await expect(page.getByText("What a parser recovered from")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("table")).toContainText("Rosalind Franklin");
+});
+
+test("the pdfjs worker loads its polyfills before a line of pdfjs runs", async ({ request }) => {
+  const entry = await request.get("/pdf.worker.min.mjs");
+  expect(entry.ok()).toBe(true);
+  expect(await entry.text()).toBe(
+    'import "./pdf.polyfills.mjs";\nexport * from "./pdf.worker.impl.min.mjs";\n',
+  );
+  for (const file of ["/pdf.polyfills.mjs", "/pdf.worker.impl.min.mjs"]) {
+    const response = await request.get(file);
+    expect(response.ok(), file).toBe(true);
+    // A module worker refuses a script served as anything but JavaScript.
+    expect(response.headers()["content-type"], file).toMatch(/javascript/);
+  }
+});
+
+test("/check reads an older Word .doc", async ({ page }) => {
+  await page.goto("/check");
+  await page
+    .locator('input[type="file"]')
+    .setInputFiles(path.join(process.cwd(), "src", "test", "fixtures", "word", "mid-career.doc"));
+
+  await expect(page.getByText("What a parser recovered from mid-career.doc")).toBeVisible({
+    timeout: 30_000,
+  });
+  await expect(page.getByRole("table")).toContainText("José Ángel Muñoz-Łukasiewicz");
+  await expect(page.getByRole("table")).toContainText("jose.munoz@example.com");
 });
 
 test("/check has no serious or critical accessibility violations", async ({ page }) => {

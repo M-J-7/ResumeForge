@@ -22,8 +22,16 @@
  * A module whose whole job is this one assignment can be imported by every
  * file that needs it, and the dependency is then visible in the import list
  * rather than implied by page composition.
+ *
+ * ## And the polyfills
+ *
+ * For the same reason, this is where the page gets `./polyfills.mjs`: every
+ * file that opens a PDF imports this one, and pdfjs needs them on every read
+ * in Safari. Without them `/check` failed on every iPhone. The worker gets its
+ * own copy; `scripts/sync-public-fonts.mjs` builds the worker entry so.
  */
 
+import "./polyfills.mjs";
 import { GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 export const PDF_WORKER_URL = "/pdf.worker.min.mjs";

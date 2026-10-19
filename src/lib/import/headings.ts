@@ -74,8 +74,15 @@ const MAX_HEADING_WORDS = 5;
  * exists to prevent.
  */
 const HEADING_PATTERNS: readonly { pattern: RegExp; kind: HeadingKind }[] = [
+  // --- achievements, whatever leads them -----------------------------------
+  // "Academic and Extracurricular Achievements" starts with "Academic", which
+  // the education rule below claims, and every achievement in it became a
+  // school (2026-10-19, a real resume). What a heading *ends* with says what
+  // the list is.
+  { pattern: /\b(achievements?|accomplishments?)$/i, kind: "custom" },
+
   // --- things that read as experience but are not the work history --------
-  { pattern: /^(volunteer|community|extra[-\s]?curricular)/i, kind: "custom" },
+  { pattern: /^(volunteer|community|extra[-\s]?curricular|co[-\s]?curricular)/i, kind: "custom" },
   { pattern: /^(publications?|research|patents?)\b/i, kind: "custom" },
   { pattern: /^(awards?|honou?rs?|achievements?|scholarships?)\b/i, kind: "custom" },
   { pattern: /^(languages?|interests?|hobbies|activities|references?)\b/i, kind: "custom" },
@@ -198,6 +205,26 @@ export function classifyHeading(heading: string): HeadingKind | null {
     if (pattern.test(text)) return kind;
   }
   return null;
+}
+
+/**
+ * True when the whole line is a section name and nothing more — "Work
+ * Experience", "Projects", "Education" — rather than a line that merely
+ * starts like one, as the job title "Projects Lead" does.
+ *
+ * The test `splitSections` uses before second-guessing a heading because a
+ * dated line follows it: a section's first entry is dated, so "Education"
+ * above "University of X 2021 – 2025" is the commonest shape there is, and
+ * reading it as an entry lost the whole section (2026-10-19).
+ */
+export function isWholeHeading(rawLine: string): boolean {
+  const text = normalizeHeading(rawLine);
+  if (text.length === 0) return false;
+  for (const { pattern } of HEADING_PATTERNS) {
+    const match = pattern.exec(text);
+    if (match) return match.index === 0 && match[0].length === text.length;
+  }
+  return false;
 }
 
 /**

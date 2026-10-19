@@ -83,6 +83,30 @@ export function parsePartialDate(raw: string): ParsedDate | null {
     }
   }
 
+  // "Mar'25", "July’23", "Mar ’25": a two-digit year after an apostrophe, the
+  // way Indian resumes very often abbreviate. Unread, every role in such a
+  // resume came back undated and the experience section fell apart into one
+  // entry per line (2026-10-19, found on a real resume). '00–'49 are this
+  // century; a resume dated '85 means 1985.
+  const apostrophe = text.match(/^([A-Za-z]{3,9})\.?\s*['’‘`]\s*(\d{2})$/);
+  if (apostrophe) {
+    const month = MONTHS[(apostrophe[1] ?? "").toLowerCase()];
+    const yy = Number(apostrophe[2]);
+    if (month !== undefined) {
+      return { date: { year: yy < 50 ? 2000 + yy : 1900 + yy, month }, monthCertain: true };
+    }
+  }
+
+  // "Mar-2022", "Mar'2022", "Mar, 2022", "Mar/2022": the month and a full
+  // year with punctuation between them rather than a space.
+  const joined = text.match(/^([A-Za-z]{3,9})\.?\s*[-/,'’‘]\s*((?:19|20)\d{2})$/);
+  if (joined) {
+    const month = MONTHS[(joined[1] ?? "").toLowerCase()];
+    if (month !== undefined) {
+      return { date: { year: Number(joined[2]), month }, monthCertain: true };
+    }
+  }
+
   // "2022 Mar" — less common, but Indian and continental templates do it.
   const reversed = text.match(/^((?:19|20)\d{2})\s+([A-Za-z]{3,9})\.?$/);
   if (reversed) {
@@ -153,8 +177,14 @@ export interface ParsedDateRange {
 const MONTH_ALTERNATION =
   "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\b";
 
-/** `Mar 2022`, `2022 Mar`, `Fall 2022`, `03/04/2023`, `03/2022`, `2022` — in that order. */
+/**
+ * `Mar'25`, `Mar-2022`, `Mar 2022`, `2022 Mar`, `Fall 2022`, `03/04/2023`,
+ * `03/2022`, `2022` — in that order. The two-digit year must not run on into
+ * more digits, so `Mar'2022` is the second form and never the first.
+ */
 const DATE_TOKEN_SOURCE = [
+  `${MONTH_ALTERNATION}\\.?\\s*['’‘\`]\\s*\\d{2}(?!\\d)`,
+  `${MONTH_ALTERNATION}\\.?\\s*[-/,'’‘]\\s*(?:19|20)\\d{2}`,
   `${MONTH_ALTERNATION}\\.?\\s+(?:19|20)\\d{2}`,
   `(?:19|20)\\d{2}\\s+${MONTH_ALTERNATION}\\.?`,
   `(?:spring|summer|fall|autumn|winter)\\s+(?:19|20)\\d{2}`,

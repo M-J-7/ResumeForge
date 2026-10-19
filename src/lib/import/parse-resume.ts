@@ -37,19 +37,23 @@
  * output document came from the user's own file.
  */
 
+import { unzipSync } from "fflate";
 import {
   extractDocxBrowser,
   extractDocxStructure,
   extractPdfGeometric,
+  type DocxParagraph,
   type ExtractedDocument,
   type ExtractionStrategy,
 } from "@/lib/xray/extract-browser";
+import { extractLegacyWord, LegacyWordError } from "./legacy-word";
 import { recoverFields } from "@/lib/xray/scorecard";
 import {
   classifyHeading,
   docxHeadingLevel,
   headingKindOf,
   headingStrength,
+  isWholeHeading,
   normalizeHeading,
 } from "./headings";
 import type { HeadingKind } from "./headings";
@@ -73,7 +77,7 @@ import {
   type Section,
 } from "@/lib/resume/schema";
 
-import type { ImportKind } from "./kind";
+import { foreignFileMessage, importKindFromBytes, looksLikeMarkup, type ImportKind } from "./kind";
 export type { ImportKind } from "./kind";
 
 /**
@@ -129,25 +133,76 @@ interface SourceSection {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * A file that could not be read, with a message written for the person who
+ * chose it. Anything else a read throws is a defect here, and the screens
+ * that call this show an apology rather than its message. They test the
+ * name, not the class, because they load this module on demand.
+ */
+export class ResumeReadError extends Error {
+  override name = "ResumeReadError";
+}
+
+/**
  * Reads a resume file. Runs entirely in the caller's process — in the
  * browser that means nothing is uploaded, which is what lets `/check` promise
  * it (D6, and §2.2's privacy requirement).
+ *
+ * `claimed` is what the file's name says it is. The file's own first bytes
+ * win when they say otherwise (`importKindFromBytes`), so a `.docx` renamed
+ * `.doc`, or an RTF Word saved as `.doc`, is read as what it is.
+ *
+ * Every failure is an `Error` whose message is written for the person who
+ * chose the file, and says whether the problem is the file or the browser.
+ * That distinction is the point: on 2026-10-19 every iPhone was told its PDF
+ * was unreadable, when the fault was a browser feature pdfjs assumed
+ * (`lib/pdf/polyfills.mjs`). A message that blames the file for that sends
+ * people off to re-export a resume that was never wrong.
  */
-export async function parseResumeFile(bytes: Uint8Array, kind: ImportKind): Promise<ImportResult> {
+export async function parseResumeFile(
+  bytes: Uint8Array,
+  claimed: ImportKind,
+): Promise<ImportResult> {
+  const foreign = foreignFileMessage(bytes);
+  if (foreign) throw new ResumeReadError(foreign);
+
+  const kind = importKindFromBytes(bytes) ?? claimed;
+
   if (kind === "docx") {
     let paragraphs;
     try {
       paragraphs = extractDocxStructure(bytes);
     } catch {
-      throw new Error(
-        "That file could not be read as a Word document. A .docx is a zip archive; a renamed " +
-          ".doc or .pages file is not one.",
+      throw new ResumeReadError(
+        "That file could not be read as a Word document — it looks damaged. If it opens in " +
+          "Word, save it again as .docx or PDF and check that.",
       );
     }
-    if (paragraphs.length === 0) {
-      throw new Error("That Word document has no readable text in its body.");
+    if (paragraphs.length === 0) throw new ResumeReadError(emptyZipMessage(bytes));
+    return parseSourceLines(wordProcessorSourceLines(paragraphs), extractDocxBrowser(bytes));
+  }
+
+  if (kind === "doc") {
+    let legacy;
+    try {
+      legacy = extractLegacyWord(bytes);
+    } catch (error) {
+      if (error instanceof LegacyWordError) throw new ResumeReadError(error.message);
+      reportReadFailure("doc", error);
+      throw new ResumeReadError(
+        "That Word file could not be read. If it opens in Word, save it again as .docx or PDF " +
+          "and check that.",
+      );
     }
-    return parseSourceLines(docxSourceLines(paragraphs), extractDocxBrowser(bytes));
+    if (legacy.paragraphs.length === 0) {
+      throw new ResumeReadError("That Word document has no readable text in its body.");
+    }
+    const lines = legacy.paragraphs.map((p) => p.text);
+    return parseSourceLines(wordProcessorSourceLines(legacy.paragraphs), {
+      strategy: "doc",
+      lines,
+      text: lines.join("\n"),
+      pageCount: 0,
+    });
   }
 
   // pdfjs reports a broken file with a message written for a developer
@@ -157,20 +212,89 @@ export async function parseResumeFile(bytes: Uint8Array, kind: ImportKind): Prom
   let extracted;
   try {
     extracted = await extractPdfGeometric(bytes);
-  } catch {
-    throw new Error(
-      "That file could not be read as a PDF. If it opens elsewhere, try exporting it again from " +
-        "the program that made it.",
-    );
+  } catch (error) {
+    throw new ResumeReadError(pdfFailureMessage(error, bytes));
   }
 
   if (extracted.lines.length === 0) {
-    throw new Error(
+    throw new ResumeReadError(
       "No text could be read from that PDF. A scanned or image-only resume has no text layer — " +
         "which is also why an applicant tracking system cannot read it.",
     );
   }
   return parseSourceLines(pdfSourceLines(extracted.lines), extracted);
+}
+
+/**
+ * What to tell someone whose PDF did not open, from what pdfjs threw and what
+ * the file is. pdfjs names its own failures; anything else it throws is the
+ * browser falling over, which says nothing about the file at all.
+ */
+function pdfFailureMessage(error: unknown, bytes: Uint8Array): string {
+  const name = error instanceof Error ? error.name : "";
+  if (name === "PasswordException") {
+    return (
+      "That PDF is password-protected, so nothing in it can be read — not here, and not by an " +
+      "applicant tracking system either. Save a copy without the password (print it to a new " +
+      "PDF) and check that."
+    );
+  }
+  if (importKindFromBytes(bytes) !== "pdf") {
+    return looksLikeMarkup(bytes)
+      ? "That file is a web page saved with a .pdf name — usually a download that did not " +
+          "finish. Download your resume again, or export it from the program you wrote it in."
+      : "That file is not a PDF, whatever its name says. Export a PDF from the program you " +
+          "wrote your resume in, and check that.";
+  }
+  if (name === "InvalidPDFException" || name === "FormatError") {
+    return (
+      "That PDF looks damaged and could not be read. If it opens elsewhere, export it again " +
+      "from the program that made it."
+    );
+  }
+  reportReadFailure("pdf", error);
+  return (
+    "Your browser stopped the PDF reader before it finished, so this says nothing about your " +
+    "file. Reload the page and try again; if it happens again, update your browser or try " +
+    "another one."
+  );
+}
+
+/**
+ * A failure that is ours or the browser's rather than the file's, written to
+ * the console so it can be diagnosed from a real device. The error alone —
+ * never the file or anything read out of it.
+ */
+function reportReadFailure(kind: ImportKind, error: unknown): void {
+  console.error(`Resume import: the ${kind} reader failed`, error);
+}
+
+/**
+ * A zip that holds no Word body. Most often it is another program's document
+ * — OpenDocument and Pages files are zips too — so that is what is said.
+ */
+function emptyZipMessage(bytes: Uint8Array): string {
+  const names: string[] = [];
+  try {
+    unzipSync(bytes, {
+      filter: (file) => {
+        names.push(file.name);
+        return false;
+      },
+    });
+  } catch {
+    // Listing the names is a courtesy; the message below stands without it.
+  }
+  if (names.includes("mimetype") && names.includes("content.xml")) {
+    return "That is an OpenDocument file (.odt), not a Word file. Save it as .docx or PDF from the program that made it, and check that.";
+  }
+  if (names.some((n) => n.startsWith("Index/") || n === "index.xml")) {
+    return "That is an Apple Pages file. In Pages, choose File → Export To → Word or PDF, and check that.";
+  }
+  if (names.some((n) => n.startsWith("xl/") || n.startsWith("ppt/"))) {
+    return "That is a spreadsheet or a presentation, not a Word document. Save your resume from Word as .docx or PDF and check that.";
+  }
+  return "That Word document has no readable text in its body.";
 }
 
 /**
@@ -194,7 +318,7 @@ export function parseResumeLines(lines: readonly string[]): ImportResult {
 }
 
 /** Moved to `kind.ts`, which costs nothing to import; re-exported here. */
-export { importKindFromFilename } from "./kind";
+export { importKindFromBytes, importKindFromFilename } from "./kind";
 
 /* -------------------------------------------------------------------------- */
 /* Format-specific: lines in, `SourceLine[]` out                               */
@@ -256,15 +380,52 @@ export function parseResumeText(text: string): ImportResult {
   );
 }
 
+/**
+ * The start of a line that carries on the sentence above it: a lowercase
+ * letter (but not "iOS" or "eBay", which start a name), or punctuation that
+ * cannot begin one.
+ */
+const CONTINUATION = /^(?:\p{Ll}(?!\p{Lu})|[(&,;:%])/u;
+
 function pdfSourceLines(lines: readonly string[]): SourceLine[] {
-  return lines
-    .filter((line) => !RULE_LINE.test(line))
-    .map((line) => {
-      const isBullet = PDF_BULLET.test(line);
-      // "Objective ______________" — a heading with its rule typed after it.
-      const text = (isBullet ? line.replace(PDF_BULLET, "") : line).replace(/[\s_]{4,}$/, "");
-      return { text: text.trim(), isBullet, declared: null };
-    });
+  const out: SourceLine[] = [];
+  for (const line of lines) {
+    if (RULE_LINE.test(line)) continue;
+    const isBullet = PDF_BULLET.test(line);
+    // "Objective ______________" — a heading with its rule typed after it.
+    const text = (isBullet ? line.replace(PDF_BULLET, "") : line).replace(/[\s_]{4,}$/, "").trim();
+
+    // A bullet too long for one line wraps, and the wrapped half arrives as
+    // a line of its own with no marker. Left alone it was read as the next
+    // entry's header — "efficiency by 35% through MySQL optimization." became
+    // a job, and the real job under it lost its title (2026-10-19). A line
+    // that starts mid-sentence right after a bullet is that bullet's.
+    const previous = out[out.length - 1];
+    if (!isBullet && previous?.isBullet && CONTINUATION.test(text) && !findEntryDate(text)) {
+      previous.text = `${previous.text} ${text}`;
+      continue;
+    }
+    out.push({ text, isBullet, declared: null });
+  }
+  return out;
+}
+
+/**
+ * Every word-processor format — DOCX, `.doc`, RTF, HTML, Word XML. Headings
+ * and list items come from the file where it states them, as `docxSourceLines`
+ * reads them. A bullet *typed* as a character — "• Led the…", "- Built…" — is
+ * stated nowhere but the text, and is common in all of these, so each line
+ * also gets the PDF path's glyph test, and the glyph comes off the text.
+ */
+function wordProcessorSourceLines(paragraphs: readonly DocxParagraph[]): SourceLine[] {
+  return docxSourceLines(paragraphs.filter((p) => !RULE_LINE.test(p.text))).map((line) => {
+    if (!PDF_BULLET.test(line.text)) return line;
+    const text = line.text
+      .replace(PDF_BULLET, "")
+      .replace(/[\s_]{4,}$/, "")
+      .trim();
+    return { ...line, text, isBullet: true };
+  });
 }
 
 /**
@@ -319,19 +480,28 @@ function splitSections(lines: readonly SourceLine[]): {
     // `contact` on a DOCX name paragraph is a label for the header block, not
     // a section of its own: starting a section there would leave the header
     // empty and the contact details inside a section nobody reads for them.
+    // A bullet is an item, not a heading: "● ECE | CGPA: 7.5" is all capitals
+    // and passed as a heading by shape, opening a section of its own. The one
+    // exception is a template that decorates its headings with a glyph —
+    // "■ EXPERIENCE" — which is a section name and nothing else.
     const kind: HeadingKind | null =
-      declared === "contact" ? null : (declared ?? headingKindOf(line.text));
+      declared === "contact"
+        ? null
+        : (declared ??
+          (line.isBullet && !isWholeHeading(line.text) ? null : headingKindOf(line.text)));
 
     // A *weak* heading immediately followed by a dated line is an entry, not
     // a section: "Projects Lead" above "Acme Corp, Jan 2020 – Present" reads
     // as a heading by shape and is a job title in fact. A strong one is not
     // second-guessed — "EXPERIENCE" above a dated role is the shape our own
-    // PDF emits and the commonest shape there is. And a heading the source
-    // *declared* is never a guess at all.
+    // PDF emits and the commonest shape there is — and neither is a line
+    // that is a section name and nothing more, like "Education" above its
+    // first, dated, school. A heading the source *declared* is never a guess.
     const next = lines[index + 1];
     const looksLikeEntry =
       declared === null &&
       headingStrength(line.text) === "weak" &&
+      !isWholeHeading(line.text) &&
       next !== undefined &&
       findDateRange(next.text) !== null;
 
@@ -397,11 +567,26 @@ const TRAILING_LOCATION =
 const TRAILING_LOCATION_AFTER_COMMA =
   /^(.*[^\s,])\s*,\s*(\p{Lu}[\p{L}.'-]*(?:\s+\p{Lu}[\p{L}.'-]*){0,2},\s*\p{Lu}[\p{L}.'-]*(?:\s+\p{Lu}[\p{L}.'-]*){0,2})$/u;
 
+/**
+ * Words that end the *name* of an institution or a company, and so are never
+ * a city: "David Model Sr. Sec. School, India" ends in a school, not in a
+ * place called School (2026-10-19, a real resume — every one of its schools
+ * was cut in half).
+ */
+const NOT_A_CITY =
+  /\b(school|university|college|institute|academy|polytechnic|technology|sciences?|engineering|management|studies|education|research|ltd|pvt|inc|limited|solutions|services|labs?|hospital|bank)\b/i;
+
 function splitTrailingLocation(text: string): { rest: string; location: string } {
-  const match =
-    TRAILING_LOCATION_AFTER_COMMA.exec(text.trim()) ?? TRAILING_LOCATION.exec(text.trim());
-  if (!match) return { rest: text.trim(), location: "" };
-  return { rest: (match[1] ?? "").replace(/[,\s]+$/, ""), location: (match[2] ?? "").trim() };
+  for (const pattern of [TRAILING_LOCATION_AFTER_COMMA, TRAILING_LOCATION]) {
+    const match = pattern.exec(text.trim());
+    if (!match) continue;
+    const location = (match[2] ?? "").trim();
+    const city = location.split(",")[0] ?? "";
+    // "Data Analyst, Globex Analytics" is not a place called Analyst.
+    if (NOT_A_CITY.test(city) || TITLE_WORD.test(city)) continue;
+    return { rest: (match[1] ?? "").replace(/[,\s]+$/, ""), location };
+  }
+  return { rest: text.trim(), location: "" };
 }
 
 /** True for a line that names an institution rather than a credential. */
@@ -810,15 +995,51 @@ function groupEntries(lines: readonly SourceLine[], options: GroupOptions = {}):
     pending = [];
   }
 
-  // A section whose entries carry no dates at all still has content. One
-  // undated entry per line beats dropping the section, and the review
-  // surface reports the dates as missing rather than inventing them.
-  if (entries.length === 0 && pending.length > 0) {
-    for (const text of pending) {
-      entries.push({ headline: text, dated: null, detail: [], above: [], bullets: [] });
+  // A section whose entries carry no dates at all still has content, and the
+  // review surface reports the dates as missing rather than inventing them.
+  if (entries.length === 0 && pending.length > 0) entries.push(...undatedEntries(lines));
+
+  return entries;
+}
+
+/**
+ * Entries for a section with no dates in it, which is how most resumes write
+ * their projects.
+ *
+ * Where the section has bullets, they say where entries are: an unbulleted
+ * line is an entry's name, the unbulleted line straight under it is its
+ * description, and the bullets after belong to it — "GetINFO", "Crop disease
+ * detection…", "● Achieved 98% accuracy…" is one project. It used to be one
+ * entry per line, so a project with three bullets became four projects, three
+ * of them named after a bullet (2026-10-19).
+ *
+ * A section with no bullets, or bullets with nothing above them, is still one
+ * entry per line: a list of achievements is a list of entries.
+ */
+function undatedEntries(lines: readonly SourceLine[]): RawEntry[] {
+  const content = lines.filter((line) => line.text.length > 0);
+  const single = (text: string): RawEntry => ({
+    headline: text,
+    dated: null,
+    detail: [],
+    above: [],
+    bullets: [],
+  });
+  if (!content.some((line) => line.isBullet)) return content.map((line) => single(line.text));
+
+  const entries: RawEntry[] = [];
+  let current: RawEntry | null = null;
+  for (const line of content) {
+    if (line.isBullet) {
+      if (current) current.bullets.push(line.text);
+      else entries.push(single(line.text));
+    } else if (current && current.bullets.length === 0 && current.detail.length === 0) {
+      current.detail.push(line.text);
+    } else {
+      current = single(line.text);
+      entries.push(current);
     }
   }
-
   return entries;
 }
 
@@ -856,12 +1077,35 @@ function parseExperience(
 
     // A headline may carry both fields — "Engineer | Acme" is common — but a
     // comma is never treated as a separator here, so "Engineer, Platform"
-    // stays one title.
-    const parts = splitFields(title);
+    // stays one title. The other order, "Acme Pvt. Ltd. | Engineer", is just
+    // as common in Indian resumes, and is told apart by what the words are.
+    let parts = employerFirst(splitFields(title));
     const entry = createExperienceEntry();
 
-    const supportLine = support[0] ?? "";
+    // The line under the headline names the employer only when it is shaped
+    // like a name. A sentence there — "Built weekly churn dashboards for 40
+    // regional managers." — is the role's first bullet set without a marker,
+    // and taking it as the employer put a sentence in the employer field.
+    const firstSupport = support[0] ?? "";
+    const supportIsMeta =
+      firstSupport !== "" &&
+      !/[.!?]$/.test(firstSupport) &&
+      (firstSupport.length <= 80 ||
+        ORGANIZATION_WORD.test(firstSupport) ||
+        splitTrailingLocation(firstSupport).location !== "");
+    const supportLine = supportIsMeta ? firstSupport : "";
+    const descriptive = supportIsMeta ? support.slice(1) : support;
     const { rest, location } = splitTrailingLocation(supportLine);
+
+    // "Data Analyst, Globex Analytics  Jan 2022 – Present", with nothing under
+    // it to name the employer: the comma is the only separator the line has,
+    // so it is read as one when a job title stands before it.
+    if (parts.length === 1 && !supportIsMeta) {
+      const comma = title.indexOf(", ");
+      if (comma > 0 && TITLE_WORD.test(title.slice(0, comma))) {
+        parts = [title.slice(0, comma), title.slice(comma + 2)];
+      }
+    }
 
     // The employer can lead: "RIVERSIDE HOSPITAL, Columbus, OH  May 2023 –
     // Present" over "Patient Care Technician". Where the city sits says which
@@ -888,7 +1132,7 @@ function parseExperience(
       entry.organization = (parts[1] ?? splitFields(rest)[0] ?? rest).slice(0, 140);
       entry.location = location.slice(0, 120);
     }
-    entry.bullets = [...support.slice(1), ...raw.bullets].map((b) => b.slice(0, 1000));
+    entry.bullets = [...descriptive, ...raw.bullets].map((b) => b.slice(0, 1000));
     if (raw.dated) entry.dates = raw.dated.range;
 
     const label = `Role ${index + 1}`;
@@ -925,6 +1169,31 @@ function parseExperience(
 
     return entry;
   });
+}
+
+/** Words that make a phrase a job title. */
+const TITLE_WORD =
+  /\b(developer|engineer(?:ing)?|intern(?:ship)?|manager|analyst|designer|consultant|lead|architect|specialist|officer|associate|executive|scientist|administrator|coordinator|assistant|director|trainee|programmer|tester|technician|representative|accountant|nurse|teacher|lecturer|professor|founder|co-founder|president|researcher|editor|writer|sde|swe|devops|head\s+of)\b/i;
+
+/** Words that make a phrase an organisation. */
+const ORGANIZATION_WORD =
+  /\b(pvt|private|ltd|limited|inc|llc|llp|plc|gmbh|corp|corporation|company|technologies|solutions|services|systems|labs?|group|university|college|institute|bank|hospital|foundation|agency|studios?|consulting|consultancy|enterprises|industries|ventures|partners)\b\.?/i;
+
+/**
+ * Two fields in title-then-employer order, whichever order the line had.
+ * Swapped only on evidence, and never when the first is itself a job title
+ * ("Customer Services Executive"): the first names an organisation and the
+ * second does not, or the second is a job title. Anything less certain keeps
+ * the order — title first is still the commoner layout.
+ */
+function employerFirst(parts: string[]): string[] {
+  const [first, second, ...rest] = parts;
+  if (first === undefined || second === undefined) return parts;
+  const firstIsTitle = TITLE_WORD.test(first);
+  const swap =
+    (ORGANIZATION_WORD.test(first) && !ORGANIZATION_WORD.test(second) && !firstIsTitle) ||
+    (TITLE_WORD.test(second) && !firstIsTitle);
+  return swap ? [second, first, ...rest] : parts;
 }
 
 function describeRange(range: {
@@ -984,15 +1253,39 @@ function parseEducation(
         institutionLine = parts.slice(at).join(", ");
       }
     }
+    // The degree and the grade on the first bullet under the school — "●
+    // ECE | CGPA: 7.5", "● CBSE (Class XII), Aggregate: 86%" — which is how
+    // most Indian resumes set them. Taken only from the first bullet, and
+    // only when it names a degree or a labelled grade, so an achievement
+    // that happens to contain a percentage stays a bullet.
+    const bullets = [...raw.bullets];
+    let result = findResult(candidates);
+    const firstBullet = bullets[0];
+    if (firstBullet !== undefined && (!credentialLine || !result)) {
+      const hasCredential = CREDENTIAL.test(firstBullet);
+      const hasLabelledResult = RESULT.test(firstBullet) && RESULT_LABEL.test(firstBullet);
+      if (hasCredential || hasLabelledResult) {
+        if (!result) result = findResult([firstBullet]);
+        const rest = withoutResult(firstBullet);
+        if (!credentialLine && rest.length > 0 && rest.length <= 80) credentialLine = rest;
+        bullets.shift();
+      }
+    }
+
     const leftover = candidates.filter(
       (t) => t !== institutionLine && t !== credentialLine && !institutionLine?.startsWith(t),
     );
 
     const fromCredential = splitTrailingLocation(credentialLine ?? "");
-    const fromInstitution = splitTrailingLocation(institutionLine ?? "");
+    // A grade at the end of the school's line — "…, Pune, India, 8.7 CGPA" —
+    // is the result, and left there it was read as part of the location.
+    const fromInstitution = splitTrailingLocation(withoutResult(institutionLine ?? ""));
 
-    // "BSc, Computer Science" — the credential leads, the field follows.
-    const credentialParts = fromCredential.rest.split(/\s*,\s*/).filter((p) => p.length > 0);
+    // "BSc, Computer Science" — the credential leads, the field follows. A
+    // grade on the same line is the result, not the field.
+    const credentialParts = withoutResult(fromCredential.rest)
+      .split(/\s*,\s*/)
+      .filter((p) => p.length > 0);
 
     entry.institution = (fromInstitution.rest || institutionLine || leftover[0] || "").slice(
       0,
@@ -1001,8 +1294,8 @@ function parseEducation(
     entry.credential = (credentialParts[0] ?? "").slice(0, 160);
     entry.field = credentialParts.slice(1).join(", ").slice(0, 160);
     entry.location = (fromInstitution.location || fromCredential.location).slice(0, 120);
-    entry.result = findResult(candidates).slice(0, 60);
-    entry.bullets = raw.bullets.map((b) => b.slice(0, 1000));
+    entry.result = result.slice(0, 60);
+    entry.bullets = bullets.map((b) => b.slice(0, 1000));
     if (raw.dated) entry.dates = raw.dated.range;
 
     return entry;
@@ -1011,7 +1304,34 @@ function parseEducation(
 
 /** GPA, CGPA, percentage and classification, in the forms resumes write them. */
 const RESULT =
-  /\b(\d(?:\.\d+)?\s*\/\s*\d(?:\.\d+)?|\d(?:\.\d+)?\s*(?:CGPA|GPA)|(?:CGPA|GPA)\s*:?\s*\d(?:\.\d+)?|\d{2,3}(?:\.\d+)?\s*%|First\s+Class(?:\s+with\s+Distinction)?|Distinction|Merit)\b/i;
+  /\b(\d(?:\.\d+)?\s*\/\s*\d(?:\.\d+)?|\d(?:\.\d+)?\s*(?:CGPA|GPA)|(?:CGPA|GPA)\s*:?\s*\d(?:\.\d+)?|\d{2,3}(?:\.\d+)?\s*%|First\s+Class(?:\s+with\s+Distinction)?|Distinction|Merit)(?!\w)/i;
+/*
+ * Closed by "no word character next" rather than `\b`, which needs one: after
+ * a `%` at the end of a line there is none, so "Aggregate: 86%" never
+ * matched and no percentage was ever read (2026-10-19).
+ */
+
+/** The label a grade is announced by, which goes when the grade does. */
+const RESULT_LABEL =
+  /\b(?:(?:cumulative|overall)\s+)?(?:c?gpa|sgpa|cpi|percentage|aggregate|marks|score|grade)\b\s*[:\-–]?\s*/i;
+
+/**
+ * A line with the grade that closes it taken out — "ECE | CGPA: 7.5" leaves
+ * "ECE", "CBSE (Class XII), Aggregate: 86%" leaves "CBSE (Class XII)". Only a
+ * grade at the end goes: "Merit" inside "Merit School" is the school's name.
+ */
+function withoutResult(line: string): string {
+  const match = RESULT.exec(line);
+  if (!match || /[\p{L}\d]/u.test(line.slice(match.index + match[0].length))) return line.trim();
+  let before = line.slice(0, match.index);
+  const label = new RegExp(`${RESULT_LABEL.source}$`, "i").exec(before);
+  if (label) before = before.slice(0, label.index);
+  return `${before} ${line.slice(match.index + match[0].length)}`
+    .replace(/\s*[|,;:–—-]\s*$/, "")
+    .replace(/^\s*[|,;:–—-]\s*/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
 
 function findResult(candidates: readonly string[]): string {
   for (const line of candidates) {
@@ -1054,7 +1374,12 @@ function parseProjects(
     const parts = splitFields(title);
 
     const urlLine = support.find((line) => URL_IN_TEXT.test(resetRegex(line)));
-    const roleLine = support.find((line) => line !== urlLine);
+    // A role is a few words — "Author", "Team Lead". The line under a
+    // project's name is more often a sentence describing it, which is
+    // content, and goes first among the bullets rather than in the role.
+    const roleLine = support.find(
+      (line) => line !== urlLine && line.length <= 60 && !/[.!?]$/.test(line) && !/,/.test(line),
+    );
 
     entry.name = (parts[0] ?? title).slice(0, 140);
     entry.role = (parts[1] ?? roleLine ?? "").slice(0, 120);

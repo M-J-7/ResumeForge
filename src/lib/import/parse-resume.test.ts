@@ -13,6 +13,8 @@
  * still recovered the field, and a real ATS reading that line would agree.
  */
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   parseResumeFile,
@@ -20,7 +22,13 @@ import {
   importKindFromFilename,
   type ImportResult,
 } from "./parse-resume";
-import { headingKindOf, headingStrength, classifyHeading, docxHeadingLevel } from "./headings";
+import {
+  headingKindOf,
+  headingStrength,
+  classifyHeading,
+  docxHeadingLevel,
+  isWholeHeading,
+} from "./headings";
 import { findDateRange, parsePartialDate } from "./dates";
 import { renderPdf } from "@/lib/emit/pdf/render";
 import { renderDocx } from "@/lib/emit/docx/render";
@@ -124,6 +132,28 @@ describe("date reading", () => {
       end: { year: 2022, month: 2 },
       current: false,
     });
+  });
+
+  it("reads a two-digit year after an apostrophe, the way Indian resumes abbreviate", () => {
+    expect(parsePartialDate("Mar’25")?.date).toEqual({ year: 2025, month: 3 });
+    expect(parsePartialDate("July'23")?.date).toEqual({ year: 2023, month: 7 });
+    expect(parsePartialDate("Oct ’99")?.date).toEqual({ year: 1999, month: 10 });
+    expect(findDateRange("Backend Developer Mar’25 - May’25")?.range).toEqual({
+      start: { year: 2025, month: 3 },
+      end: { year: 2025, month: 5 },
+      current: false,
+    });
+    expect(findDateRange("Systems Engineer Aug'23 - Present")?.range).toEqual({
+      start: { year: 2023, month: 8 },
+      end: null,
+      current: true,
+    });
+  });
+
+  it("reads a month joined to its year by punctuation", () => {
+    expect(parsePartialDate("Mar-2022")?.date).toEqual({ year: 2022, month: 3 });
+    expect(parsePartialDate("Sep, 2021")?.date).toEqual({ year: 2021, month: 9 });
+    expect(parsePartialDate("Jan'2024")?.date).toEqual({ year: 2024, month: 1 });
   });
 
   it("refuses to guess between dd/mm and mm/dd, and says the month is uncertain", () => {
@@ -240,6 +270,40 @@ describe("round-tripping our own output — DOCX", () => {
   });
 });
 
+/**
+ * The `.doc` Word itself saved from each fixture's DOCX — see
+ * `legacy-word.test.ts` for where the files come from. The bar is the one the
+ * PDF and the DOCX meet.
+ */
+describe("round-tripping our own output — DOC, as Word saves it", () => {
+  it.each(ALL_FIXTURES)("$name recovers contact and every role", async ({ name, document }) => {
+    const bytes = new Uint8Array(
+      readFileSync(path.join(process.cwd(), "src", "test", "fixtures", "word", `${name}.doc`)),
+    );
+    const result = await parseResumeFile(bytes, "doc");
+
+    expect(result.strategy).toBe("doc");
+    expect(resumeDocumentSchema.safeParse(result.document).success).toBe(true);
+    expect(recovers(result.document.contact.fullName, document.contact.fullName)).toBe(true);
+    expect(result.document.contact.email).toBe(document.contact.email);
+    expect(recovers(result.document.contact.phone, document.contact.phone)).toBe(true);
+
+    const expected = rolesOf(document);
+    const actual = rolesOf(result.document);
+    expect(actual).toHaveLength(expected.length);
+    expected.forEach((role, i) => {
+      const got = actual[i]!;
+      expect(recovers(got.title, role.title), `role ${i} title: got "${got.title}"`).toBe(true);
+      expect(
+        recovers(got.organization, role.organization),
+        `role ${i} organisation: got "${got.organization}"`,
+      ).toBe(true);
+      expect(got.dates).toEqual(role.dates);
+      expect(got.bullets).toEqual(role.bullets);
+    });
+  });
+});
+
 describe("the rest of the document", () => {
   it("recovers the summary, skills, education and projects from a DOCX", async () => {
     const result = await importedFromDocx(midCareerResume);
@@ -339,6 +403,139 @@ describe("the confidence report", () => {
   });
 });
 
+describe("the layout most Indian resumes use", () => {
+  /**
+   * The shape of the real resume that found the iPhone failure on
+   * 2026-10-19, with every word of it replaced: "Company | Role  Mon'YY –
+   * Mon'YY", "●" bullets that wrap onto an unmarked second line, the degree
+   * and grade on a bullet under the school, undated projects, and an
+   * "Academic and … Achievements" heading. Before that day it came back with
+   * every role undated, every bullet a role of its own, and the education
+   * section lost.
+   */
+  const lines = [
+    "ARJUN MEHTA",
+    "arjun.mehta@example.com | +91-98100 12345 | www.linkedin.com/in/arjunmehta",
+    "Education",
+    "Delhi Technological University, India 2019 - 2023",
+    "● B.Tech, CSE | CGPA: 8.4",
+    "Kendriya Vidyalaya School, India 2018 - 2019",
+    "● CBSE (Class XII), Aggregate: 91%",
+    "Skills",
+    "Java | Spring Boot | MySQL | Docker",
+    "Work Experience",
+    "Infosys Ltd. | Systems Engineer Aug’23 - Present",
+    "● Built 6 REST services for the claims platform, cutting average response time",
+    "from 900ms to 300ms.",
+    "● Migrated nightly batch jobs to Spring Batch.",
+    "Zeta Labs Pvt. Ltd. | Backend Intern Jan’23 - Jun’23",
+    "● Wrote integration tests for the payments API.",
+    "Projects",
+    "Expense Splitter",
+    "A web app that splits shared expenses between friends.",
+    "● Used by 300 students in its first month.",
+    "● Built with React and Node.js.",
+    "Academic and Extracurricular Achievements",
+    "● Won second place in the college hackathon among 80 teams.",
+  ];
+  const result = parseResumeLines(lines);
+  const section = <T extends ResumeDocument["sections"][number]["type"]>(type: T) =>
+    result.document.sections.find((s) => s.type === type) as Extract<
+      ResumeDocument["sections"][number],
+      { type: T }
+    >;
+
+  it("reads each role's title, employer and dates, whichever order they are in", () => {
+    expect(section("experience").entries.map((e) => [e.title, e.organization, e.dates])).toEqual([
+      [
+        "Systems Engineer",
+        "Infosys Ltd.",
+        { start: { year: 2023, month: 8 }, end: null, current: true },
+      ],
+      [
+        "Backend Intern",
+        "Zeta Labs Pvt. Ltd.",
+        { start: { year: 2023, month: 1 }, end: { year: 2023, month: 6 }, current: false },
+      ],
+    ]);
+  });
+
+  it("joins a bullet that wrapped back onto the bullet", () => {
+    expect(section("experience").entries[0]?.bullets).toEqual([
+      "Built 6 REST services for the claims platform, cutting average response time from 900ms to 300ms.",
+      "Migrated nightly batch jobs to Spring Batch.",
+    ]);
+  });
+
+  it("keeps the education section, with the degree and grade from the bullet under each school", () => {
+    expect(
+      section("education").entries.map((e) => [e.institution, e.credential, e.field, e.result]),
+    ).toEqual([
+      ["Delhi Technological University, India", "B.Tech", "CSE", "CGPA: 8.4"],
+      ["Kendriya Vidyalaya School, India", "CBSE (Class XII)", "", "91%"],
+    ]);
+  });
+
+  it("keeps an undated project's description and bullets together", () => {
+    expect(section("projects").entries.map((p) => [p.name, p.bullets])).toEqual([
+      [
+        "Expense Splitter",
+        [
+          "A web app that splits shared expenses between friends.",
+          "Used by 300 students in its first month.",
+          "Built with React and Node.js.",
+        ],
+      ],
+    ]);
+  });
+
+  it("does not file achievements under education", () => {
+    expect(classifyHeading("Academic and Extracurricular Achievements")).toBe("custom");
+    const custom = result.document.sections.filter((s) => s.type === "custom");
+    expect(custom.map((s) => s.type === "custom" && s.label)).toEqual([
+      "Academic and Extracurricular Achievements",
+    ]);
+  });
+});
+
+describe("headings above a dated line", () => {
+  it("takes a whole section name as a heading, and a job title that starts like one as an entry", () => {
+    expect(isWholeHeading("Work Experience")).toBe(true);
+    expect(isWholeHeading("Education")).toBe(true);
+    expect(isWholeHeading("Projects Lead")).toBe(false);
+
+    const result = parseResumeLines([
+      "Sam Lee",
+      "sam@example.com",
+      "Projects",
+      "Projects Lead, Acme Corp Jan 2020 – Present",
+      "• Ran the migration.",
+    ]);
+    const projects = result.document.sections.find((s) => s.type === "projects");
+    expect(projects?.type === "projects" && projects.entries[0]?.name).toMatch(/^Projects Lead/);
+  });
+});
+
+describe("a role written “Title, Company” with its description under it", () => {
+  it("splits at the comma rather than taking the description as the employer", () => {
+    const result = parseResumeLines([
+      "Jane Doe",
+      "jane@example.com",
+      "EXPERIENCE",
+      "Data Analyst, Globex Analytics Jan 2022 – Present",
+      "Built weekly dashboards for 40 regional managers.",
+    ]);
+    const experience = result.document.sections.find((s) => s.type === "experience");
+    const [role] = experience?.type === "experience" ? experience.entries : [];
+    expect([role?.title, role?.organization, role?.location]).toEqual([
+      "Data Analyst",
+      "Globex Analytics",
+      "",
+    ]);
+    expect(role?.bullets).toEqual(["Built weekly dashboards for 40 regional managers."]);
+  });
+});
+
 describe("a layout neither emitter produces", () => {
   /**
    * Hand-built, and deliberately awkward in every way a real third-party
@@ -406,10 +603,11 @@ describe("a layout neither emitter produces", () => {
 });
 
 describe("file kinds", () => {
-  it("recognises the two formats it can read", () => {
+  it("recognises the formats it can read by name", () => {
     expect(importKindFromFilename("resume.pdf")).toBe("pdf");
     expect(importKindFromFilename("Resume.DOCX")).toBe("docx");
-    expect(importKindFromFilename("resume.doc")).toBeNull();
+    expect(importKindFromFilename("resume.doc")).toBe("doc");
+    expect(importKindFromFilename("resume.rtf")).toBe("doc");
     expect(importKindFromFilename("resume.txt")).toBeNull();
   });
 });

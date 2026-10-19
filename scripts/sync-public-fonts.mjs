@@ -13,7 +13,7 @@
  * `predev` and `prebuild` run this, so a fresh clone needs no extra step.
  */
 
-import { cp, mkdir, readdir, rm } from "node:fs/promises";
+import { cp, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,7 +42,18 @@ for (const name of files) {
 // pdfjs refuses to run in a browser without a worker script, and there is no
 // default it can guess. Serving it from a fixed path keeps it independent of
 // how any given bundler decides to emit worker assets.
+//
+// The path pdfjs is pointed at (`PDF_WORKER`, see `src/lib/pdf/worker.ts`) is
+// a two-line entry rather than pdfjs's own file. The worker is its own
+// global, so the polyfills the page installs do not reach it, and in Safari
+// it needs them too (`src/lib/pdf/polyfills.mjs` says which and why). Module
+// requests evaluate in source order, so the polyfills are in place before a
+// line of pdfjs runs. `export *` keeps `WorkerMessageHandler` visible for
+// pdfjs's fallback, which imports the worker on the main thread when a real
+// worker cannot start.
 const PDF_WORKER = "pdf.worker.min.mjs";
+const PDF_WORKER_IMPL = "pdf.worker.impl.min.mjs";
+const PDF_POLYFILLS = "pdf.polyfills.mjs";
 const pdfWorkerSource = path.join(
   HERE,
   "..",
@@ -53,6 +64,14 @@ const pdfWorkerSource = path.join(
   PDF_WORKER,
 );
 const publicDir = path.join(HERE, "..", "public");
-await cp(pdfWorkerSource, path.join(publicDir, PDF_WORKER));
+await cp(pdfWorkerSource, path.join(publicDir, PDF_WORKER_IMPL));
+await cp(
+  path.join(HERE, "..", "src", "lib", "pdf", "polyfills.mjs"),
+  path.join(publicDir, PDF_POLYFILLS),
+);
+await writeFile(
+  path.join(publicDir, PDF_WORKER),
+  `import "./${PDF_POLYFILLS}";\nexport * from "./${PDF_WORKER_IMPL}";\n`,
+);
 
-console.log(`Synced ${files.length} font files to public/fonts/ and ${PDF_WORKER}`);
+console.log(`Synced ${files.length} font files to public/fonts/ and the pdfjs worker`);

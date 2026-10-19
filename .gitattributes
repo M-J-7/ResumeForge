@@ -13,6 +13,12 @@
 *.jpg binary
 *.pdf binary
 *.docx binary
+*.doc binary
+
+# Word's own RTF and HTML output, kept as Word wrote it — line endings and
+# all — because the reader under test has to cope with exactly that.
+src/test/fixtures/word/*.rtf binary
+src/test/fixtures/word/*.htm binary
 
 # Font metadata is protobuf text but upstream-owned; leave it byte-exact.
 *.pb -text

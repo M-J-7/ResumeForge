@@ -56,6 +56,8 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /public/pdf.worker.min.mjs
+/public/pdf.worker.impl.min.mjs
+/public/pdf.polyfills.mjs
 
 # generated: the local enhancement model and its ONNX runtime, vendored by
 # scripts/fetch-enhancement-model.mjs. ~98MB, deliberately not committed and

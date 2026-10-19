@@ -32,7 +32,13 @@ import { Button } from "@/components/ui/control";
 import { Dialog } from "@/components/ui/dialog";
 import { ImportReview } from "@/components/import/ImportReview";
 import { fromJsonResume } from "@/lib/interop/json-resume";
-import { importKindFromFilename } from "@/lib/import/kind";
+import {
+  foreignFileMessage,
+  importKindFromBytes,
+  importKindFromFilename,
+  readFailureMessage,
+  RESUME_FILE_ACCEPT,
+} from "@/lib/import/kind";
 import type { ImportResult } from "@/lib/import/parse-resume";
 import { track } from "@/lib/track";
 import { useResumeStore } from "@/store/resume";
@@ -62,10 +68,8 @@ export function ImportResumeFile({
         await importDocumentFile(file);
       }
     } catch (error) {
-      setMessage({
-        tone: "error",
-        text: error instanceof Error ? error.message : "That file could not be read.",
-      });
+      setMessage({ tone: "error", text: readFailureMessage(error) });
+      track("import:failed");
     } finally {
       setBusy(false);
       // Cleared so selecting the same file again re-triggers the change event.
@@ -97,12 +101,18 @@ export function ImportResumeFile({
   };
 
   const importDocumentFile = async (file: File) => {
-    const kind = importKindFromFilename(file.name);
+    // The name first, then the bytes: a file shared from a phone often
+    // arrives with no extension at all.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const kind = importKindFromFilename(file.name) ?? importKindFromBytes(bytes);
     if (!kind) {
       setMessage({
         tone: "error",
-        text: "Choose a PDF, a Word .docx, or a JSON Resume file. The older .doc format has no text a parser can read.",
+        text:
+          foreignFileMessage(bytes) ??
+          "Choose a PDF, a Word file (.docx or .doc), or a JSON Resume file. That one is none of them.",
       });
+      track("import:failed");
       return;
     }
 
@@ -113,12 +123,18 @@ export function ImportResumeFile({
     // Loaded here, when a file has actually been chosen: the parser brings
     // pdfjs's text layer, the DOCX reader and libphonenumber, and a builder
     // that imported it statically paid for all of it on every open.
-    const bytes = new Uint8Array(await file.arrayBuffer());
     const { parseResumeFile } = await import("@/lib/import/parse-resume");
     const result = await parseResumeFile(bytes, kind);
 
     importDocument(result.document);
-    track(`import:${kind}`);
+    // Counted by what was read, which the file's bytes decide, not its name.
+    track(
+      result.strategy === "docx"
+        ? "import:docx"
+        : result.strategy === "doc"
+          ? "import:doc"
+          : "import:pdf",
+    );
     setReview(result);
     setMessage({
       tone: "ok",
@@ -132,12 +148,12 @@ export function ImportResumeFile({
         ref={inputRef}
         id={inputId}
         type="file"
-        accept=".pdf,.docx,.json,application/pdf,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept={`${RESUME_FILE_ACCEPT},.json,application/json`}
         // Visually hidden, but still in the accessibility tree and still
         // focusable — so it needs a name of its own. Without one it announced
         // as an unnamed file input sitting just before the button that opens
         // it, which is the worst of both.
-        aria-label="Import a resume file — PDF, Word .docx, or JSON Resume"
+        aria-label="Import a resume file — PDF, Word, or JSON Resume"
         className="sr-only"
         onChange={(event) => void onFile(event.target.files?.[0])}
       />

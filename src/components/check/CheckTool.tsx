@@ -31,7 +31,13 @@ import { Button, buttonClassName } from "@/components/ui/control";
 import { Card, CardBody, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangleIcon, FileTextIcon } from "@/components/ui/icons";
 import { ImportReview } from "@/components/import/ImportReview";
-import { importKindFromFilename } from "@/lib/import/kind";
+import {
+  foreignFileMessage,
+  importKindFromBytes,
+  importKindFromFilename,
+  readFailureMessage,
+  RESUME_FILE_ACCEPT,
+} from "@/lib/import/kind";
 import type { ImportResult } from "@/lib/import/parse-resume";
 import { CHECK_HANDOFF_KEY } from "@/lib/import/handoff";
 import { track } from "@/lib/track";
@@ -69,37 +75,50 @@ export function CheckTool() {
     if (!file) return;
     setError(null);
     setState(null);
-
-    const kind = importKindFromFilename(file.name);
-    if (!kind) {
-      setError(
-        "Choose a PDF or a Word .docx. The older .doc format stores no text a parser can read, which is a finding in itself.",
-      );
-      return;
-    }
-
     setBusy(true);
+
+    // Started at once so the download overlaps reading the file; caught here
+    // so a file turned away below leaves no unhandled rejection behind.
+    const reader = loadReader();
+    reader.catch(() => {});
+
     try {
-      const [[{ parseResumeFile }, xray], buffer] = await Promise.all([
-        loadReader(),
-        file.arrayBuffer(),
-      ]);
-      const bytes = new Uint8Array(buffer);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      // The name first, then the bytes: a file shared from a phone often
+      // arrives with no extension at all.
+      const kind = importKindFromFilename(file.name) ?? importKindFromBytes(bytes);
+      if (!kind) {
+        setError(
+          foreignFileMessage(bytes) ??
+            "Choose a PDF or a Word file (.docx or .doc). That one is neither, so there is nothing in it a parser could read.",
+        );
+        track("check:failed");
+        return;
+      }
+
+      const [{ parseResumeFile }, xray] = await reader;
       const result = await parseResumeFile(bytes, kind);
 
-      // Layer 3, and only for PDFs: a DOCX states its own reading order, so
-      // there are not two readings of it to disagree.
+      // Layer 3, and only for PDFs: a Word file states its own reading
+      // order, so there are not two readings of it to disagree. Tested on
+      // what was read rather than the name, which may have said otherwise.
+      // An extra, too: if it fails, the reading above still stands.
       let disagreements: string[] = [];
-      if (kind === "pdf") {
-        const naive = await xray.extractPdfStreamOrder(bytes);
-        const careful = await xray.extractPdfGeometric(bytes);
-        disagreements = xray.strategyDisagreements(naive, careful);
+      if (result.strategy === "pdf-geometric") {
+        try {
+          const naive = await xray.extractPdfStreamOrder(bytes);
+          const careful = await xray.extractPdfGeometric(bytes);
+          disagreements = xray.strategyDisagreements(naive, careful);
+        } catch (err) {
+          console.error("The second PDF reading failed", err);
+        }
       }
 
       setState({ fileName: file.name, result, disagreements });
       track("check:read");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That file could not be read.");
+      setError(readFailureMessage(err));
+      track("check:failed");
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -165,7 +184,7 @@ export function CheckTool() {
           <FileTextIcon className="h-6 w-6" />
         </span>
         <div>
-          <p className="text-text text-title font-semibold">Drop a PDF or Word .docx here</p>
+          <p className="text-text text-title font-semibold">Drop a PDF or Word file here</p>
           <p className="text-muted text-small max-w-measure mx-auto mt-2 leading-relaxed">
             It is read in this tab. Nothing is uploaded, there is no account, and there is nothing
             to pay for.
@@ -174,7 +193,7 @@ export function CheckTool() {
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          accept={RESUME_FILE_ACCEPT}
           aria-label="Choose a resume file to check"
           className="sr-only"
           onChange={(event) => void run(event.target.files?.[0])}
@@ -185,7 +204,7 @@ export function CheckTool() {
         {/* The formats, in the machine's face, because they are a statement
             about what a parser here can open. */}
         <p aria-hidden className="text-faint text-micro font-mono tracking-wider uppercase">
-          .pdf&ensp;·&ensp;.docx
+          .pdf&ensp;·&ensp;.docx&ensp;·&ensp;.doc
         </p>
       </div>
 

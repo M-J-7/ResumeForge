@@ -67,7 +67,7 @@ export const CHECK_FAQ: readonly FaqItem[] = [
   {
     question: "Which resume file formats can the checker read?",
     answer:
-      "PDF and Word .docx, which are what application forms ask for. An older .doc file needs saving as .docx first, from Word or Google Docs. A scanned PDF or a photo of a resume is a picture of text rather than text, so very little comes back from it; export a fresh PDF from the document you wrote instead. A PDF is read two ways, in the order the file stores its text and line by line across the page, and the lines where those disagree are listed for you.",
+      "PDF and Word — .docx, and the older .doc — which are what application forms ask for. RTF files are read too, and so are the “Word” downloads some websites make, which are often a web page with a .doc name. A password-protected file cannot be read by any parser, so save a copy without the password first. A scanned PDF or a photo of a resume is a picture of text rather than text, so very little comes back from it; export a fresh PDF from the document you wrote instead. A PDF is read two ways, in the order the file stores its text and line by line across the page, and the lines where those disagree are listed for you.",
     link: { href: "/guides/resume-file-format", label: "PDF, Word or plain text: which to send" },
   },
   {
