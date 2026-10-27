@@ -9,7 +9,7 @@
 
 import { describe, expect, it, vi } from "vitest";
 import type { Adapter, AdapterAccount } from "next-auth/adapters";
-import { accountIdentity, withIdentityOnlyAccounts } from "./adapter";
+import { accountIdentity, withIdempotentSignOut, withIdentityOnlyAccounts } from "./adapter";
 
 /** What Auth.js hands `linkAccount` after a Google sign-in. */
 function googleAccount(): AdapterAccount {
@@ -95,5 +95,32 @@ describe("withIdentityOnlyAccounts", () => {
   it("passes an adapter with no linkAccount through untouched", () => {
     const base = {} as Adapter;
     expect(withIdentityOnlyAccounts(base)).toBe(base);
+  });
+});
+
+describe("withIdempotentSignOut", () => {
+  it("treats a session that is already gone as deleted", async () => {
+    const missing = Object.assign(new Error("No record was found for a delete."), {
+      code: "P2025",
+    });
+    const adapter = withIdempotentSignOut({
+      deleteSession: vi.fn().mockRejectedValue(missing),
+    } as unknown as Adapter);
+
+    await expect(adapter.deleteSession?.("gone")).resolves.toBeNull();
+  });
+
+  it("still throws every other failure", async () => {
+    const locked = Object.assign(new Error("database is locked"), { code: "SQLITE_BUSY" });
+    const adapter = withIdempotentSignOut({
+      deleteSession: vi.fn().mockRejectedValue(locked),
+    } as unknown as Adapter);
+
+    await expect(adapter.deleteSession?.("token")).rejects.toBe(locked);
+  });
+
+  it("passes an adapter with no deleteSession through untouched", () => {
+    const base = {} as Adapter;
+    expect(withIdempotentSignOut(base)).toBe(base);
   });
 });

@@ -16,7 +16,7 @@ import NextAuth from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { getPrisma } from "@/server/db";
-import { withIdentityOnlyAccounts } from "./adapter";
+import { withIdempotentSignOut, withIdentityOnlyAccounts } from "./adapter";
 import { buildAuthConfig, googleCredentials } from "./config";
 import { resolveMailTransport } from "./mail";
 import { countServerEvent } from "@/server/count-server-event";
@@ -31,8 +31,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     //
     // Wrapped so a linked OAuth account stores what identifies it and not
     // the provider's token response — which does not fit the schema and
-    // would fail the first Google sign-in outright. See `./adapter.ts`.
-    adapter: withIdentityOnlyAccounts(PrismaAdapter(prisma as never) as Adapter),
+    // would fail the first Google sign-in outright, and so signing out of a
+    // session that is already gone is not an error. See `./adapter.ts`.
+    adapter: withIdempotentSignOut(
+      withIdentityOnlyAccounts(PrismaAdapter(prisma as never) as Adapter),
+    ),
     mailTransport: () => resolveMailTransport(),
     google: googleCredentials(),
     // The usage counter's conversion: that a sign-in completed, and nothing
