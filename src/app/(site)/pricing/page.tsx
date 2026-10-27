@@ -22,12 +22,12 @@ import { AppFooter } from "@/components/shell/AppFooter";
 import { JsonLdScript } from "@/components/seo/JsonLd";
 import { Built, BuildGroup, BuiltListItem } from "@/components/marketing/Build";
 import { CtaLink } from "@/components/marketing/CtaLink";
-import { Eyebrow } from "@/components/marketing/Eyebrow";
 import { MotionProvider } from "@/components/marketing/MotionProvider";
 import { PageHeader, PAGE_LEAD_CLASS, PAGE_TITLE_CLASS } from "@/components/marketing/PageHeader";
 import { RefusalList } from "@/components/marketing/RefusalList";
 import { Section } from "@/components/marketing/Section";
 import { SpotlightGroup } from "@/components/ui/Spotlight";
+import { Badge } from "@/components/ui/badge";
 import { CheckIcon } from "@/components/ui/icons";
 import { PASS, PRICING_REFUSALS, PRICING_TIERS } from "@/lib/pricing";
 import { pageMetadata } from "@/lib/seo";
@@ -99,33 +99,40 @@ export default function PricingPage() {
                     key={tier.name}
                     variant="row"
                     className={cn(
-                      "spot lift elev-1 flex flex-col rounded-xl border p-6",
+                      "spot lift elev-1 relative flex flex-col rounded-xl border p-6",
                       // The Pass carries the accent because it is the one tier
                       // with a decision in it. The free tiers are the product
                       // and do not need to be sold.
                       tier.price ? "card-tinted" : "border-line bg-surface-0",
                     )}
                   >
-                    <h3 className="text-text text-title font-semibold">{tier.name}</h3>
+                    {/*
+                     * Every card has the same skeleton — name row, figure row,
+                     * one line of who it is for, the list, and a footer of the
+                     * same height — so the three read as one comparison. The
+                     * Pass used to drop the button for a grey paragraph and set
+                     * its figure differently, and beside two matching cards it
+                     * read as a card that had failed to render.
+                     */}
+                    <div className="flex min-h-7 items-center justify-between gap-3">
+                      <h3 className="text-text text-title font-semibold">{tier.name}</h3>
+                      {!tier.available && <Badge tone="accent">Coming soon</Badge>}
+                    </div>
 
                     <p className="mt-4 flex items-baseline gap-2">
-                      {tier.price ? (
-                        <>
-                          <span className="text-text text-display-3 font-semibold">
-                            ${tier.price}
-                          </span>
-                          <span className="text-faint text-small">{tier.priceNote}</span>
-                        </>
-                      ) : (
-                        <span className="text-text text-display-3 font-semibold">
-                          {tier.priceNote}
-                        </span>
-                      )}
+                      <span className="text-text text-display-3 font-semibold">
+                        ${tier.price ?? "0"}
+                      </span>
+                      <span className="text-faint text-small">
+                        {tier.price ? tier.priceNote : tier.priceNote.toLowerCase()}
+                      </span>
                     </p>
 
-                    <p className="text-muted text-small mt-3 leading-relaxed">{tier.who}</p>
+                    <p className="text-muted text-small mt-3 leading-relaxed lg:min-h-[4.5rem]">
+                      {tier.who}
+                    </p>
 
-                    <ul className="mt-5 flex flex-col gap-2.5">
+                    <ul className="border-line mt-5 flex flex-col gap-2.5 border-t pt-5">
                       {tier.features.map((feature) => (
                         <li key={feature} className="text-muted text-small flex gap-2.5">
                           <CheckIcon aria-hidden className="text-accent mt-0.5 h-4 w-4 shrink-0" />
@@ -134,7 +141,7 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    <div className="mt-auto pt-6">
+                    <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-2 pt-6">
                       {tier.available ? (
                         <CtaLink href="/builder" size="md">
                           Start building
@@ -142,16 +149,17 @@ export default function PricingPage() {
                       ) : (
                         /*
                          * Not a button. There is no checkout behind this, and a
-                         * disabled control that looks like a buy button still
-                         * tells the reader that buying is a thing they nearly
-                         * did. A statement is the honest shape.
+                         * control that looks like a buy button still tells the
+                         * reader that buying is a thing they nearly did. Same
+                         * size as the buttons beside it, so the row lines up,
+                         * but plainly a statement.
                          */
-                        <p className="border-line bg-surface-2 text-faint text-small rounded-md border px-4 py-2.5">
-                          <Eyebrow className="text-machine">not yet</Eyebrow>{" "}
-                          <span className="ml-1">
-                            There is no checkout here yet. Nothing is being taken.
+                        <>
+                          <span className="border-line text-muted inline-flex items-center rounded-md border border-dashed px-5 py-2.5 text-sm font-medium">
+                            Not on sale yet
                           </span>
-                        </p>
+                          <span className="text-faint text-small">Nothing is being charged.</span>
+                        </>
                       )}
                     </div>
                   </BuiltListItem>

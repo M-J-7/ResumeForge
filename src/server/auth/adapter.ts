@@ -63,3 +63,30 @@ export function withIdentityOnlyAccounts(adapter: Adapter): Adapter {
     linkAccount: (account) => linkAccount(accountIdentity(account)),
   };
 }
+
+/**
+ * Makes signing out of a session that is already gone a no-op.
+ *
+ * The Prisma adapter deletes the session row with `session.delete`, which
+ * throws `P2025` when there is no row. That happens in ordinary use: sign out
+ * in two tabs, sign out after deleting the account (the cascade has already
+ * removed the session), or sign out after the session expired and was swept.
+ * Auth.js turns the throw into a `SignOutError` in the server log, and the
+ * reader was signing out anyway. A session that does not exist is a session
+ * that has been deleted, so that case returns as if it had just been.
+ */
+export function withIdempotentSignOut(adapter: Adapter): Adapter {
+  const { deleteSession } = adapter;
+  if (!deleteSession) return adapter;
+  return {
+    ...adapter,
+    deleteSession: (async (sessionToken: string) => {
+      try {
+        return await deleteSession(sessionToken);
+      } catch (error) {
+        if ((error as { code?: unknown } | null)?.code === "P2025") return null;
+        throw error;
+      }
+    }) as typeof deleteSession,
+  };
+}
