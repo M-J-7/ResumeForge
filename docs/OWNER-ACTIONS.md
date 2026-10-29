@@ -4,13 +4,20 @@ Everything in `ROADMAP.md` that needs an account, a device, a decision or a
 signature that the code cannot supply. Each item says why it is yours, how long
 it takes, and exactly what to do. Tick them off here as they land.
 
-**Kept current by whoever changes the plan.** Last updated 2026-10-02.
+**Kept current by whoever changes the plan.** Last updated 2026-10-29.
 
 ---
 
 ## Do these first — they gate everything else
 
 ### 1. Google Search Console and Bing Webmaster Tools (ROADMAP Phase 1.1) — 20 minutes
+
+**Update 2026-10-29: Google setup is done.** Authenticated Search Console confirms DNS ownership,
+a successful sitemap submission/read on October 27 and 65 discovered URLs. The homepage and
+`/check` are indexed. Performance: 16 impressions, 0 clicks, average position 18.6, currently
+covering October 26–27. The full indexing report is still processing. See `SEO.md` for the
+baseline; do not repeat the completed Google setup steps below. Bing verification remains
+unconfirmed (its dashboard is signed out). The following checklist is retained for reference.
 
 The site is live and fast, and Google has still not indexed it — checked again
 on 2026-10-02: `site:sixseconds.tech` returns nothing on Google **or Bing**.
@@ -24,7 +31,7 @@ thing on this list.
 1. <https://search.google.com/search-console> → **Add property** → **Domain** →
    `sixseconds.tech`. It shows a `TXT` record. Add it at your domain registrar
    (DNS settings for `sixseconds.tech`), wait a few minutes, press **Verify**.
-   *No access to DNS right now?* Choose **URL prefix** →
+   _No access to DNS right now?_ Choose **URL prefix** →
    `https://sixseconds.tech/` → **HTML tag** instead, and send me the `content`
    value of the `google-site-verification` tag (it is not a secret — it is
    published in the page by design). I add it to the site's metadata, deploy,
@@ -85,7 +92,7 @@ It is also insurance: Oracle reclaims Always Free instances that sit idle.
 The product's core claim, never yet checked against Word. Build any resume in
 the builder, **Download DOCX**, and open it in **Microsoft Word**, **Google
 Docs** and (if you have it) **LibreOffice**. Tick each box under QA.md §1 — no
-repair prompt, headings show as *Heading 1*, bullets are a real list, dates
+repair prompt, headings show as _Heading 1_, bullets are a real list, dates
 sit at the right margin. Then compare the page count with the PDF (§2).
 Tell me anything that looks wrong; each miss becomes a test.
 
@@ -108,7 +115,7 @@ real Google and email accounts.
 
 ### 8. The destructive restore rehearsal (QA #5, RUNBOOK) — 30 minutes, at a quiet time
 
-The off-site replica has been restored *beside* the live database, not after
+The off-site replica has been restored _beside_ the live database, not after
 losing it. Pick a quiet hour and say so; the procedure is in RUNBOOK.md →
 "Restoring". I can run it with you watching.
 

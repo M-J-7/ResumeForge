@@ -39,8 +39,8 @@ import { GUIDES } from "@/lib/guides/guides";
 const PATH = "/resume-keyword-scanner";
 const TITLE = "Resume keyword scanner";
 const DESCRIPTION =
-  "Compare your resume with a job description: which requirements your resume shows, which it " +
-  "only lists, and which are missing. Free, in your browser, nothing uploaded.";
+  "Free resume keyword scanner: compare your resume to a job description and find missing skills. " +
+  "No sign-up or upload; your text stays in your browser.";
 
 export const metadata: Metadata = pageMetadata({
   title: `Free ${TITLE.toLowerCase()}`,
@@ -97,6 +97,42 @@ export default function KeywordScannerPage() {
         <div className="py-band-tight mx-auto flex w-full max-w-5xl flex-col gap-12 px-6">
           <section aria-label="Keyword scanner">
             <KeywordScanner />
+          </section>
+
+          <section
+            aria-labelledby="scanner-steps-heading"
+            className="flex max-w-3xl flex-col gap-4"
+          >
+            <h2 id="scanner-steps-heading" className="text-text text-title font-semibold">
+              How to compare your resume to a job description
+            </h2>
+            <ol className="text-muted text-body flex list-decimal flex-col gap-3 pl-6 leading-relaxed">
+              <li>
+                Paste the full job description, including its requirements and responsibilities.
+                Keep its headings: the scanner uses them to distinguish required skills from
+                preferences and the company description.
+              </li>
+              <li>
+                Paste your resume as plain text, keeping section headings such as Experience,
+                Projects and Skills. If copying from a PDF scrambles the text, use the{" "}
+                <Link href="/check" className="text-accent rounded-sm underline underline-offset-4">
+                  ATS resume checker
+                </Link>{" "}
+                to inspect the file first.
+              </li>
+              <li>
+                Compare, then review demonstrated, listed and missing skills. Add a missing skill
+                only when you have used it. For a listed skill, look for a truthful experience or
+                project bullet that shows how you used it; leave out requirements you cannot
+                support.
+              </li>
+            </ol>
+            <p className="text-muted text-body leading-relaxed">
+              For example, if a posting asks for SQL, a Skills entry tells the reader you know its
+              name. An experience bullet explaining the queries you wrote, the report they supported
+              and who used it gives the reader evidence. Use your own work and figures: the scanner
+              identifies terms, but cannot verify a claim or decide whether you qualify for a job.
+            </p>
           </section>
 
           <div className="grid gap-12 lg:grid-cols-2">

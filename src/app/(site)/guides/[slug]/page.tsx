@@ -31,7 +31,7 @@ import {
   guideFaqJsonLd,
 } from "@/lib/structured-data";
 import { pageMetadata } from "@/lib/seo";
-import { examplesForGuide, otherGuides } from "@/lib/related";
+import { examplesForGuide, otherGuides, toolsForGuide } from "@/lib/related";
 import { formatContentDate } from "@/lib/content-dates";
 import { Breadcrumbs } from "@/components/marketing/Breadcrumbs";
 import { RelatedLinks } from "@/components/marketing/RelatedLinks";
@@ -134,6 +134,9 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
           <RelatedLinks
             stacked
             groups={[
+              ...(toolsForGuide(guide).length
+                ? [{ title: "Try it on your resume", items: toolsForGuide(guide) }]
+                : []),
               {
                 title: "Examples that show it",
                 items: examplesForGuide(guide).map((example) => ({

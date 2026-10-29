@@ -144,3 +144,37 @@ export function otherGuides(guide: Guide, limit = 4): Guide[] {
 
 /** Tests only: the hand-written table, so a stale slug can be named. */
 export const EXAMPLES_FOR_GUIDE_TABLE = EXAMPLES_FOR_GUIDE;
+
+/** A useful next action after reading, with descriptive, crawlable links. */
+const GUIDE_TOOLS = {
+  scanner: {
+    href: "/resume-keyword-scanner",
+    label: "Free resume keyword scanner",
+    detail: "Compare your resume with a job description and review missing requirements.",
+  },
+  check: {
+    href: "/check",
+    label: "Free ATS resume checker",
+    detail: "See what a parser recovers from your PDF or Word resume in your browser.",
+  },
+  bullets: {
+    href: "/bullet-point-checker",
+    label: "Resume bullet point checker",
+    detail: "Find the action, method or outcome missing from an experience bullet.",
+  },
+} as const;
+
+const TOOLS_FOR_GUIDE: Readonly<Record<string, readonly (keyof typeof GUIDE_TOOLS)[]>> = {
+  "what-an-ats-actually-does": ["check", "scanner"],
+  "resume-file-format": ["check"],
+  "two-column-resume-ats": ["check"],
+  "how-to-quantify-a-bullet": ["bullets"],
+  "how-to-write-a-resume-summary": ["scanner", "bullets"],
+  "career-change-resume": ["scanner"],
+  "resume-for-naukri": ["scanner", "check"],
+  "resume-for-campus-placement": ["scanner"],
+};
+
+export function toolsForGuide(guide: Guide) {
+  return (TOOLS_FOR_GUIDE[guide.slug] ?? []).map((tool) => GUIDE_TOOLS[tool]);
+}

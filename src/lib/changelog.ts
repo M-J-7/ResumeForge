@@ -29,6 +29,16 @@ export interface ChangelogEntry {
 /** Newest first. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: "2026-10-29",
+    kind: "improved",
+    title: "Put the resume guides into practice",
+    body:
+      "Relevant guides now link directly to the keyword scanner, ATS checker or bullet checker. " +
+      "The keyword scanner also walks through comparing your resume with a job description, " +
+      "including how to turn a listed skill into evidence from your own work.",
+    link: { href: "/resume-keyword-scanner", label: "Compare a resume with a job description" },
+  },
+  {
     date: "2026-10-02",
     kind: "new",
     title: "Every example resume downloads free as Word or PDF",

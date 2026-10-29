@@ -1,10 +1,51 @@
 # Search: where the site stands and what moves it
 
-> **Written 2026-10-02.** Plan and record for organic search. `ROADMAP.md` Phase 1, 3 and 5 are
+> **Updated 2026-10-29.** Plan and record for organic search. `ROADMAP.md` Phase 1, 3 and 5 are
 > the source; this file is the search view of them, kept current as work lands. The owner's half
 > is in `OWNER-ACTIONS.md` items 1 and "Distribution".
 
-## 1. Where it stands (checked 2026-10-02)
+## Current verified status — 2026-10-29
+
+Checked the owner's authenticated Google Search Console domain property, not just a public
+`site:` query. **Google verification is complete** (DNS TXT), and the sitemap was submitted and
+successfully read on **2026-10-27**, with **65 discovered pages**. URL Inspection confirms `/`
+and `/check` are indexed. The aggregate Page indexing report is still processing; the number
+of indexed pages is not yet available. Discovery and indexing are different measurements.
+
+The three-month Web performance report currently contains data for October 26–27 only:
+**16 impressions, 0 clicks, 0% CTR, average position 18.6**. These are early observations, not
+a stable site-wide ranking. Search Console hides some low-volume query rows, so the four
+visible queries do not sum to all 16 impressions.
+
+| Landing page                       | Impressions | Average position |
+| ---------------------------------- | ----------: | ---------------: |
+| `/examples/cashier`                |           3 |              6.7 |
+| `/examples/mechanical-engineer`    |           3 |              7.3 |
+| `/terms`                           |           2 |              3.0 |
+| `/examples/civil-engineer-fresher` |           2 |              9.0 |
+| `/examples/receptionist`           |           1 |              1.0 |
+| `/bullet-point-checker`            |           1 |              3.0 |
+| `/examples/medical-assistant`      |           1 |             11.0 |
+| `/examples/mba-fresher`            |           1 |             42.0 |
+| `/resume-keyword-scanner`          |           1 |             77.0 |
+| `/guides/cv-vs-resume-vs-biodata`  |           1 |             97.0 |
+
+Read-only live audit: **65/65 pages pass** HTTP status, self-canonical, indexability,
+unique title and description, one H1, parseable JSON-LD and inbound internal-link checks.
+Run `node scripts/audit-seo.mjs https://sixseconds.tech <report.json>` to repeat it.
+This is a technical crawl, not Google's rich-results eligibility test or a ranking predictor.
+
+Changes on October 29: practical comparison steps and a SQL example on the keyword scanner,
+a clearer search description, and contextual links from eight relevant guides to the free tools.
+No mass-generated pages or fabricated ratings were added.
+
+Next: let Search Console finish processing, then compare 28-day page/query data with this
+baseline. Prioritize pages with repeated relevant impressions. Earn links through genuine
+product use and measured research; publish outreach only with the owner's authorization.
+Do not repeatedly submit an unchanged sitemap or request indexing for already-indexed,
+unchanged pages. Bing Webmaster Tools was signed out and was not verified in this audit.
+
+## 1. Historical audit (2026-10-02; superseded by the status above)
 
 **Neither Google nor Bing has indexed a single page.** `site:sixseconds.tech` returns nothing on
 either, twenty days after launch, and the brand query "six seconds resume" returns other people's

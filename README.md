@@ -64,6 +64,11 @@ the repository exactly once, under `src/lib/fonts/files/`. **If the preview 404s
 
 ## Scripts
 
+For a read-only check of every public sitemap URL, run
+`node scripts/audit-seo.mjs https://sixseconds.tech report.json`. It checks rendered metadata,
+indexability, structured-data JSON and internal discovery links, and exits nonzero on failures.
+Actual Google positions and indexing status come from Search Console; see `docs/SEO.md`.
+
 | Command              | What it does                                                                            |
 | -------------------- | --------------------------------------------------------------------------------------- |
 | `pnpm dev`           | Development server                                                                      |
