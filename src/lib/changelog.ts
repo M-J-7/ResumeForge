@@ -29,6 +29,13 @@ export interface ChangelogEntry {
 /** Newest first. */
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: "2026-10-31",
+    kind: "improved",
+    title: "Find a free resume template for your experience",
+    body: "The template gallery now explains where freshers, experienced professionals and career changers can start, with links to suggested designs. It also walks through editing and downloading a resume, choosing PDF or Word, and checking what a parser reads from the result.",
+    link: { href: "/templates", label: "Find an ATS-friendly resume template" },
+  },
+  {
     date: "2026-10-29",
     kind: "improved",
     title: "Put the resume guides into practice",

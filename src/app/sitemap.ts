@@ -15,6 +15,7 @@ import { GUIDES } from "@/lib/guides/guides";
 import { latestUpdate } from "@/lib/content-dates";
 import { ACTION_VERBS_PATH, ACTION_VERBS_UPDATED } from "@/lib/verbs/action-verbs";
 import { CHANGELOG_UPDATED } from "@/lib/changelog";
+import { HOME_PAGE_UPDATED, TEMPLATE_PAGE_UPDATED } from "@/lib/template-content";
 
 /*
  * Prerendered, as a file — since 2026-09-30, for the reasons in `robots.ts`:
@@ -26,14 +27,19 @@ import { CHANGELOG_UPDATED } from "@/lib/changelog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    { url: siteUrl("/"), changeFrequency: "monthly", priority: 1 },
+    { url: siteUrl("/"), lastModified: HOME_PAGE_UPDATED, changeFrequency: "monthly", priority: 1 },
     // A public tool that answers a question people search for, and the only
     // page here that is worth landing on before the builder itself (P31-A4).
     { url: siteUrl("/check"), changeFrequency: "monthly", priority: 0.9 },
     // The gallery (P32-B3). Its thumbnails need a browser to draw, but every
     // name and description is server-rendered text, which is what a crawler
     // indexes.
-    { url: siteUrl("/templates"), changeFrequency: "monthly", priority: 0.8 },
+    {
+      url: siteUrl("/templates"),
+      lastModified: TEMPLATE_PAGE_UPDATED,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     // What costs money and what never will. Worth landing on cold: "is <tool>
     // actually free" is a real query, and this is the page that answers it.
     { url: siteUrl("/pricing"), changeFrequency: "monthly", priority: 0.8 },

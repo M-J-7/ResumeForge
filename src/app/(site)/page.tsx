@@ -117,10 +117,10 @@ import { MEASURED, REFUSED_CLAIMS, TRUST_SIGNALS } from "@/lib/trust-signals";
  */
 export const metadata: Metadata = pageMetadata({
   title: "Free resume builder",
-  absoluteTitle: `Free ATS resume builder, no sign-up — ${SITE_NAME}`,
+  absoluteTitle: `Free online resume builder & download — ${SITE_NAME}`,
   description:
-    "Build a resume and download it free as PDF or Word — no sign-up, no watermark, no paywall. " +
-    "Then see exactly what an ATS reads back from it.",
+    "Create an ATS-friendly resume online and download PDF or Word for free. " +
+    "No sign-up, watermark or paywall. Check what a parser reads from your file.",
   path: "/",
 });
 
@@ -226,11 +226,11 @@ export default function Home() {
             */}
             <Built>
               <h1 className="font-display text-text text-display-1 max-w-[17ch] text-balance">
-                The resume you write is the resume a{" "}
+                Free online resume builder. Your{" "}
                 {/* One word in the accent, and it is the word the whole
                     position turns on. `--accent` clears AA on this ground at
                     any size; at display size it is not close. */}
-                <span className="text-accent">machine</span> reads
+                <span className="text-accent">download</span> is free.
               </h1>
             </Built>
 
@@ -240,9 +240,10 @@ export default function Home() {
                     child and takes 0 by position. */}
                 <Built order={1}>
                   <p className="text-muted text-body-l max-w-[46ch]">
-                    One column of real text, downloadable as PDF, Word, plain text and JSON Resume
-                    &mdash; all four free, permanently. It runs in your browser and works without an
-                    account, so nothing is sent anywhere unless you ask for it.
+                    Build an ATS-friendly resume in one column of real text, downloadable as PDF,
+                    Word, plain text and JSON Resume &mdash; all four free, permanently. It runs in
+                    your browser and works without an account, so nothing is sent anywhere unless
+                    you ask for it.
                   </p>
                 </Built>
 

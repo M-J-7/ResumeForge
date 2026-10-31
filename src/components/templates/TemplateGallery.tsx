@@ -150,7 +150,11 @@ function TemplateGrid({
           // the height that is left rather than all of it — `h-full` there
           // pushed the row out of the cell and under the next row's card, which
           // then took its clicks.
-          <li key={template.id} className={downloads ? "flex flex-col" : undefined}>
+          <li
+            key={template.id}
+            id={href ? `template-${template.id}` : undefined}
+            className={downloads ? "flex scroll-mt-24 flex-col" : undefined}
+          >
             {/*
               The whole card is one target rather than a card containing a
               button: that is what a pointer expects, and it halves the tab

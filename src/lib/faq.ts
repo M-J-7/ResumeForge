@@ -44,9 +44,20 @@ export interface FaqItem {
 
 export const FAQ: readonly FaqItem[] = [
   {
-    question: "Does a two-column resume break ATS parsing?",
+    question: "Can I create a resume online and download it for free?",
     answer:
-      `Often, and in a way you cannot see on the page. We measured it: the same ${COLUMNS.resumes} resumes laid out in one column and with a sidebar, each PDF read back the two ways parsers read text. One column came through both intact. With a sidebar, reading line by line across the page glued the columns together and broke about half the bullets, and reading in the order the file stores its text lost the name whenever the sidebar came first. Which way an employer's system reads, it does not say. Single-column text is the only layout that survived both, which is why this tool only makes that kind — and you can check any file you already have, without an account.`,
+      "Yes. Choose a template, enter your own information and download PDF, Word, plain text or JSON Resume without paying or creating an account. There is no watermark or trial subscription at the end. The builder runs in your browser, so no desktop installation is needed. You can also download a sample template as Word or PDF and replace its fictional details yourself.",
+    link: { href: "/templates", label: "Choose a free ATS-friendly resume template" },
+  },
+  {
+    question: "Is Six Seconds Resume an AI resume builder?",
+    answer:
+      "It does not use generative AI to write your resume or invent achievements. You write the content; the builder supplies layouts, a checklist, a keyword comparison and coaching questions about what a bullet is missing. If you are looking for a free AI resume builder because you want help getting started, use a template or an example as a structure, then replace it with your own experience and facts.",
+    link: { href: "/examples", label: "Browse complete resume examples" },
+  },
+  {
+    question: "Does a two-column resume break ATS parsing?",
+    answer: `Often, and in a way you cannot see on the page. We measured it: the same ${COLUMNS.resumes} resumes laid out in one column and with a sidebar, each PDF read back the two ways parsers read text. One column came through both intact. With a sidebar, reading line by line across the page glued the columns together and broke about half the bullets, and reading in the order the file stores its text lost the name whenever the sidebar came first. Which way an employer's system reads, it does not say. Single-column text is the only layout that survived both, which is why this tool only makes that kind — and you can check any file you already have, without an account.`,
     link: { href: "/guides/two-column-resume-ats", label: "The measurement, and its limits" },
   },
   {
